@@ -63,8 +63,11 @@ const TUTORIAL_CONTROLS: Record<TutorialStepId, Record<InputDevice, string>> = {
   move: { keyboardMouse: 'A / D 或方向键', gamepad: '左摇杆或 D-pad' },
   jump: { keyboardMouse: 'SPACE', gamepad: 'A' },
   weapons: { keyboardMouse: 'J 射击，K 近战', gamepad: 'X 射击，Y 近战' },
+  reflect: { keyboardMouse: '弹体接近时按 K', gamepad: '弹体接近时按 Y' },
   dash: { keyboardMouse: 'SHIFT', gamepad: 'B' },
+  shield: { keyboardMouse: 'SHIFT 穿越，J/K 攻击', gamepad: 'B 穿越，X/Y 攻击' },
   wallJump: { keyboardMouse: '贴墙后按 SPACE', gamepad: '贴墙后按 A' },
+  piercing: { keyboardMouse: '墙跳后按 J', gamepad: '墙跳后按 X' },
   interact: { keyboardMouse: 'E', gamepad: 'RB' },
 };
 

@@ -1,15 +1,24 @@
 import Phaser from 'phaser';
 
 import type { ProceduralAudio } from '../audio/ProceduralAudio';
+import { AUDIO_EVENT, type AudioCue } from '../audio/soundDesign';
 import { CombatSystem } from '../combat/CombatSystem';
+import {
+  COMBAT_EVENTS,
+  type PiercingHitEvent,
+  type ProjectileReflectedEvent,
+  type ShieldCoreHitEvent,
+  type ShieldOpenedEvent,
+} from '../combat/events';
 import { COLORS, REGISTRY_KEYS } from '../constants';
+import { EnemySystem } from '../enemies/EnemySystem';
 import { getInputDevice, type InputDevice } from '../input/device';
 import { InputController } from '../input/InputController';
 import { Player } from '../player/Player';
 import { releaseArcadeImage } from '../render/arcadePool';
 import { queueRegionAssets } from '../render/regionAssets';
 import { createNewSession, type GameSessionState } from '../state/GameSession';
-import { TUTORIAL_STEPS, tutorialAbilities } from '../tutorial/tutorialPlan';
+import { TUTORIAL_STEPS, tutorialAbilities, tutorialEnemies } from '../tutorial/tutorialPlan';
 import { tutorialControlHint } from '../ui/helpContent';
 import { bodyTextStyle } from '../ui/text';
 
@@ -17,6 +26,8 @@ export class TutorialScene extends Phaser.Scene {
   private controls!: InputController;
   private player!: Player;
   private combat!: CombatSystem;
+  private enemySystem!: EnemySystem;
+  private audio?: ProceduralAudio;
   private session!: GameSessionState;
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
   private playerCollider?: Phaser.Physics.Arcade.Collider;
@@ -31,6 +42,8 @@ export class TutorialScene extends Phaser.Scene {
   private wall?: Phaser.Physics.Arcade.Image;
   private shootComplete = false;
   private meleeComplete = false;
+  private piercingProjectileSerial?: number;
+  private readonly piercingTargets = new Set<string>();
   private advancing = false;
   private complete = false;
   private renderedDevice?: InputDevice;
@@ -58,6 +71,7 @@ export class TutorialScene extends Phaser.Scene {
     this.playerCollider = this.physics.add.collider(this.player, this.platforms);
     this.combat = new CombatSystem(this, this.player, this.session, () => this.resetStage());
     this.combat.bindWorld(this.platforms);
+    this.enemySystem = new EnemySystem(this, this.player, this.combat);
 
     this.add.rectangle(240, 41, 468, 72, COLORS.void, 0.88).setStrokeStyle(1, COLORS.cyan, 0.7);
     this.progressText = this.add.text(14, 10, '', bodyTextStyle('#ffb454'));
@@ -66,15 +80,23 @@ export class TutorialScene extends Phaser.Scene {
       .setOrigin(0.5, 0);
     this.objectiveText = this.add
       .text(240, 31, '', { ...bodyTextStyle('#d8f7ff'), align: 'center' })
-      .setOrigin(0.5, 0);
+      .setOrigin(0.5, 0)
+      .setWordWrapWidth(450);
     this.effectText = this.add
       .text(240, 50, '', { ...bodyTextStyle('#8ce7ff'), align: 'center' })
-      .setOrigin(0.5, 0);
+      .setOrigin(0.5, 0)
+      .setWordWrapWidth(450);
     this.add.text(468, 10, 'H 帮助 · ESC 标题', bodyTextStyle('#8da1c8')).setOrigin(1, 0);
 
     this.input.keyboard?.on('keydown-H', this.openHelp, this);
     this.input.keyboard?.on('keydown-ESC', this.returnToTitle, this);
-    (this.registry.get(REGISTRY_KEYS.audio) as ProceduralAudio | undefined)?.setBiome('vestibule');
+    this.audio = this.registry.get(REGISTRY_KEYS.audio) as ProceduralAudio | undefined;
+    this.audio?.setBiome('vestibule');
+    this.events.on(AUDIO_EVENT, this.playAudio, this);
+    this.events.on(COMBAT_EVENTS.projectileReflected, this.onProjectileReflected, this);
+    this.events.on(COMBAT_EVENTS.shieldOpened, this.onShieldOpened, this);
+    this.events.on(COMBAT_EVENTS.shieldCoreHit, this.onShieldCoreHit, this);
+    this.events.on(COMBAT_EVENTS.piercingHit, this.onPiercingHit, this);
     this.enterStage();
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -82,6 +104,7 @@ export class TutorialScene extends Phaser.Scene {
       this.input.keyboard?.off('keydown-ESC', this.returnToTitle, this);
       this.controls.destroy();
       this.combat.destroy();
+      this.enemySystem.destroy();
       this.playerCollider?.destroy();
       if (this.platforms.children) this.platforms.destroy(true);
     });
@@ -101,6 +124,7 @@ export class TutorialScene extends Phaser.Scene {
       body.blocked.left || body.blocked.right || body.touching.left || body.touching.right;
     this.player.updateMovement(delta, input, this.session.abilities);
     const attack = this.combat.update(input);
+    this.enemySystem.update(delta, attack);
     const step = TUTORIAL_STEPS[this.stageIndex];
     if (!step) return;
 
@@ -134,10 +158,12 @@ export class TutorialScene extends Phaser.Scene {
   }
 
   private enterStage(): void {
+    this.enemySystem.clear();
     this.clearStageObjects();
     this.advancing = false;
     const step = TUTORIAL_STEPS[this.stageIndex];
     if (!step) return;
+    this.session.health = this.session.maxHealth;
     this.session.abilities = tutorialAbilities(step.id);
     this.progressText.setText(`训练 ${this.stageIndex + 1}/${TUTORIAL_STEPS.length}`);
     this.titleText.setText(step.title);
@@ -146,6 +172,8 @@ export class TutorialScene extends Phaser.Scene {
     this.effectText.setText(step.effect);
     this.combat.clearTransient();
     this.player.resetTraversalState();
+    this.piercingProjectileSerial = undefined;
+    this.piercingTargets.clear();
 
     if (step.id === 'move') {
       this.player.setPosition(36, 248);
@@ -160,6 +188,9 @@ export class TutorialScene extends Phaser.Scene {
       this.shootTarget = this.add.image(246, 218, 'sentry').setDepth(4);
       this.meleeTarget = this.add.image(288, 244, 'crawler').setOrigin(0.5, 1).setDepth(4);
       this.stageObjects.push(this.shootTarget, this.meleeTarget);
+    } else if (step.id === 'reflect') {
+      this.player.setPosition(224, 248);
+      this.stageObjects.push(this.createBeacon(286, 230, COLORS.amber));
     } else if (step.id === 'dash') {
       this.player.setPosition(278, 248);
       const gate = this.add
@@ -167,10 +198,21 @@ export class TutorialScene extends Phaser.Scene {
         .setStrokeStyle(2, COLORS.cyan, 0.95)
         .setDepth(3);
       this.stageObjects.push(gate, this.createBeacon(336, 230, COLORS.cyan));
+    } else if (step.id === 'shield') {
+      this.player.setPosition(180, 248);
+      this.stageObjects.push(this.createBeacon(310, 230, COLORS.amber));
     } else if (step.id === 'wallJump') {
       this.player.setPosition(350, 248);
       this.wall = this.createPlatform(392, 148, 14, 100, 0x334b76);
       this.stageObjects.push(this.createBeacon(378, 152, 0xed63d6));
+    } else if (step.id === 'piercing') {
+      this.player.setPosition(152, 205);
+      this.wall = this.createPlatform(112, 110, 14, 138, 0x334b76);
+      this.stageObjects.push(
+        this.createPlatform(126, 205, 58, 8, 0x334b76),
+        this.createBeacon(238, 148, COLORS.amber),
+        this.createBeacon(304, 148, COLORS.amber),
+      );
     } else {
       this.wall?.destroy();
       this.wall = undefined;
@@ -178,6 +220,8 @@ export class TutorialScene extends Phaser.Scene {
       const terminal = this.add.image(448, 248, 'terminal').setOrigin(0.5, 1).setDepth(4);
       this.stageObjects.push(terminal);
     }
+    this.player.setVelocity(0, 0).setAcceleration(0, 0);
+    this.enemySystem.load(tutorialEnemies(step.id), this.platforms);
   }
 
   private updateWeaponLesson(attack: ReturnType<CombatSystem['update']>): void {
@@ -220,8 +264,10 @@ export class TutorialScene extends Phaser.Scene {
   }
 
   private resetStage(): void {
+    if (this.advancing || this.complete) return;
+    this.advancing = true;
     this.session.health = this.session.maxHealth;
-    this.enterStage();
+    this.time.delayedCall(0, () => this.enterStage());
   }
 
   private finishTutorial(): void {
@@ -242,7 +288,7 @@ export class TutorialScene extends Phaser.Scene {
     );
     panel.add(
       this.add
-        .text(240, 124, '你已掌握移动、战斗、相位冲刺与磁附跃迁。\n正式任务会从坠星船坞开始。', {
+        .text(240, 124, '你已掌握反射、穿盾开核与墙跳贯穿。\n正式任务会从坠星船坞开始。', {
           ...bodyTextStyle('#8ce7ff'),
           align: 'center',
           lineSpacing: 6,
@@ -311,11 +357,40 @@ export class TutorialScene extends Phaser.Scene {
 
   private openHelp(): void {
     this.controls.clear();
+    this.combat.clearHitStop();
     this.scene.launch('help', { returnScene: 'tutorial', resumeScene: true });
     this.scene.pause();
   }
 
   private returnToTitle(): void {
     this.scene.start('title');
+  }
+
+  private playAudio(cue: AudioCue): void {
+    this.audio?.play(cue);
+  }
+
+  private onProjectileReflected(_event: ProjectileReflectedEvent): void {
+    if (TUTORIAL_STEPS[this.stageIndex]?.id === 'reflect') this.advanceStage();
+  }
+
+  private onShieldOpened(_event: ShieldOpenedEvent): void {
+    if (TUTORIAL_STEPS[this.stageIndex]?.id !== 'shield') return;
+    this.effectText.setText('核心已开放：留在抵达侧，用能量刃或能量枪攻击。');
+  }
+
+  private onShieldCoreHit(_event: ShieldCoreHitEvent): void {
+    if (TUTORIAL_STEPS[this.stageIndex]?.id === 'shield') this.advanceStage();
+  }
+
+  private onPiercingHit(event: PiercingHitEvent): void {
+    if (TUTORIAL_STEPS[this.stageIndex]?.id !== 'piercing') return;
+    if (this.piercingProjectileSerial !== event.serial) {
+      this.piercingProjectileSerial = event.serial;
+      this.piercingTargets.clear();
+    }
+    this.piercingTargets.add(event.targetId);
+    this.effectText.setText(`贯穿命中 ${this.piercingTargets.size}/2：保持移动，继续穿透目标。`);
+    if (this.piercingTargets.size >= 2) this.advanceStage();
   }
 }

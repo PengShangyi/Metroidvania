@@ -1,6 +1,16 @@
 import type { AbilityState } from '../state/GameSession';
+import type { EnemySpawn } from '../world/types';
 
-export type TutorialStepId = 'move' | 'jump' | 'weapons' | 'dash' | 'wallJump' | 'interact';
+export type TutorialStepId =
+  | 'move'
+  | 'jump'
+  | 'weapons'
+  | 'reflect'
+  | 'dash'
+  | 'shield'
+  | 'wallJump'
+  | 'piercing'
+  | 'interact';
 
 export interface TutorialStep {
   id: TutorialStepId;
@@ -29,16 +39,34 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
     effect: '能量枪射程远且无弹药；能量刃伤害更高，适合近身。',
   },
   {
+    id: 'reflect',
+    title: '短窗反射',
+    objective: '在炮弹接近刀刃时挥砍，将它反射',
+    effect: '挥砍前 80ms 可反射炮台弹；反射弹造成 2 点伤害。',
+  },
+  {
     id: 'dash',
     title: '相位冲刺',
     objective: '向右冲过青色相位门',
     effect: '冲刺持续 150ms，前 120ms 可免疫伤害；空中次数落地恢复。',
   },
   {
+    id: 'shield',
+    title: '穿盾开核',
+    objective: '冲刺越过盾兵中心，再从抵达侧攻击核心',
+    effect: '核心暴露 1.8 秒；冲刺只开盾，不会直接造成伤害。',
+  },
+  {
     id: 'wallJump',
     title: '磁附跃迁',
     objective: '贴住右侧墙面并完成墙跳',
     effect: '贴墙下落限速为 55px/s；墙跳会向反方向弹出。',
+  },
+  {
+    id: 'piercing',
+    title: '墙跳贯穿',
+    objective: '墙跳后立刻射击，让同一发子弹命中两个目标',
+    effect: '每次墙跳只武装首发；琥珀轮廓亮起时可发射贯穿弹。',
   },
   {
     id: 'interact',
@@ -48,9 +76,27 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   },
 ] as const;
 
+const TUTORIAL_ENEMIES: Partial<Record<TutorialStepId, readonly EnemySpawn[]>> = {
+  reflect: [{ id: 'training-reflect-turret', type: 'turret', x: 370, y: 248 }],
+  shield: [{ id: 'training-shield-crawler', type: 'crawler', variant: 'shielded', x: 264, y: 248 }],
+  piercing: [
+    { id: 'training-piercing-a', type: 'sentry', x: 238, y: 168 },
+    { id: 'training-piercing-b', type: 'sentry', x: 304, y: 168 },
+  ],
+};
+
 export function tutorialAbilities(step: TutorialStepId): AbilityState {
   return {
-    phaseDash: step === 'dash' || step === 'wallJump' || step === 'interact',
-    magneticGrip: step === 'wallJump' || step === 'interact',
+    phaseDash:
+      step === 'dash' ||
+      step === 'shield' ||
+      step === 'wallJump' ||
+      step === 'piercing' ||
+      step === 'interact',
+    magneticGrip: step === 'wallJump' || step === 'piercing' || step === 'interact',
   };
+}
+
+export function tutorialEnemies(step: TutorialStepId): EnemySpawn[] {
+  return (TUTORIAL_ENEMIES[step] ?? []).map((spawn) => ({ ...spawn }));
 }
