@@ -8,12 +8,14 @@ import type { GameSessionState } from '../state/GameSession';
 import { CombatFeedback } from './CombatFeedback';
 import type { HitImpactKind } from './feedbackRules';
 import { configureProjectileMetadata, getProjectileMetadata } from './projectileMetadata';
+import { REFLECTION, reflectionWindowActive } from './reflectionRules';
 import { COMBAT, cooldownReady, resolveDamage } from './rules';
 
 export interface AttackFrame {
   projectiles: Phaser.Physics.Arcade.Group;
   meleeBounds?: Phaser.Geom.Rectangle;
   meleeSerial: number;
+  meleeReflective: boolean;
 }
 
 export class CombatSystem {
@@ -28,6 +30,7 @@ export class CombatSystem {
   private invulnerableUntil = 0;
   private meleeBounds?: Phaser.Geom.Rectangle;
   private meleeSerial = 0;
+  private meleeReflectiveUntil = 0;
   private projectileSerial = 0;
   private readonly feedback: CombatFeedback;
 
@@ -65,6 +68,7 @@ export class CombatSystem {
       projectiles: this.projectiles,
       meleeBounds: this.meleeBounds,
       meleeSerial: this.meleeSerial,
+      meleeReflective: reflectionWindowActive(now, this.meleeReflectiveUntil),
     };
   }
 
@@ -115,6 +119,7 @@ export class CombatSystem {
   public clearTransient(): void {
     if (this.projectiles.children) releaseArcadeGroup(this.projectiles);
     this.meleeBounds = undefined;
+    this.meleeReflectiveUntil = 0;
     this.feedback.clear();
   }
 
@@ -142,6 +147,10 @@ export class CombatSystem {
 
   public shieldOpenFeedback(x: number, y: number, direction: -1 | 1): void {
     this.feedback.shieldOpen(x, y, direction);
+  }
+
+  public reflectionFeedback(x: number, y: number, direction: -1 | 1): void {
+    this.feedback.reflect(x, y, direction);
   }
 
   private fireBlaster(now: number): void {
@@ -179,6 +188,7 @@ export class CombatSystem {
     const y = this.player.y - 18;
     this.meleeBounds = new Phaser.Geom.Rectangle(x - 14, y - 12, 28, 24);
     this.meleeSerial += 1;
+    this.meleeReflectiveUntil = now + REFLECTION.windowMs;
     this.player.playAction('slash');
     this.scene.events.emit(AUDIO_EVENT, 'blade');
     const slash = this.scene.add

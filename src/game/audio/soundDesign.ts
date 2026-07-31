@@ -6,6 +6,7 @@ export type AudioCue =
   | 'enemyHit'
   | 'shieldBlock'
   | 'shieldOpen'
+  | 'reflect'
   | 'hurt'
   | 'pickup'
   | 'terminal'
@@ -70,6 +71,13 @@ export const TONE_PRESETS: Record<AudioCue, TonePreset> = {
     duration: 0.16,
     gain: 0.11,
     wave: 'sawtooth',
+  },
+  reflect: {
+    startFrequency: 360,
+    endFrequency: 1_120,
+    duration: 0.11,
+    gain: 0.11,
+    wave: 'triangle',
   },
   hurt: {
     startFrequency: 105,

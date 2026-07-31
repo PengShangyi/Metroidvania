@@ -1,9 +1,15 @@
 import Phaser from 'phaser';
 
 import type { AttackFrame, CombatSystem } from '../combat/CombatSystem';
-import { COMBAT_EVENTS, type ShieldCoreHitEvent, type ShieldOpenedEvent } from '../combat/events';
+import {
+  COMBAT_EVENTS,
+  type ProjectileReflectedEvent,
+  type ShieldCoreHitEvent,
+  type ShieldOpenedEvent,
+} from '../combat/events';
 import { hitReaction, projectileImpactKind, type HitImpactKind } from '../combat/feedbackRules';
 import { configureProjectileMetadata, getProjectileMetadata } from '../combat/projectileMetadata';
+import { reflectProjectile } from '../combat/reflectProjectile';
 import type { Player } from '../player/Player';
 import { activateArcadeImage, releaseArcadeGroup, releaseArcadeImage } from '../render/arcadePool';
 import type { EnemySpawn } from '../world/types';
@@ -26,7 +32,6 @@ export class EnemySystem {
   private readonly repairDrops: Phaser.Physics.Arcade.Group;
   private platformCollider?: Phaser.Physics.Arcade.Collider;
   private projectileCollider?: Phaser.Physics.Arcade.Collider;
-  private hostileCollider?: Phaser.Physics.Arcade.Collider;
   private contactCollider?: Phaser.Physics.Arcade.Collider;
   private dropCollider?: Phaser.Physics.Arcade.Collider;
   private projectileSerial = 0;
@@ -45,17 +50,6 @@ export class EnemySystem {
       const knockback = player.x < sprite.x ? -130 : 130;
       this.combat.damagePlayer(1, knockback);
     });
-    this.hostileCollider = scene.physics.add.overlap(
-      player,
-      this.hostileProjectiles,
-      (_player, shot) => {
-        const projectile = shot as Phaser.Physics.Arcade.Image;
-        const velocity = (projectile.body as Phaser.Physics.Arcade.Body).velocity.x;
-        const damage = getProjectileMetadata(projectile).damage;
-        releaseArcadeImage(projectile);
-        this.combat.damagePlayer(damage, velocity < 0 ? -110 : 110);
-      },
-    );
     this.dropCollider = scene.physics.add.overlap(player, this.repairDrops, (_player, drop) => {
       this.combat.healPlayer(1);
       releaseArcadeImage(drop as Phaser.Physics.Arcade.Image);
@@ -96,6 +90,8 @@ export class EnemySystem {
       return true;
     });
 
+    this.reflectHostileProjectiles(attack, now);
+
     this.scene.physics.overlap(attack.projectiles, this.enemies, (projectile, enemy) => {
       const shot = projectile as Phaser.Physics.Arcade.Image;
       const target = enemy as EnemySprite;
@@ -110,6 +106,9 @@ export class EnemySystem {
       );
       releaseArcadeImage(shot);
     });
+
+    this.resolveReflectedProjectileHits();
+    this.resolveHostileProjectileHits();
 
     this.hostileProjectiles.children.each((child) => {
       const shot = child as Phaser.Physics.Arcade.Image;
@@ -140,7 +139,6 @@ export class EnemySystem {
   public destroy(): void {
     this.clear();
     this.contactCollider?.destroy();
-    this.hostileCollider?.destroy();
     this.dropCollider?.destroy();
     if (this.enemies.children) this.enemies.destroy(true);
     if (this.hostileProjectiles.children) this.hostileProjectiles.destroy(true);
@@ -249,6 +247,80 @@ export class EnemySystem {
       reflectable: true,
       serial: this.projectileSerial,
       expiresAt: this.scene.time.now + 2_200,
+    });
+  }
+
+  private reflectHostileProjectiles(attack: AttackFrame, now: number): void {
+    if (!attack.meleeReflective || !attack.meleeBounds) return;
+    this.hostileProjectiles.children.each((child) => {
+      const projectile = child as Phaser.Physics.Arcade.Image;
+      if (
+        !projectile.active ||
+        !Phaser.Geom.Intersects.RectangleToRectangle(projectile.getBounds(), attack.meleeBounds!)
+      ) {
+        return true;
+      }
+      const reflection = reflectProjectile(projectile, now);
+      if (!reflection) return true;
+      this.combat.reflectionFeedback(projectile.x, projectile.y, reflection.direction);
+      this.scene.events.emit(COMBAT_EVENTS.projectileReflected, {
+        serial: reflection.serial,
+        kind: reflection.originalKind,
+      } satisfies ProjectileReflectedEvent);
+      return true;
+    });
+  }
+
+  private resolveReflectedProjectileHits(): void {
+    this.hostileProjectiles.children.each((child) => {
+      const projectile = child as Phaser.Physics.Arcade.Image;
+      if (!projectile.active) return true;
+      const metadata = getProjectileMetadata(projectile);
+      if (metadata.faction !== 'player' || metadata.kind !== 'reflected') return true;
+
+      const body = projectile.body as Phaser.Physics.Arcade.Body;
+      this.enemies.children.each((enemyChild) => {
+        const enemy = enemyChild as EnemySprite;
+        if (
+          !projectile.active ||
+          !enemy.active ||
+          !Phaser.Geom.Intersects.RectangleToRectangle(projectile.getBounds(), enemy.getBounds())
+        ) {
+          return true;
+        }
+        this.resolveEnemyHit(
+          enemy,
+          metadata.damage,
+          'reflected',
+          body.velocity.x < 0 ? -1 : 1,
+          body.velocity.x < 0 ? 1 : -1,
+        );
+        releaseArcadeImage(projectile);
+        return false;
+      });
+      return true;
+    });
+  }
+
+  private resolveHostileProjectileHits(): void {
+    this.hostileProjectiles.children.each((child) => {
+      const projectile = child as Phaser.Physics.Arcade.Image;
+      if (!projectile.active) return true;
+      const metadata = getProjectileMetadata(projectile);
+      if (
+        metadata.faction !== 'hostile' ||
+        !Phaser.Geom.Intersects.RectangleToRectangle(
+          projectile.getBounds(),
+          this.player.getBounds(),
+        )
+      ) {
+        return true;
+      }
+      const velocityX = (projectile.body as Phaser.Physics.Arcade.Body).velocity.x;
+      const damage = metadata.damage;
+      releaseArcadeImage(projectile);
+      this.combat.damagePlayer(damage, velocityX < 0 ? -110 : 110);
+      return true;
     });
   }
 

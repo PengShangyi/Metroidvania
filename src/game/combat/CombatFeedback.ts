@@ -42,6 +42,14 @@ export class CombatFeedback {
     this.spawnImpact(x, y - 4, direction, 0xd8f7ff);
   }
 
+  public reflect(x: number, y: number, direction: -1 | 1): void {
+    this.requestHitStop(38);
+    this.scene.events.emit(AUDIO_EVENT, 'reflect');
+    if (this.session.settings.screenShake) this.scene.cameras.main.shake(45, 0.0015);
+    this.spawnImpact(x, y, direction, 0x43d8e8);
+    this.spawnImpact(x, y, direction === 1 ? -1 : 1, 0xffb454);
+  }
+
   public clear(): void {
     this.hitStopToken += 1;
     this.hitStopUntil = 0;
