@@ -56,7 +56,7 @@ export class PlayScene extends Phaser.Scene {
   public update(_time: number, delta: number): void {
     const input = this.controls.update();
     if (!this.transitioning) {
-      this.player.updateMovement(delta, input);
+      this.player.updateMovement(delta, input, this.session.abilities);
       this.roomRuntime.update(this.player, input, (exit) => this.transition(exit));
       const attack = this.combat.update(input);
       this.enemySystem.update(delta, attack);

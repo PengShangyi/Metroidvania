@@ -70,6 +70,7 @@ export class CombatSystem {
   }
 
   public damagePlayer(amount: number, knockbackX = 0): boolean {
+    if (this.player.isDashInvulnerable(this.scene.time.now)) return false;
     const result = resolveDamage(
       this.session.health,
       amount,

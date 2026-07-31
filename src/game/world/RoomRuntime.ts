@@ -7,7 +7,7 @@ import type { GameSessionState } from '../state/GameSession';
 import { bodyTextStyle } from '../ui/text';
 import { meetsRequirement } from './progression';
 import type { RoomRepository } from './RoomRepository';
-import type { ExitDefinition, RoomDefinition } from './types';
+import type { ExitDefinition, PickupDefinition, RoomDefinition } from './types';
 
 type ExitHandler = (exit: ExitDefinition) => void;
 
@@ -19,6 +19,8 @@ export class RoomRuntime {
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
   private collider?: Phaser.Physics.Arcade.Collider;
   private roomObjects: Phaser.GameObjects.GameObject[] = [];
+  private pickupObjects = new Map<string, Phaser.GameObjects.Image>();
+  private exitObjects = new Map<string, Phaser.GameObjects.Rectangle>();
   private messageToken = 0;
   private safePosition = new Phaser.Math.Vector2();
   private readonly saveProgress: () => boolean;
@@ -53,6 +55,7 @@ export class RoomRuntime {
     }
     this.collider = this.scene.physics.add.collider(player, this.platforms);
     player.setPosition(spawn.x, spawn.y).setVelocity(0, 0).setAcceleration(0, 0);
+    player.resetTraversalState();
     this.safePosition.set(spawn.x, spawn.y);
 
     for (const exit of this.room.exits) this.drawExit(exit);
@@ -78,6 +81,7 @@ export class RoomRuntime {
     if ((playerBody.blocked.down || playerBody.touching.down) && !this.isTouchingHazard(player)) {
       this.safePosition.set(player.x, player.y);
     }
+    this.handlePickups(player, input);
     const overlappingExit = this.room.exits.find((exit) =>
       Phaser.Geom.Rectangle.Contains(
         new Phaser.Geom.Rectangle(exit.x, exit.y, exit.width, exit.height),
@@ -183,6 +187,7 @@ export class RoomRuntime {
       0.16,
     );
     door.setOrigin(0).setStrokeStyle(1, unlocked ? COLORS.cyan : COLORS.danger, 0.85);
+    this.exitObjects.set(exit.id, door);
     this.roomObjects.push(door);
   }
 
@@ -219,7 +224,71 @@ export class RoomRuntime {
       duration: 780,
       ease: 'Sine.inOut',
     });
+    this.pickupObjects.set(pickup.id, image);
     this.roomObjects.push(image);
+  }
+
+  private handlePickups(player: Player, input: ActionSnapshot): void {
+    for (const pickup of this.room.pickups) {
+      if (this.session.collectedPickups.has(pickup.id)) continue;
+      if (
+        !meetsRequirement(pickup.requirement, this.session.abilities, this.session.bossDefeated)
+      ) {
+        continue;
+      }
+      if (Phaser.Math.Distance.Between(player.x, player.y - 12, pickup.x, pickup.y) > 25) continue;
+      if (pickup.type === 'lore' && !input.pressed.interact) {
+        if (this.registryMessageEmpty()) this.showMessage('E：读取残留记录', 400);
+        continue;
+      }
+      this.collectPickup(pickup);
+    }
+  }
+
+  private collectPickup(pickup: PickupDefinition): void {
+    this.session.collectedPickups.add(pickup.id);
+    let message = '';
+    if (pickup.type === 'phaseDash') {
+      this.session.abilities.phaseDash = true;
+      message = '获得相位冲刺 · SHIFT / B';
+    } else if (pickup.type === 'magneticGrip') {
+      this.session.abilities.magneticGrip = true;
+      message = '获得磁附跃迁 · 可贴墙跳跃';
+    } else if (pickup.type === 'healthCell') {
+      this.session.maxHealth += 1;
+      this.session.health = this.session.maxHealth;
+      message = '外骨骼生命上限 +1';
+    } else {
+      this.session.readLore.add(pickup.id);
+      message = pickup.text ?? '记录内容已经损坏';
+    }
+
+    const image = this.pickupObjects.get(pickup.id);
+    if (image) {
+      this.scene.tweens.killTweensOf(image);
+      image.destroy();
+      this.pickupObjects.delete(pickup.id);
+    }
+    this.refreshExitVisuals();
+    const saved = this.saveProgress();
+    this.showMessage(
+      saved ? message : `${message} · 存档不可用`,
+      pickup.type === 'lore' ? 4_500 : 2_000,
+    );
+  }
+
+  private refreshExitVisuals(): void {
+    for (const exit of this.room.exits) {
+      const door = this.exitObjects.get(exit.id);
+      if (!door) continue;
+      const unlocked = meetsRequirement(
+        exit.requirement,
+        this.session.abilities,
+        this.session.bossDefeated,
+      );
+      door.setFillStyle(unlocked ? COLORS.cyan : COLORS.danger, 0.16);
+      door.setStrokeStyle(1, unlocked ? COLORS.cyan : COLORS.danger, 0.85);
+    }
   }
 
   private platformColor(room: RoomDefinition): number {
@@ -260,5 +329,7 @@ export class RoomRuntime {
       object.destroy();
     }
     this.roomObjects = [];
+    this.pickupObjects.clear();
+    this.exitObjects.clear();
   }
 }
