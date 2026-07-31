@@ -41,6 +41,7 @@ export interface PickupDefinition {
 
 export interface CheckpointDefinition {
   id: string;
+  spawnId: string;
   x: number;
   y: number;
 }

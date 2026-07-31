@@ -50,6 +50,9 @@ export function validateRooms(definitions: RoomDefinition[]): void {
       pickupIds.add(pickup.id);
       assertPointInRoom(room, pickup.x, pickup.y, `拾取物 ${pickup.id}`);
     }
+    if (room.checkpoint && !room.spawns.some((spawn) => spawn.id === room.checkpoint?.spawnId)) {
+      throw new Error(`终端 ${room.checkpoint.id} 指向未知生成点 ${room.checkpoint.spawnId}`);
+    }
   }
 
   const byId = new Map(definitions.map((room) => [room.id, room]));

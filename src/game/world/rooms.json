@@ -25,7 +25,7 @@
     ],
     "enemies": [],
     "pickups": [],
-    "checkpoint": { "id": "terminal-dock", "x": 110, "y": 222 }
+    "checkpoint": { "id": "terminal-dock", "spawnId": "start", "x": 110, "y": 222 }
   },
   {
     "id": "vestibule_gallery",
@@ -273,7 +273,12 @@
     ],
     "enemies": [],
     "pickups": [],
-    "checkpoint": { "id": "terminal-intake", "x": 98, "y": 222 }
+    "checkpoint": {
+      "id": "terminal-intake",
+      "spawnId": "from_causeway",
+      "x": 98,
+      "y": 222
+    }
   },
   {
     "id": "bioforge_pump",
@@ -532,7 +537,12 @@
     ],
     "enemies": [],
     "pickups": [],
-    "checkpoint": { "id": "terminal-reactor", "x": 98, "y": 222 }
+    "checkpoint": {
+      "id": "terminal-reactor",
+      "spawnId": "from_spire",
+      "x": 98,
+      "y": 222
+    }
   },
   {
     "id": "reactor_conduit",
