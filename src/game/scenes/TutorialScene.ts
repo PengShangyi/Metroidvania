@@ -76,7 +76,7 @@ export class TutorialScene extends Phaser.Scene {
     this.add.rectangle(240, 41, 468, 72, COLORS.void, 0.88).setStrokeStyle(1, COLORS.cyan, 0.7);
     this.progressText = this.add.text(14, 10, '', bodyTextStyle('#ffb454'));
     this.titleText = this.add
-      .text(240, 9, '', { ...bodyTextStyle('#d8f7ff'), fontSize: '14px' })
+      .text(240, 9, '', { ...bodyTextStyle('#d8f7ff'), fontSize: '12px' })
       .setOrigin(0.5, 0);
     this.objectiveText = this.add
       .text(240, 31, '', { ...bodyTextStyle('#d8f7ff'), align: 'center' })
@@ -283,7 +283,7 @@ export class TutorialScene extends Phaser.Scene {
     );
     panel.add(
       this.add
-        .text(240, 90, '训练完成', { ...bodyTextStyle('#d8f7ff'), fontSize: '22px' })
+        .text(240, 90, '训练完成', { ...bodyTextStyle('#d8f7ff'), fontSize: '24px' })
         .setOrigin(0.5),
     );
     panel.add(

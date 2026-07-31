@@ -13,7 +13,7 @@ export function renderHelpPanel(
     scene.add
       .text(240, 38, `帮助 // ${inputDeviceLabel(device)}`, {
         ...bodyTextStyle('#d8f7ff'),
-        fontSize: '17px',
+        fontSize: '24px',
       })
       .setOrigin(0.5),
   );
@@ -48,7 +48,7 @@ export function renderHelpPanel(
       container.add(
         scene.add.text(x + 89, y - 1, `${row.action}\n${row.description}`, {
           ...bodyTextStyle('#d8f7ff'),
-          fontSize: '10px',
+          fontSize: '12px',
           lineSpacing: 1,
         }),
       );

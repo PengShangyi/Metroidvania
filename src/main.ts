@@ -1,17 +1,23 @@
 import Phaser from 'phaser';
 
 import { createGameConfig } from './game/config';
+import { ensureUIFont } from './game/ui/fontLoader';
 import './style.css';
 
-const game = new Phaser.Game(createGameConfig());
+let game: Phaser.Game | undefined;
 
-if (import.meta.env.MODE === 'test') {
-  void import('./game/testing/installTestBridge').then(({ installTestBridge }) =>
-    installTestBridge(game),
-  );
+async function startGame(): Promise<void> {
+  await ensureUIFont(document.fonts);
+  game = new Phaser.Game(createGameConfig());
+  if (import.meta.env.MODE === 'test') {
+    const { installTestBridge } = await import('./game/testing/installTestBridge');
+    installTestBridge(game);
+  }
 }
 
-window.addEventListener('beforeunload', () => game.destroy(true));
+void startGame().catch(() => showRuntimeError('中文界面字体加载失败，请检查资源后重新加载。'));
+
+window.addEventListener('beforeunload', () => game?.destroy(true));
 
 function showRuntimeError(message: string): void {
   const existing = document.querySelector<HTMLElement>('[data-runtime-error]');

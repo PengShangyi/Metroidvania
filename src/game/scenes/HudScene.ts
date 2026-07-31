@@ -342,8 +342,7 @@ export class HudScene extends Phaser.Scene {
     return this.add
       .text(240, 48, label, {
         ...bodyTextStyle('#d8f7ff'),
-        fontSize: '18px',
-        fontStyle: 'bold',
+        fontSize: '24px',
       })
       .setOrigin(0.5);
   }
