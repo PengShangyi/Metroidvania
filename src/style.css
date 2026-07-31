@@ -1,7 +1,17 @@
+@font-face {
+  font-family: 'Fusion Pixel 12';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('/assets/fonts/fusion-pixel-12px-proportional-zh_hans.otf.woff2') format('woff2');
+}
+
 :root {
   color: #d9f4ff;
   background: #03050d;
-  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Noto Sans SC', sans-serif;
+  font-family:
+    'Fusion Pixel 12', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Noto Sans SC',
+    sans-serif;
   font-synthesis: none;
 }
 

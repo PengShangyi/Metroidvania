@@ -1,12 +1,17 @@
-import { readdir, stat } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { access, readFile, readdir, stat } from 'node:fs/promises';
 import { extname, join, relative } from 'node:path';
 import { fileURLToPath, URL } from 'node:url';
 
 import sharp from 'sharp';
 
 const root = fileURLToPath(new URL('../public/assets/', import.meta.url));
+const projectRoot = fileURLToPath(new URL('../', import.meta.url));
 const budgetBytes = 20 * 1024 * 1024;
 const supportedExtensions = new Set(['.png', '.webp', '.jpg', '.jpeg']);
+const uiFontPath = join(root, 'fonts', 'fusion-pixel-12px-proportional-zh_hans.otf.woff2');
+const uiFontLicensePath = join(projectRoot, 'docs', 'licenses', 'fusion-pixel-font', 'OFL.txt');
+const uiFontSha256 = '9d8d2f0bae6214568c591c72f4f3e8cbc39b2eeda461861e521e45d966ccefac';
 
 async function walk(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -14,19 +19,22 @@ async function walk(directory) {
   for (const entry of entries) {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) files.push(...(await walk(path)));
-    else if (supportedExtensions.has(extname(entry.name).toLowerCase())) files.push(path);
+    else files.push(path);
   }
   return files;
 }
 
-const files = await walk(root);
+const runtimeFiles = await walk(root);
+const imageFiles = runtimeFiles.filter((file) =>
+  supportedExtensions.has(extname(file).toLowerCase()),
+);
 let totalBytes = 0;
 
-for (const file of files) {
-  const fileStat = await stat(file);
+for (const file of runtimeFiles) totalBytes += (await stat(file)).size;
+
+for (const file of imageFiles) {
   const metadata = await sharp(file).metadata();
   const assetPath = relative(root, file);
-  totalBytes += fileStat.size;
   if (!metadata.width || !metadata.height) throw new Error(`无法读取图像尺寸：${file}`);
   if (metadata.width > 4096 || metadata.height > 4096) {
     throw new Error(`资源尺寸超过 4096px：${assetPath}`);
@@ -51,11 +59,24 @@ for (const file of files) {
   }
 }
 
+await access(uiFontLicensePath);
+const font = await readFile(uiFontPath);
+if (font.subarray(0, 4).toString('ascii') !== 'wOF2') {
+  throw new Error('简体中文 UI 字体不是有效的 WOFF2 文件');
+}
+if (font.byteLength > 1024 * 1024) throw new Error('简体中文 UI 字体超过 1MB 上限');
+if (createHash('sha256').update(font).digest('hex') !== uiFontSha256) {
+  throw new Error('简体中文 UI 字体校验和不匹配');
+}
+
 if (totalBytes > budgetBytes) {
   throw new Error(`资源总量 ${(totalBytes / 1024 / 1024).toFixed(2)}MB 超过 20MB 预算`);
 }
 
-console.log(`Validated ${files.length} image assets (${(totalBytes / 1024 / 1024).toFixed(2)}MB).`);
+console.log(
+  `Validated ${imageFiles.length} image assets and 1 UI font ` +
+    `(${(totalBytes / 1024 / 1024).toFixed(2)}MB).`,
+);
 
 async function assertSeamlessTile(file, assetPath) {
   const { data, info } = await sharp(file)

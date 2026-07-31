@@ -9,6 +9,7 @@ const runtimeBudgetBytes = 20 * 1024 * 1024;
 const firstScreenBudgetBytes = 8 * 1024 * 1024;
 const firstScreenAssets = [
   'assets/backgrounds/title.webp',
+  'assets/fonts/fusion-pixel-12px-proportional-zh_hans.otf.woff2',
   'assets/sprites/iya-atlas.png',
   'assets/ui/base-icons.png',
 ];

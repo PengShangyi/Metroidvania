@@ -16,6 +16,10 @@
 
 三个区域环境循环以及武器、受伤、拾取、终端和 Boss 音效均由项目内 Web Audio 振荡器、噪声缓冲和包络实时合成，没有使用外部音频文件或生成式音乐素材。
 
+## 字体
+
+简体中文 UI 使用 TakWolf 的 Fusion Pixel Font 12px proportional `zh_hans` WebFont，版本 `2026.07.20`，以 SIL Open Font License 1.1 授权。运行时 WOFF2 的 SHA-256 为 `9d8d2f0bae6214568c591c72f4f3e8cbc39b2eeda461861e521e45d966ccefac`；完整许可证及字体所含组件许可证保存在 [`docs/licenses/fusion-pixel-font/`](licenses/fusion-pixel-font/)。
+
 ## 工具与依赖
 
 - Phaser 3.90：渲染、场景、输入和 Arcade Physics。
