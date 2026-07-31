@@ -13,6 +13,9 @@ export class EndingScene extends Phaser.Scene {
   public create(): void {
     const session = this.registry.get(REGISTRY_KEYS.session) as GameSessionState;
     this.cameras.main.setBackgroundColor(COLORS.void);
+    if (this.textures.exists('reactor-bg')) {
+      this.add.image(0, 0, 'reactor-bg').setOrigin(0).setDisplaySize(480, 270).setAlpha(0.22);
+    }
     this.add.text(240, 54, '信号归于寂静', titleTextStyle()).setOrigin(0.5);
     this.add
       .text(

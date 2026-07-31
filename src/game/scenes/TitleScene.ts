@@ -107,7 +107,10 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private drawBackdrop(): void {
-    if (this.textures.exists('iya-portrait')) {
+    if (this.textures.exists('title-bg')) {
+      this.add.image(0, 0, 'title-bg').setOrigin(0).setDisplaySize(480, 270).setAlpha(0.72);
+      this.add.rectangle(240, 52, 480, 104, COLORS.void, 0.48);
+    } else if (this.textures.exists('iya-portrait')) {
       this.add
         .image(410, 262, 'iya-portrait')
         .setOrigin(0.5, 1)
@@ -115,7 +118,7 @@ export class TitleScene extends Phaser.Scene {
         .setAlpha(0.24);
     }
     const graphics = this.add.graphics();
-    graphics.fillStyle(COLORS.steel, 0.22);
+    graphics.fillStyle(COLORS.steel, this.textures.exists('title-bg') ? 0.08 : 0.22);
     for (let x = 24; x < 480; x += 48) graphics.fillRect(x, 0, 2, 270);
     graphics.lineStyle(1, COLORS.cyan, 0.2);
     graphics.strokeCircle(240, 134, 94);

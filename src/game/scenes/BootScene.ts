@@ -14,7 +14,11 @@ export class BootScene extends Phaser.Scene {
   public preload(): void {
     this.load.image('vestibule-bg', 'assets/backgrounds/vestibule.webp');
     this.load.image('bioforge-bg', 'assets/backgrounds/bioforge.webp');
+    this.load.image('reactor-bg', 'assets/backgrounds/reactor.webp');
+    this.load.image('title-bg', 'assets/backgrounds/title.webp');
     this.load.image('bioforge-tile', 'assets/tiles/bioforge-tile.png');
+    this.load.image('reactor-tile', 'assets/tiles/reactor-tile.png');
+    this.load.image('boss', 'assets/sprites/core-guardian.png');
     this.load.image('iya-portrait', 'assets/sprites/iya-portrait.png');
     this.load.image('enemy-lineup-art', 'assets/sprites/enemy-lineup.png');
     this.load.spritesheet('iya-atlas', 'assets/sprites/iya-atlas.png', {

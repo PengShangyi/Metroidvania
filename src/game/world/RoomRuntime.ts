@@ -51,7 +51,13 @@ export class RoomRuntime {
         .create(definition.x + definition.width / 2, definition.y + definition.height / 2, 'pixel')
         .setDisplaySize(definition.width, definition.height)
         .setTint(this.platformColor(this.room));
-      if (this.room.biome === 'bioforge' && this.scene.textures.exists('bioforge-tile')) {
+      const tileKey =
+        this.room.biome === 'bioforge'
+          ? 'bioforge-tile'
+          : this.room.biome === 'reactor'
+            ? 'reactor-tile'
+            : undefined;
+      if (tileKey && this.scene.textures.exists(tileKey)) {
         platform.setVisible(false);
         this.roomObjects.push(
           this.scene.add
@@ -60,7 +66,7 @@ export class RoomRuntime {
               definition.y + definition.height / 2,
               definition.width,
               definition.height,
-              'bioforge-tile',
+              tileKey,
             )
             .setDepth(1),
         );
@@ -182,7 +188,7 @@ export class RoomRuntime {
         ? 'vestibule-bg'
         : room.biome === 'bioforge'
           ? 'bioforge-bg'
-          : undefined;
+          : 'reactor-bg';
     if (backgroundKey && this.scene.textures.exists(backgroundKey)) {
       const background = this.scene.add
         .image(0, 0, backgroundKey)

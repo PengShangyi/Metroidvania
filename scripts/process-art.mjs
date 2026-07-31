@@ -11,8 +11,11 @@ const publicAssets = fileURLToPath(new URL('../public/assets/', import.meta.url)
 const required = [
   `${source}vestibule-background.png`,
   `${source}bioforge-background.png`,
+  `${source}reactor-background.png`,
+  `${source}title-key-art.png`,
   `${prepared}iya-cutout.png`,
   `${prepared}enemy-cutout.png`,
+  `${prepared}boss-cutout.png`,
 ];
 
 for (const file of required) {
@@ -39,6 +42,14 @@ await Promise.all([
     .resize(480, 270, { fit: 'cover', position: 'centre', kernel: sharp.kernel.nearest })
     .webp({ quality: 84, smartSubsample: false, effort: 6 })
     .toFile(`${publicAssets}backgrounds/bioforge.webp`),
+  sharp(`${source}reactor-background.png`)
+    .resize(480, 270, { fit: 'cover', position: 'centre', kernel: sharp.kernel.nearest })
+    .webp({ quality: 84, smartSubsample: false, effort: 6 })
+    .toFile(`${publicAssets}backgrounds/reactor.webp`),
+  sharp(`${source}title-key-art.png`)
+    .resize(480, 270, { fit: 'cover', position: 'centre', kernel: sharp.kernel.nearest })
+    .webp({ quality: 86, smartSubsample: false, effort: 6 })
+    .toFile(`${publicAssets}backgrounds/title.webp`),
   sharp(`${prepared}iya-cutout.png`)
     .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .resize({ height: 384, kernel: sharp.kernel.nearest, withoutEnlargement: true })
@@ -49,13 +60,25 @@ await Promise.all([
     .resize({ width: 768, kernel: sharp.kernel.nearest, withoutEnlargement: true })
     .png({ palette: true, colours: 128, compressionLevel: 9 })
     .toFile(`${publicAssets}sprites/enemy-lineup.png`),
+  sharp(`${prepared}boss-cutout.png`)
+    .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .resize(72, 72, {
+      fit: 'contain',
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+      kernel: sharp.kernel.nearest,
+    })
+    .png({ palette: true, colours: 128, compressionLevel: 9 })
+    .toFile(`${publicAssets}sprites/core-guardian.png`),
 ]);
 
 const expectations = new Map([
   [`${publicAssets}backgrounds/vestibule.webp`, [480, 270]],
   [`${publicAssets}backgrounds/bioforge.webp`, [480, 270]],
+  [`${publicAssets}backgrounds/reactor.webp`, [480, 270]],
+  [`${publicAssets}backgrounds/title.webp`, [480, 270]],
   [`${publicAssets}sprites/iya-portrait.png`, [undefined, 384]],
   [`${publicAssets}sprites/enemy-lineup.png`, [768, undefined]],
+  [`${publicAssets}sprites/core-guardian.png`, [72, 72]],
 ]);
 
 for (const [file, [expectedWidth, expectedHeight]] of expectations) {
@@ -68,4 +91,4 @@ for (const [file, [expectedWidth, expectedHeight]] of expectations) {
   }
 }
 
-console.log('Processed ImageGen sources into four optimized runtime assets.');
+console.log('Processed all seven ImageGen sources into eight optimized runtime assets.');

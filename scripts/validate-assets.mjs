@@ -31,17 +31,23 @@ for (const file of files) {
   if (metadata.width > 4096 || metadata.height > 4096) {
     throw new Error(`资源尺寸超过 4096px：${assetPath}`);
   }
-  if (assetPath === 'tiles/bioforge-tile.png') {
+  if (assetPath === 'tiles/bioforge-tile.png' || assetPath === 'tiles/reactor-tile.png') {
     if (metadata.width !== 16 || metadata.height !== 16) {
-      throw new Error('生化区瓦片必须为 16×16px');
+      throw new Error(`${assetPath} 必须为 16×16px`);
     }
-    await assertSeamlessTile(file);
+    await assertSeamlessTile(file, assetPath);
   }
   if (
     assetPath === 'sprites/spore-atlas.png' &&
     (metadata.width !== 88 || metadata.height !== 22)
   ) {
     throw new Error('孢子跃兽图集必须为四帧 22×22px');
+  }
+  if (
+    assetPath === 'sprites/core-guardian.png' &&
+    (metadata.width !== 72 || metadata.height !== 72)
+  ) {
+    throw new Error('守核者运行时轮廓必须为 72×72px');
   }
 }
 
@@ -51,7 +57,7 @@ if (totalBytes > budgetBytes) {
 
 console.log(`Validated ${files.length} image assets (${(totalBytes / 1024 / 1024).toFixed(2)}MB).`);
 
-async function assertSeamlessTile(file) {
+async function assertSeamlessTile(file, assetPath) {
   const { data, info } = await sharp(file)
     .ensureAlpha()
     .raw()
@@ -61,7 +67,7 @@ async function assertSeamlessTile(file) {
     return data.subarray(offset, offset + info.channels);
   };
   for (let index = 0; index < 16; index += 1) {
-    if (!pixel(0, index).equals(pixel(15, index))) throw new Error('生化区瓦片左右接缝不一致');
-    if (!pixel(index, 0).equals(pixel(index, 15))) throw new Error('生化区瓦片上下接缝不一致');
+    if (!pixel(0, index).equals(pixel(15, index))) throw new Error(`${assetPath} 左右接缝不一致`);
+    if (!pixel(index, 0).equals(pixel(index, 15))) throw new Error(`${assetPath} 上下接缝不一致`);
   }
 }

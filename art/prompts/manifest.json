@@ -34,7 +34,10 @@
       "prompt": "Original circular mechanical reactor guardian with a luminous cyan core and three hovering armor plates, ominous but readable side-view game silhouette, pixel-art-inspired industrial design.",
       "backdrop": "perfectly flat solid #00ff00 chroma-key background",
       "constraints": "single centered boss, generous padding, no shadow, no text, no logo, no watermark, do not use #00ff00 on subject",
-      "status": "planned"
+      "status": "selected",
+      "source": "art/source/core-guardian-anchor.png",
+      "outputs": ["public/assets/sprites/core-guardian.png"],
+      "processing": "remove_chroma_key.py --auto-key border --soft-matte --despill; Sharp trim, 72x72 nearest-neighbour contain resize and 128-colour palette"
     },
     {
       "id": "vestibule-background",
@@ -71,7 +74,10 @@
       "prompt": "Zero-point reactor interior with concentric machinery, black metal, cold cyan energy arcs and pale white core light, side-view 2D platform game background, monumental scale, restrained pixel-art texture.",
       "backdrop": "dark circular reactor chamber",
       "constraints": "wide 16:9 composition, no foreground platforms, no characters, no text, no logos, no watermark",
-      "status": "planned"
+      "status": "selected",
+      "source": "art/source/reactor-background.png",
+      "outputs": ["public/assets/backgrounds/reactor.webp", "public/assets/tiles/reactor-tile.png"],
+      "processing": "Sharp 480x270 nearest-neighbour cover crop; deterministic seamless 16px reactor tile in the selected palette"
     },
     {
       "id": "title-key-art",
@@ -80,7 +86,10 @@
       "prompt": "A lone original salvage pilot viewed from behind at the threshold of a colossal derelict station core, cyan signal echo reflected across broken steel, cinematic pixel-art-inspired science-fiction key art.",
       "backdrop": "deep orbital ruin with strong central core silhouette",
       "constraints": "wide 16:9 composition with quiet title space above, no text, no logos, no watermark",
-      "status": "planned"
+      "status": "selected",
+      "source": "art/source/title-key-art.png",
+      "outputs": ["public/assets/backgrounds/title.webp"],
+      "processing": "Sharp 480x270 nearest-neighbour cover crop and WebP quality 86"
     }
   ]
 }
