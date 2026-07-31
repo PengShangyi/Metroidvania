@@ -272,7 +272,13 @@
     ],
     "enemies": [
       { "id": "turret-causeway", "type": "turret", "x": 242, "y": 166 },
-      { "id": "crawler-causeway", "type": "crawler", "x": 352, "y": 236 }
+      {
+        "id": "crawler-causeway",
+        "type": "crawler",
+        "variant": "shielded",
+        "x": 352,
+        "y": 236
+      }
     ],
     "pickups": []
   },
@@ -317,7 +323,13 @@
     ],
     "enemies": [
       { "id": "spore-intake", "type": "spore", "x": 330, "y": 236 },
-      { "id": "crawler-intake", "type": "crawler", "x": 260, "y": 236 }
+      {
+        "id": "crawler-intake",
+        "type": "crawler",
+        "variant": "shielded",
+        "x": 260,
+        "y": 236
+      }
     ],
     "pickups": [],
     "checkpoint": {
@@ -802,7 +814,13 @@
       }
     ],
     "enemies": [
-      { "id": "crawler-threshold", "type": "crawler", "x": 124, "y": 196 },
+      {
+        "id": "crawler-threshold",
+        "type": "crawler",
+        "variant": "shielded",
+        "x": 124,
+        "y": 196
+      },
       { "id": "sentry-threshold", "type": "sentry", "x": 244, "y": 132 },
       { "id": "turret-threshold", "type": "turret", "x": 354, "y": 198 }
     ],

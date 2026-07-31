@@ -53,4 +53,18 @@ describe('room repository', () => {
       validateRooms(rooms.map((candidate) => (candidate.id === room.id ? invalidRoom : candidate))),
     ).toThrow(/只有爬行体/);
   });
+
+  it('places exactly three shield crawlers at the planned progression checks', () => {
+    const shielded = new RoomRepository()
+      .all()
+      .flatMap((room) => room.enemies)
+      .filter((enemy) => enemy.variant === 'shielded');
+
+    expect(shielded.map((enemy) => enemy.id).sort()).toEqual([
+      'crawler-causeway',
+      'crawler-intake',
+      'crawler-threshold',
+    ]);
+    expect(shielded.every((enemy) => enemy.type === 'crawler')).toBe(true);
+  });
 });

@@ -90,6 +90,7 @@ export class HudScene extends Phaser.Scene {
         align: 'center',
       })
       .setOrigin(0.5)
+      .setWordWrapWidth(440)
       .setScrollFactor(0);
     this.bossText = this.add
       .text(240, 16, '', {

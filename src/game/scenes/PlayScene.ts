@@ -17,6 +17,12 @@ import { createBrowserSaveService, type SaveService } from '../save/SaveService'
 import type { GameSessionState } from '../state/GameSession';
 import { RoomRepository } from '../world/RoomRepository';
 import { RoomRuntime } from '../world/RoomRuntime';
+import {
+  CONTEXT_HINT_DELAY_MS,
+  CONTEXT_HINT_DURATION_MS,
+  ContextualCombatHintTracker,
+  contextualCombatHint,
+} from '../world/contextualCombatHints';
 import type { BiomeId, ExitDefinition } from '../world/types';
 
 export class PlayScene extends Phaser.Scene {
@@ -31,6 +37,9 @@ export class PlayScene extends Phaser.Scene {
   private saveService!: SaveService;
   private audio!: ProceduralAudio;
   private transitioning = false;
+  private contextHintToken = 0;
+  private hintSession?: GameSessionState;
+  private contextHints = new ContextualCombatHintTracker();
 
   public constructor() {
     super('play');
@@ -45,6 +54,10 @@ export class PlayScene extends Phaser.Scene {
 
   public create(): void {
     this.session = this.registry.get(REGISTRY_KEYS.session) as GameSessionState;
+    if (this.hintSession !== this.session) {
+      this.hintSession = this.session;
+      this.contextHints = new ContextualCombatHintTracker();
+    }
     this.cameras.main.setBackgroundColor(COLORS.void);
     this.scene.launch('hud');
 
@@ -121,6 +134,26 @@ export class PlayScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, 480, 270);
     this.physics.world.setBounds(0, 0, 480, 270);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+    this.scheduleContextHint(roomId);
+  }
+
+  private scheduleContextHint(roomId: string): void {
+    const token = ++this.contextHintToken;
+    const hint = contextualCombatHint(roomId);
+    if (!hint || this.contextHints.hasShown(hint)) return;
+    this.time.delayedCall(CONTEXT_HINT_DELAY_MS, () => {
+      if (token !== this.contextHintToken || this.session.currentRoomId !== roomId) return;
+      this.contextHints.markShown(hint);
+      this.registry.set(REGISTRY_KEYS.runtimeMessage, hint.message);
+      this.time.delayedCall(CONTEXT_HINT_DURATION_MS, () => {
+        if (
+          token === this.contextHintToken &&
+          this.registry.get(REGISTRY_KEYS.runtimeMessage) === hint.message
+        ) {
+          this.registry.set(REGISTRY_KEYS.runtimeMessage, '');
+        }
+      });
+    });
   }
 
   private transition(exit: ExitDefinition): void {
