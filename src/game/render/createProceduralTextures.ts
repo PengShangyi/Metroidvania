@@ -71,6 +71,11 @@ export function createProceduralTextures(scene: Phaser.Scene): void {
     g.fillStyle(COLORS.pale).fillRect(7, 1, 4, 5).fillRect(7, 12, 4, 5);
   });
 
+  createTexture(scene, 'health-cell', 16, 16, (g) => {
+    g.fillStyle(COLORS.danger, 0.28).fillCircle(8, 8, 8);
+    g.fillStyle(COLORS.pale).fillRect(6, 2, 4, 12).fillRect(2, 6, 12, 4);
+  });
+
   createTexture(scene, 'boss', 72, 72, (g) => {
     g.lineStyle(10, 0x263e67).strokeCircle(36, 36, 27);
     g.fillStyle(COLORS.cyan, 0.3).fillCircle(36, 36, 15);

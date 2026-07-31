@@ -47,6 +47,8 @@ export class RoomRuntime {
     player.setPosition(spawn.x, spawn.y).setVelocity(0, 0).setAcceleration(0, 0);
 
     for (const exit of this.room.exits) this.drawExit(exit);
+    for (const hazard of this.room.hazards) this.drawHazard(hazard);
+    for (const pickup of this.room.pickups) this.drawPickup(pickup);
     if (this.room.checkpoint) {
       this.roomObjects.push(
         this.scene.add
@@ -144,6 +146,42 @@ export class RoomRuntime {
     );
     door.setOrigin(0).setStrokeStyle(1, unlocked ? COLORS.cyan : COLORS.danger, 0.85);
     this.roomObjects.push(door);
+  }
+
+  private drawHazard(hazard: RoomDefinition['hazards'][number]): void {
+    const warning = this.scene.add
+      .tileSprite(
+        hazard.x + hazard.width / 2,
+        hazard.y + hazard.height / 2,
+        hazard.width,
+        hazard.height,
+        'hazard',
+      )
+      .setDepth(2);
+    this.roomObjects.push(warning);
+  }
+
+  private drawPickup(pickup: RoomDefinition['pickups'][number]): void {
+    if (this.session.collectedPickups.has(pickup.id)) return;
+    const texture =
+      pickup.type === 'phaseDash'
+        ? 'ability-dash'
+        : pickup.type === 'magneticGrip'
+          ? 'ability-grip'
+          : pickup.type === 'healthCell'
+            ? 'health-cell'
+            : 'terminal';
+    const image = this.scene.add.image(pickup.x, pickup.y, texture).setDepth(3);
+    if (pickup.type === 'lore') image.setScale(0.65).setOrigin(0.5, 1);
+    this.scene.tweens.add({
+      targets: image,
+      y: pickup.y - 3,
+      yoyo: true,
+      repeat: -1,
+      duration: 780,
+      ease: 'Sine.inOut',
+    });
+    this.roomObjects.push(image);
   }
 
   private platformColor(room: RoomDefinition): number {
