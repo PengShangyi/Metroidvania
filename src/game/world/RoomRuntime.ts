@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import { AUDIO_EVENT } from '../audio/soundDesign';
 import { COLORS, REGISTRY_KEYS } from '../constants';
 import type { ActionSnapshot } from '../input/actions';
 import type { Player } from '../player/Player';
@@ -137,6 +138,7 @@ export class RoomRuntime {
         this.session.checkpointRoomId = this.room.id;
         this.session.checkpointSpawnId = checkpoint.spawnId;
         this.session.health = this.session.maxHealth;
+        this.scene.events.emit(AUDIO_EVENT, 'terminal');
         this.showMessage(
           this.saveProgress() ? '终端同步完成 · 生命已恢复' : '生命已恢复 · 本地存档不可用',
           1500,
@@ -312,6 +314,7 @@ export class RoomRuntime {
       this.pickupObjects.delete(pickup.id);
     }
     this.refreshExitVisuals();
+    this.scene.events.emit(AUDIO_EVENT, pickup.type === 'lore' ? 'terminal' : 'pickup');
     const saved = this.saveProgress();
     this.showMessage(
       saved ? message : `${message} · 存档不可用`,

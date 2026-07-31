@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import { ProceduralAudio } from '../audio/ProceduralAudio';
 import { COLORS, REGISTRY_KEYS } from '../constants';
 import { createProceduralTextures } from '../render/createProceduralTextures';
 import { createPlayerAnimations } from '../render/playerAnimations';
@@ -38,6 +39,10 @@ export class BootScene extends Phaser.Scene {
   public create(): void {
     this.cameras.main.setBackgroundColor(COLORS.void);
     this.registry.set(REGISTRY_KEYS.session, createNewSession());
+    const audio = new ProceduralAudio();
+    audio.arm();
+    this.registry.set(REGISTRY_KEYS.audio, audio);
+    this.game.events.once(Phaser.Core.Events.DESTROY, () => audio.destroy());
     createProceduralTextures(this);
     createPlayerAnimations(this);
     if (!this.anims.exists('spore-pulse')) {

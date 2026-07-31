@@ -325,6 +325,7 @@ export class HudScene extends Phaser.Scene {
 
   private persistSettings(): void {
     this.saveService.writeSettings(this.session.settings);
+    (this.scene.get('play') as PlayScene).applyAudioSettings();
     this.renderOverlay();
   }
 }

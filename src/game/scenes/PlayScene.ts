@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 
+import type { ProceduralAudio } from '../audio/ProceduralAudio';
+import { AUDIO_EVENT, type AudioCue } from '../audio/soundDesign';
 import { BossSystem } from '../boss/BossSystem';
 import { CombatSystem } from '../combat/CombatSystem';
 import { COLORS, REGISTRY_KEYS } from '../constants';
@@ -22,6 +24,7 @@ export class PlayScene extends Phaser.Scene {
   private enemySystem!: EnemySystem;
   private bossSystem!: BossSystem;
   private saveService!: SaveService;
+  private audio!: ProceduralAudio;
   private transitioning = false;
 
   public constructor() {
@@ -35,6 +38,12 @@ export class PlayScene extends Phaser.Scene {
 
     this.controls = new InputController(this);
     this.saveService = createBrowserSaveService();
+    this.audio = this.registry.get(REGISTRY_KEYS.audio) as ProceduralAudio;
+    this.audio.setVolume(this.session.settings.masterVolume);
+    this.audio.setPaused(false);
+    this.events.on(AUDIO_EVENT, (cue: AudioCue) => this.audio.play(cue));
+    this.events.on(Phaser.Scenes.Events.PAUSE, () => this.audio.setPaused(true));
+    this.events.on(Phaser.Scenes.Events.RESUME, () => this.audio.setPaused(false));
     this.rooms = new RoomRepository();
     this.player = new Player(this, 0, 0);
     this.roomRuntime = new RoomRuntime(this, this.rooms, this.session, () =>
@@ -53,6 +62,7 @@ export class PlayScene extends Phaser.Scene {
       this.combat.destroy();
       this.enemySystem.destroy();
       this.bossSystem.destroy();
+      this.audio.stopAmbience();
       this.scene.stop('hud');
     });
   }
@@ -80,6 +90,10 @@ export class PlayScene extends Phaser.Scene {
     this.scene.start('title');
   }
 
+  public applyAudioSettings(): void {
+    this.audio.setVolume(this.session.settings.masterVolume);
+  }
+
   private loadRoom(roomId: string, spawnId: string): void {
     this.session.currentRoomId = roomId;
     this.session.visitedRooms.add(roomId);
@@ -87,6 +101,7 @@ export class PlayScene extends Phaser.Scene {
     this.combat.bindWorld(this.roomRuntime.collisionPlatforms);
     this.enemySystem.load(this.roomRuntime.definition.enemies, this.roomRuntime.collisionPlatforms);
     this.bossSystem.load(roomId);
+    this.audio.setBiome(this.roomRuntime.definition.biome);
     this.cameras.main.setBounds(0, 0, 480, 270);
     this.physics.world.setBounds(0, 0, 480, 270);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import type { ProceduralAudio } from '../audio/ProceduralAudio';
 import { COLORS, REGISTRY_KEYS } from '../constants';
 import {
   createBrowserSaveService,
@@ -21,6 +22,7 @@ export class TitleScene extends Phaser.Scene {
 
   public create(): void {
     this.cameras.main.setBackgroundColor(COLORS.void);
+    (this.registry.get(REGISTRY_KEYS.audio) as ProceduralAudio | undefined)?.stopAmbience();
     this.drawBackdrop();
     bindFullscreenKey(this);
     this.saveService = createBrowserSaveService();

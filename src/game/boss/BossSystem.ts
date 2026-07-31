@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import { AUDIO_EVENT } from '../audio/soundDesign';
 import type { AttackFrame, CombatSystem } from '../combat/CombatSystem';
 import { COLORS, REGISTRY_KEYS } from '../constants';
 import type { Player } from '../player/Player';
@@ -252,6 +253,7 @@ export class BossSystem {
     const boss = this.boss;
     if (!boss?.active) return;
     this.health = Math.max(0, this.health - Math.max(0, amount));
+    this.scene.events.emit(AUDIO_EVENT, this.health > 0 ? 'bossHit' : 'bossDefeat');
     boss.setTintFill(0xffffff);
     this.scene.time.delayedCall(55, () => {
       if (boss.active) boss.clearTint();
