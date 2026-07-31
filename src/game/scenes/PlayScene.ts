@@ -54,7 +54,10 @@ export class PlayScene extends Phaser.Scene {
     this.audio.setVolume(this.session.settings.masterVolume);
     this.audio.setPaused(false);
     this.events.on(AUDIO_EVENT, (cue: AudioCue) => this.audio.play(cue));
-    this.events.on(Phaser.Scenes.Events.PAUSE, () => this.audio.setPaused(true));
+    this.events.on(Phaser.Scenes.Events.PAUSE, () => {
+      this.audio.setPaused(true);
+      this.combat?.clearHitStop();
+    });
     this.events.on(Phaser.Scenes.Events.RESUME, () => this.audio.setPaused(false));
     this.rooms = new RoomRepository();
     createRegionAnimations(this, this.rooms.get(this.session.currentRoomId).biome);

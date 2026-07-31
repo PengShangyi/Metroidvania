@@ -17,6 +17,7 @@ export class EnemySprite extends Phaser.Physics.Arcade.Sprite {
   public patrolDirection: -1 | 1 = 1;
   public nextActionAt = 0;
   public lastMeleeSerial = -1;
+  public stunnedUntil = 0;
 
   public constructor(scene: Phaser.Scene, spawn: EnemySpawn) {
     const texture =
@@ -40,12 +41,14 @@ export class EnemySprite extends Phaser.Physics.Arcade.Sprite {
       this.setOrigin(0.5, 1);
       body.setSize(20, 12).setOffset(2, 4);
       body.setMaxVelocity(42, 320);
+      body.setDragX(900);
       return;
     }
     if (this.enemyType === 'spore') {
       this.setOrigin(0.5, 1);
       body.setSize(18, 20).setOffset(2, 2);
       body.setMaxVelocity(90, 320);
+      body.setDragX(900);
       return;
     }
 

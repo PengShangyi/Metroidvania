@@ -5,6 +5,8 @@ import type { ActionSnapshot } from '../input/actions';
 import type { Player } from '../player/Player';
 import { activateArcadeImage, releaseArcadeGroup, releaseArcadeImage } from '../render/arcadePool';
 import type { GameSessionState } from '../state/GameSession';
+import { CombatFeedback } from './CombatFeedback';
+import type { HitImpactKind } from './feedbackRules';
 import { configureProjectileMetadata, getProjectileMetadata } from './projectileMetadata';
 import { COMBAT, cooldownReady, resolveDamage } from './rules';
 
@@ -27,6 +29,7 @@ export class CombatSystem {
   private meleeBounds?: Phaser.Geom.Rectangle;
   private meleeSerial = 0;
   private projectileSerial = 0;
+  private readonly feedback: CombatFeedback;
 
   public constructor(
     scene: Phaser.Scene,
@@ -42,6 +45,7 @@ export class CombatSystem {
       maxSize: 32,
       allowGravity: false,
     });
+    this.feedback = new CombatFeedback(scene, session);
   }
 
   public update(input: ActionSnapshot): AttackFrame {
@@ -111,11 +115,25 @@ export class CombatSystem {
   public clearTransient(): void {
     if (this.projectiles.children) releaseArcadeGroup(this.projectiles);
     this.meleeBounds = undefined;
+    this.feedback.clear();
   }
 
   public destroy(): void {
+    this.feedback.clear();
     this.worldCollider?.destroy();
     if (this.projectiles.children) this.projectiles.destroy(true);
+  }
+
+  public enemyHitFeedback(kind: HitImpactKind, x: number, y: number, direction: -1 | 1): void {
+    this.feedback.enemyHit(kind, x, y, direction);
+  }
+
+  public clearHitStop(): void {
+    this.feedback.clear();
+  }
+
+  public bossHitFeedback(kind: HitImpactKind, x: number, y: number, direction: -1 | 1): void {
+    this.feedback.bossHit(kind, x, y, direction);
   }
 
   private fireBlaster(now: number): void {

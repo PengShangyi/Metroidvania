@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { AUDIO_EVENT } from '../audio/soundDesign';
 import type { AttackFrame, CombatSystem } from '../combat/CombatSystem';
+import { projectileImpactKind, type HitImpactKind } from '../combat/feedbackRules';
 import { COLORS, REGISTRY_KEYS } from '../constants';
 import type { Player } from '../player/Player';
 import { activateArcadeImage, releaseArcadeGroup, releaseArcadeImage } from '../render/arcadePool';
@@ -47,8 +48,9 @@ export class BossSystem {
       (_player, projectile) => {
         const shot = projectile as Phaser.Physics.Arcade.Image;
         const velocity = (shot.body as Phaser.Physics.Arcade.Body).velocity.x;
+        const damage = getProjectileMetadata(shot).damage;
         releaseArcadeImage(shot);
-        this.combat.damagePlayer(getProjectileMetadata(shot).damage, velocity < 0 ? -120 : 120);
+        this.combat.damagePlayer(damage, velocity < 0 ? -120 : 120);
       },
     );
   }
@@ -81,7 +83,13 @@ export class BossSystem {
 
     this.scene.physics.overlap(attack.projectiles, boss, (projectile) => {
       const shot = projectile as Phaser.Physics.Arcade.Image;
-      this.damageBoss(getProjectileMetadata(shot).damage || 1);
+      const metadata = getProjectileMetadata(shot);
+      const velocityX = (shot.body as Phaser.Physics.Arcade.Body).velocity.x;
+      this.damageBoss(
+        metadata.damage || 1,
+        projectileImpactKind(metadata.kind),
+        velocityX < 0 ? -1 : 1,
+      );
       releaseArcadeImage(shot);
     });
     if (!boss.active) return;
@@ -91,7 +99,7 @@ export class BossSystem {
       Phaser.Geom.Intersects.RectangleToRectangle(boss.getBounds(), attack.meleeBounds)
     ) {
       this.lastMeleeSerial = attack.meleeSerial;
-      this.damageBoss(2);
+      this.damageBoss(2, 'blade', this.player.facingDirection);
     }
 
     if (
@@ -265,10 +273,11 @@ export class BossSystem {
     (wave.body as Phaser.Physics.Arcade.Body).setAllowGravity(false).setSize(22, 10);
   }
 
-  private damageBoss(amount: number): void {
+  private damageBoss(amount: number, impact: HitImpactKind, direction: -1 | 1): void {
     const boss = this.boss;
     if (!boss?.active) return;
     this.health = Math.max(0, this.health - Math.max(0, amount));
+    this.combat.bossHitFeedback(impact, boss.x, boss.y, direction);
     this.scene.events.emit(AUDIO_EVENT, this.health > 0 ? 'bossHit' : 'bossDefeat');
     boss.setTintFill(0xffffff);
     this.scene.time.delayedCall(55, () => {

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import type { AttackFrame, CombatSystem } from '../combat/CombatSystem';
+import { hitReaction, projectileImpactKind, type HitImpactKind } from '../combat/feedbackRules';
 import type { Player } from '../player/Player';
 import { activateArcadeImage, releaseArcadeGroup, releaseArcadeImage } from '../render/arcadePool';
 import type { EnemySpawn } from '../world/types';
@@ -40,11 +41,9 @@ export class EnemySystem {
       (_player, shot) => {
         const projectile = shot as Phaser.Physics.Arcade.Image;
         const velocity = (projectile.body as Phaser.Physics.Arcade.Body).velocity.x;
+        const damage = getProjectileMetadata(projectile).damage;
         releaseArcadeImage(projectile);
-        this.combat.damagePlayer(
-          getProjectileMetadata(projectile).damage,
-          velocity < 0 ? -110 : 110,
-        );
+        this.combat.damagePlayer(damage, velocity < 0 ? -110 : 110);
       },
     );
     this.dropCollider = scene.physics.add.overlap(player, this.repairDrops, (_player, drop) => {
@@ -73,7 +72,7 @@ export class EnemySystem {
       if (attack.meleeBounds && enemy.lastMeleeSerial !== attack.meleeSerial) {
         if (Phaser.Geom.Intersects.RectangleToRectangle(enemy.getBounds(), attack.meleeBounds)) {
           enemy.lastMeleeSerial = attack.meleeSerial;
-          this.damageEnemy(enemy, 2);
+          this.damageEnemy(enemy, 2, 'blade', this.player.facingDirection);
         }
       }
       return true;
@@ -82,7 +81,14 @@ export class EnemySystem {
     this.scene.physics.overlap(attack.projectiles, this.enemies, (projectile, enemy) => {
       const shot = projectile as Phaser.Physics.Arcade.Image;
       const target = enemy as EnemySprite;
-      this.damageEnemy(target, getProjectileMetadata(shot).damage || 1);
+      const metadata = getProjectileMetadata(shot);
+      const velocityX = (shot.body as Phaser.Physics.Arcade.Body).velocity.x;
+      this.damageEnemy(
+        target,
+        metadata.damage || 1,
+        projectileImpactKind(metadata.kind),
+        velocityX < 0 ? -1 : 1,
+      );
       releaseArcadeImage(shot);
     });
 
@@ -123,6 +129,7 @@ export class EnemySystem {
 
   private updateEnemy(enemy: EnemySprite, now: number, delta: number): void {
     const body = enemy.body as Phaser.Physics.Arcade.Body;
+    if (now < enemy.stunnedUntil) return;
     if (enemy.enemyType === 'crawler') {
       if (body.blocked.left || body.blocked.right) enemy.patrolDirection *= -1;
       enemy.setVelocityX(enemy.patrolDirection * 34).setFlipX(enemy.patrolDirection < 0);
@@ -180,9 +187,18 @@ export class EnemySystem {
     });
   }
 
-  private damageEnemy(enemy: EnemySprite, amount: number): void {
+  private damageEnemy(
+    enemy: EnemySprite,
+    amount: number,
+    impact: HitImpactKind,
+    direction: -1 | 1,
+  ): void {
     if (!enemy.active) return;
+    const reaction = hitReaction(impact);
     enemy.health -= amount;
+    enemy.stunnedUntil = this.scene.time.now + reaction.stunMs;
+    this.applyKnockback(enemy, direction, reaction.knockbackSpeed);
+    this.combat.enemyHitFeedback(impact, enemy.x, enemy.y - enemy.displayHeight / 2, direction);
     enemy.setTintFill(0xffffff);
     this.scene.time.delayedCall(55, () => {
       if (enemy.active) enemy.clearTint();
@@ -198,6 +214,20 @@ export class EnemySystem {
         .setScale(0.55)
         .setData('expiresAt', this.scene.time.now + 5_000);
     }
+  }
+
+  private applyKnockback(enemy: EnemySprite, direction: -1 | 1, speed: number): void {
+    if (enemy.enemyType === 'crawler' || enemy.enemyType === 'spore') {
+      enemy.setVelocityX(direction * speed);
+      return;
+    }
+    this.scene.tweens.killTweensOf(enemy);
+    this.scene.tweens.add({
+      targets: enemy,
+      x: enemy.x + direction * 2,
+      duration: 45,
+      yoyo: true,
+    });
   }
 
   private dropHash(value: string): number {
