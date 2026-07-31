@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { COLORS, REGISTRY_KEYS } from '../constants';
 import { createNewSession } from '../state/GameSession';
 import { bodyTextStyle, titleTextStyle } from '../ui/text';
+import { bindFullscreenKey } from '../ui/fullscreen';
 
 export class TitleScene extends Phaser.Scene {
   public constructor() {
@@ -12,6 +13,7 @@ export class TitleScene extends Phaser.Scene {
   public create(): void {
     this.cameras.main.setBackgroundColor(COLORS.void);
     this.drawBackdrop();
+    bindFullscreenKey(this);
 
     this.add.text(240, 62, '星骸回声', titleTextStyle()).setOrigin(0.5);
     this.add.text(240, 90, 'STAR ECHO // v0.1.0', bodyTextStyle('#7184a8')).setOrigin(0.5);

@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { COLORS, REGISTRY_KEYS } from '../constants';
 import type { GameSessionState } from '../state/GameSession';
 import { bodyTextStyle } from '../ui/text';
+import { bindFullscreenKey } from '../ui/fullscreen';
 
 export class PlayScene extends Phaser.Scene {
   private session!: GameSessionState;
@@ -15,6 +16,7 @@ export class PlayScene extends Phaser.Scene {
     this.session = this.registry.get(REGISTRY_KEYS.session) as GameSessionState;
     this.cameras.main.setBackgroundColor(COLORS.void);
     this.scene.launch('hud');
+    bindFullscreenKey(this);
 
     this.add
       .text(240, 118, '坠星船坞', {

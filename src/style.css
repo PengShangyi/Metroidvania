@@ -29,3 +29,30 @@ canvas {
   image-rendering: crisp-edges;
   box-shadow: 0 0 64px rgb(53 177 222 / 18%);
 }
+
+.runtime-error {
+  position: fixed;
+  inset: 50% auto auto 50%;
+  z-index: 10;
+  display: grid;
+  gap: 12px;
+  width: min(420px, calc(100vw - 32px));
+  padding: 24px;
+  color: #d8f7ff;
+  background: #101a32;
+  border: 1px solid #ff5678;
+  transform: translate(-50%, -50%);
+}
+
+.runtime-error strong {
+  color: #ff5678;
+}
+
+.runtime-error button {
+  padding: 8px 12px;
+  color: #070b18;
+  font: inherit;
+  background: #43d8e8;
+  border: 0;
+  cursor: pointer;
+}
