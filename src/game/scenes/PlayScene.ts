@@ -5,6 +5,7 @@ import { COLORS, REGISTRY_KEYS } from '../constants';
 import { EnemySystem } from '../enemies/EnemySystem';
 import { InputController } from '../input/InputController';
 import { Player } from '../player/Player';
+import { createBrowserSaveService, type SaveService } from '../save/SaveService';
 import type { GameSessionState } from '../state/GameSession';
 import { bindFullscreenKey } from '../ui/fullscreen';
 import { RoomRepository } from '../world/RoomRepository';
@@ -19,6 +20,7 @@ export class PlayScene extends Phaser.Scene {
   private roomRuntime!: RoomRuntime;
   private combat!: CombatSystem;
   private enemySystem!: EnemySystem;
+  private saveService!: SaveService;
   private transitioning = false;
 
   public constructor() {
@@ -32,9 +34,12 @@ export class PlayScene extends Phaser.Scene {
     bindFullscreenKey(this);
 
     this.controls = new InputController(this);
+    this.saveService = createBrowserSaveService();
     this.rooms = new RoomRepository();
     this.player = new Player(this, 0, 0);
-    this.roomRuntime = new RoomRuntime(this, this.rooms, this.session);
+    this.roomRuntime = new RoomRuntime(this, this.rooms, this.session, () =>
+      this.saveService.write(this.session),
+    );
     this.combat = new CombatSystem(this, this.player, this.session, () => this.respawn());
     this.enemySystem = new EnemySystem(this, this.player, this.combat);
     this.loadRoom(this.session.currentRoomId, this.session.checkpointSpawnId);

@@ -1,11 +1,20 @@
 import Phaser from 'phaser';
 
 import { COLORS, REGISTRY_KEYS } from '../constants';
+import {
+  createBrowserSaveService,
+  type SaveReadResult,
+  type SaveService,
+} from '../save/SaveService';
 import { createNewSession } from '../state/GameSession';
-import { bodyTextStyle, titleTextStyle } from '../ui/text';
 import { bindFullscreenKey } from '../ui/fullscreen';
+import { bodyTextStyle, titleTextStyle } from '../ui/text';
 
 export class TitleScene extends Phaser.Scene {
+  private saveService!: SaveService;
+  private readResult!: SaveReadResult;
+  private confirmNewGame = false;
+
   public constructor() {
     super('title');
   }
@@ -14,32 +23,87 @@ export class TitleScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(COLORS.void);
     this.drawBackdrop();
     bindFullscreenKey(this);
+    this.saveService = createBrowserSaveService();
+    this.readResult = this.saveService.read();
 
-    this.add.text(240, 62, '星骸回声', titleTextStyle()).setOrigin(0.5);
-    this.add.text(240, 90, 'STAR ECHO // v0.1.0', bodyTextStyle('#7184a8')).setOrigin(0.5);
+    this.add.text(240, 52, '星骸回声', titleTextStyle()).setOrigin(0.5);
+    this.add.text(240, 78, 'STAR ECHO // v0.1.0', bodyTextStyle('#7184a8')).setOrigin(0.5);
 
-    const start = this.add
-      .text(240, 145, '开始回收任务', {
-        ...bodyTextStyle('#07101d'),
-        backgroundColor: '#43d8e8',
-        padding: { x: 12, y: 7 },
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true });
+    const hasSave = this.readResult.status === 'valid';
+    const continueButton = this.createMenuButton(128, '继续任务', hasSave, () =>
+      this.continueGame(),
+    );
+    const newButton = this.createMenuButton(160, '新建任务', true, () =>
+      this.startNewGame(newButton),
+    );
 
-    const launch = (): void => {
-      this.registry.set(REGISTRY_KEYS.session, createNewSession());
-      this.scene.start('play');
-    };
-
-    start.on('pointerdown', launch);
-    this.input.keyboard?.once('keydown-ENTER', launch);
-    this.input.keyboard?.once('keydown-SPACE', launch);
+    if (hasSave) {
+      this.input.keyboard?.once('keydown-ENTER', () => this.continueGame());
+      continueButton.setBackgroundColor('#43d8e8').setColor('#07101d');
+    } else {
+      newButton.setBackgroundColor('#43d8e8').setColor('#07101d');
+      this.input.keyboard?.once('keydown-ENTER', () => this.startNewGame(newButton));
+    }
 
     this.add
-      .text(240, 194, 'A/D 移动  ·  SPACE 跳跃  ·  J 射击  ·  K 近战', bodyTextStyle('#8da1c8'))
+      .text(240, 205, this.saveStatusText(), bodyTextStyle(this.saveStatusColor()))
       .setOrigin(0.5);
-    this.add.text(240, 214, 'ENTER / SPACE 开始', bodyTextStyle('#ffb454')).setOrigin(0.5);
+    this.add
+      .text(240, 224, '鼠标选择 · ENTER 快速开始 · F 全屏', bodyTextStyle('#7184a8'))
+      .setOrigin(0.5);
+  }
+
+  private createMenuButton(
+    y: number,
+    label: string,
+    enabled: boolean,
+    action: () => void,
+  ): Phaser.GameObjects.Text {
+    const button = this.add
+      .text(240, y, label, {
+        ...bodyTextStyle(enabled ? '#d8f7ff' : '#4f5d78'),
+        backgroundColor: '#152445',
+        padding: { x: 14, y: 7 },
+      })
+      .setOrigin(0.5);
+    if (enabled) button.setInteractive({ useHandCursor: true }).on('pointerdown', action);
+    return button;
+  }
+
+  private continueGame(): void {
+    if (this.readResult.status !== 'valid') return;
+    this.registry.set(REGISTRY_KEYS.session, this.readResult.session);
+    this.scene.start('play');
+  }
+
+  private startNewGame(button: Phaser.GameObjects.Text): void {
+    if (this.readResult.status === 'valid' && !this.confirmNewGame) {
+      this.confirmNewGame = true;
+      button.setText('再次选择以覆盖记录').setBackgroundColor('#ff5678').setColor('#07101d');
+      this.time.delayedCall(3_000, () => {
+        this.confirmNewGame = false;
+        button.setText('新建任务').setBackgroundColor('#152445').setColor('#d8f7ff');
+      });
+      return;
+    }
+    const session = createNewSession();
+    session.settings = this.saveService.readSettings();
+    this.saveService.erase();
+    this.registry.set(REGISTRY_KEYS.session, session);
+    this.scene.start('play');
+  }
+
+  private saveStatusText(): string {
+    if (this.readResult.status === 'valid') return '检测到终端同步记录';
+    if (this.readResult.status === 'corrupt') return '存档损坏：已安全隔离，可新建任务';
+    if (this.readResult.status === 'unsupported') return '存档版本不兼容，可新建任务';
+    return '未检测到同步记录';
+  }
+
+  private saveStatusColor(): string {
+    return this.readResult.status === 'corrupt' || this.readResult.status === 'unsupported'
+      ? '#ff5678'
+      : '#8da1c8';
   }
 
   private drawBackdrop(): void {

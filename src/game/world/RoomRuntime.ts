@@ -21,11 +21,18 @@ export class RoomRuntime {
   private roomObjects: Phaser.GameObjects.GameObject[] = [];
   private messageToken = 0;
   private safePosition = new Phaser.Math.Vector2();
+  private readonly saveProgress: () => boolean;
 
-  public constructor(scene: Phaser.Scene, repository: RoomRepository, session: GameSessionState) {
+  public constructor(
+    scene: Phaser.Scene,
+    repository: RoomRepository,
+    session: GameSessionState,
+    saveProgress: () => boolean,
+  ) {
     this.scene = scene;
     this.repository = repository;
     this.session = session;
+    this.saveProgress = saveProgress;
   }
 
   public load(roomId: string, spawnId: string, player: Player): void {
@@ -106,7 +113,10 @@ export class RoomRuntime {
         this.session.checkpointRoomId = this.room.id;
         this.session.checkpointSpawnId = checkpoint.spawnId;
         this.session.health = this.session.maxHealth;
-        this.showMessage('终端同步完成 · 生命已恢复', 1500);
+        this.showMessage(
+          this.saveProgress() ? '终端同步完成 · 生命已恢复' : '生命已恢复 · 本地存档不可用',
+          1500,
+        );
       } else if (this.registryMessageEmpty()) {
         this.showMessage('E：同步终端', 400);
       }
