@@ -34,6 +34,13 @@ export function createProceduralTextures(scene: Phaser.Scene): void {
     g.fillStyle(0xed63d6, 0.45).fillRect(2, 10, 4, 2).fillRect(10, 13, 3, 1);
   });
 
+  createTexture(scene, 'hazard-reactor', 16, 16, (g) => {
+    g.fillStyle(0x07101d).fillRect(0, 0, 16, 16);
+    g.fillStyle(COLORS.cyan, 0.38).fillRect(0, 6, 16, 6);
+    g.lineStyle(2, COLORS.pale, 0.9);
+    g.beginPath().moveTo(0, 10).lineTo(5, 4).lineTo(10, 12).lineTo(16, 6).strokePath();
+  });
+
   createTexture(scene, 'projectile', 8, 4, (g) => {
     g.fillStyle(COLORS.pale).fillRect(0, 1, 8, 2);
     g.fillStyle(COLORS.cyan).fillRect(2, 0, 4, 4);

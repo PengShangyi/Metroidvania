@@ -230,7 +230,11 @@ export class RoomRuntime {
         hazard.y + hazard.height / 2,
         hazard.width,
         hazard.height,
-        this.room.biome === 'bioforge' ? 'hazard-acid' : 'hazard',
+        this.room.biome === 'bioforge'
+          ? 'hazard-acid'
+          : this.room.biome === 'reactor'
+            ? 'hazard-reactor'
+            : 'hazard',
       )
       .setDepth(2);
     this.roomObjects.push(warning);
@@ -332,6 +336,7 @@ export class RoomRuntime {
   private requirementMessage(requirement: ExitDefinition['requirement']): string {
     if (requirement === 'phaseDash') return '通道需要：相位冲刺';
     if (requirement === 'magneticGrip') return '通道需要：磁附跃迁';
+    if (requirement === 'dualAbility') return '最终锁需要：两项跃迁能力';
     if (requirement === 'bossDefeated') return '核心仍处于封锁状态';
     return '';
   }

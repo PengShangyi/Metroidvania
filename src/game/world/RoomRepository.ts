@@ -5,6 +5,7 @@ const VALID_REQUIREMENTS = new Set<GateRequirement>([
   'none',
   'phaseDash',
   'magneticGrip',
+  'dualAbility',
   'bossDefeated',
 ]);
 

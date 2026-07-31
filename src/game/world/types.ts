@@ -1,5 +1,6 @@
 export type BiomeId = 'vestibule' | 'bioforge' | 'reactor';
-export type GateRequirement = 'none' | 'phaseDash' | 'magneticGrip' | 'bossDefeated';
+export type GateRequirement =
+  'none' | 'phaseDash' | 'magneticGrip' | 'dualAbility' | 'bossDefeated';
 export type EnemyType = 'crawler' | 'sentry' | 'turret' | 'spore';
 export type PickupType = 'phaseDash' | 'magneticGrip' | 'healthCell' | 'lore';
 

@@ -53,5 +53,6 @@ export function meetsRequirement(
   if (requirement === 'none') return true;
   if (requirement === 'phaseDash') return abilities.phaseDash;
   if (requirement === 'magneticGrip') return abilities.magneticGrip;
+  if (requirement === 'dualAbility') return abilities.phaseDash && abilities.magneticGrip;
   return bossDefeated;
 }

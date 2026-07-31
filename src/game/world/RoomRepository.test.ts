@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { RoomRepository, validateRooms } from './RoomRepository';
-import { simulateProgression } from './progression';
+import { meetsRequirement, simulateProgression } from './progression';
 
 describe('room repository', () => {
   it('loads exactly seventeen connected rooms', () => {
@@ -25,5 +25,14 @@ describe('room repository', () => {
 
     expect(result.reachable.has('core_guardian')).toBe(true);
     expect(result.abilities.phaseDash && result.abilities.magneticGrip).toBe(true);
+    expect(meetsRequirement('dualAbility', result.abilities, false)).toBe(true);
+    expect(meetsRequirement('dualAbility', { phaseDash: true, magneticGrip: false }, false)).toBe(
+      false,
+    );
+    expect(
+      repository
+        .get('reactor_threshold')
+        .exits.find((exit) => exit.targetRoomId === 'core_guardian')?.requirement,
+    ).toBe('dualAbility');
   });
 });

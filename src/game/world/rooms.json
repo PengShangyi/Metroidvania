@@ -612,7 +612,12 @@
       { "id": "from_spire", "x": 56, "y": 238 },
       { "id": "from_conduit", "x": 408, "y": 238 }
     ],
-    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
+    "platforms": [
+      { "x": 0, "y": 254, "width": 480, "height": 16 },
+      { "x": 100, "y": 206, "width": 82, "height": 12 },
+      { "x": 228, "y": 170, "width": 84, "height": 12 },
+      { "x": 350, "y": 206, "width": 72, "height": 12 }
+    ],
     "hazards": [],
     "exits": [
       {
@@ -636,7 +641,10 @@
         "requirement": "none"
       }
     ],
-    "enemies": [],
+    "enemies": [
+      { "id": "sentry-antechamber", "type": "sentry", "x": 382, "y": 154 },
+      { "id": "turret-antechamber", "type": "turret", "x": 270, "y": 158 }
+    ],
     "pickups": [],
     "checkpoint": {
       "id": "terminal-reactor",
@@ -655,8 +663,17 @@
       { "id": "from_antechamber", "x": 56, "y": 238 },
       { "id": "from_coreway", "x": 408, "y": 238 }
     ],
-    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
-    "hazards": [],
+    "platforms": [
+      { "x": 0, "y": 254, "width": 128, "height": 16 },
+      { "x": 212, "y": 254, "width": 88, "height": 16 },
+      { "x": 384, "y": 254, "width": 96, "height": 16 },
+      { "x": 102, "y": 206, "width": 58, "height": 12 },
+      { "x": 278, "y": 192, "width": 50, "height": 12 }
+    ],
+    "hazards": [
+      { "x": 128, "y": 246, "width": 84, "height": 24 },
+      { "x": 300, "y": 246, "width": 84, "height": 24 }
+    ],
     "exits": [
       {
         "id": "to_antechamber",
@@ -679,7 +696,10 @@
         "requirement": "phaseDash"
       }
     ],
-    "enemies": [],
+    "enemies": [
+      { "id": "sentry-conduit-a", "type": "sentry", "x": 176, "y": 158 },
+      { "id": "sentry-conduit-b", "type": "sentry", "x": 346, "y": 144 }
+    ],
     "pickups": []
   },
   {
@@ -690,10 +710,18 @@
     "height": 270,
     "spawns": [
       { "id": "from_conduit", "x": 56, "y": 238 },
-      { "id": "from_threshold", "x": 408, "y": 238 }
+      { "id": "from_threshold", "x": 408, "y": 102 }
     ],
-    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
-    "hazards": [],
+    "platforms": [
+      { "x": 0, "y": 254, "width": 144, "height": 16 },
+      { "x": 320, "y": 254, "width": 160, "height": 16 },
+      { "x": 118, "y": 210, "width": 64, "height": 12 },
+      { "x": 188, "y": 64, "width": 16, "height": 146 },
+      { "x": 276, "y": 110, "width": 16, "height": 144 },
+      { "x": 204, "y": 92, "width": 88, "height": 12 },
+      { "x": 330, "y": 110, "width": 80, "height": 12 }
+    ],
+    "hazards": [{ "x": 144, "y": 246, "width": 176, "height": 24 }],
     "exits": [
       {
         "id": "to_conduit",
@@ -708,7 +736,7 @@
       {
         "id": "to_threshold",
         "x": 438,
-        "y": 210,
+        "y": 62,
         "width": 24,
         "height": 44,
         "targetRoomId": "reactor_threshold",
@@ -716,13 +744,16 @@
         "requirement": "magneticGrip"
       }
     ],
-    "enemies": [],
+    "enemies": [
+      { "id": "sentry-coreway", "type": "sentry", "x": 240, "y": 56 },
+      { "id": "turret-coreway", "type": "turret", "x": 368, "y": 98 }
+    ],
     "pickups": [
       {
         "id": "lore-core",
         "type": "lore",
         "x": 246,
-        "y": 232,
+        "y": 76,
         "requirement": "none",
         "text": "记录 03：它不是在求救。它在确认宇宙中是否还有人会回答。"
       }
@@ -738,8 +769,16 @@
       { "id": "from_coreway", "x": 56, "y": 238 },
       { "id": "from_boss", "x": 408, "y": 238 }
     ],
-    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
-    "hazards": [],
+    "platforms": [
+      { "x": 0, "y": 254, "width": 480, "height": 16 },
+      { "x": 92, "y": 210, "width": 76, "height": 12 },
+      { "x": 202, "y": 174, "width": 76, "height": 12 },
+      { "x": 318, "y": 210, "width": 72, "height": 12 }
+    ],
+    "hazards": [
+      { "x": 174, "y": 246, "width": 24, "height": 24 },
+      { "x": 284, "y": 246, "width": 28, "height": 24 }
+    ],
     "exits": [
       {
         "id": "to_coreway",
@@ -759,10 +798,14 @@
         "height": 44,
         "targetRoomId": "core_guardian",
         "targetSpawnId": "from_threshold",
-        "requirement": "none"
+        "requirement": "dualAbility"
       }
     ],
-    "enemies": [],
+    "enemies": [
+      { "id": "crawler-threshold", "type": "crawler", "x": 124, "y": 196 },
+      { "id": "sentry-threshold", "type": "sentry", "x": 244, "y": 132 },
+      { "id": "turret-threshold", "type": "turret", "x": 354, "y": 198 }
+    ],
     "pickups": []
   },
   {
