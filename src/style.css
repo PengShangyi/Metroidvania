@@ -1,7 +1,7 @@
 :root {
   color: #d9f4ff;
   background: #03050d;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Noto Sans SC', sans-serif;
   font-synthesis: none;
 }
 
@@ -39,6 +39,10 @@ canvas {
   width: min(420px, calc(100vw - 32px));
   padding: 24px;
   color: #d8f7ff;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.6;
+  text-shadow: 1px 1px 0 #03050d;
   background: #101a32;
   border: 1px solid #ff5678;
   transform: translate(-50%, -50%);
