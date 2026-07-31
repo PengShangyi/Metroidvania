@@ -1,0 +1,70 @@
+{
+  "version": 1,
+  "mode": "built-in-imagegen",
+  "palette": ["#070b18", "#152445", "#43d8e8", "#d8f7ff", "#ffb454", "#ff5678"],
+  "assets": [
+    {
+      "id": "iya-anchor",
+      "useCase": "stylized-concept",
+      "assetType": "game character concept",
+      "prompt": "Original compact female salvage pilot in a practical sci-fi exosuit, asymmetric cyan visor, right-arm energy blaster and folded left-arm energy blade; full body neutral pose; crisp pixel-art-inspired silhouette; deep navy, cyan and amber palette.",
+      "backdrop": "perfectly flat solid #00ff00 chroma-key background",
+      "constraints": "single character, generous padding, no shadow, no text, no logo, no watermark, do not use #00ff00 on the subject",
+      "status": "planned"
+    },
+    {
+      "id": "enemy-lineup",
+      "useCase": "stylized-concept",
+      "assetType": "game enemy concept lineup",
+      "prompt": "Four original sci-fi ruin enemies in a clean lineup: low triangular crawler, floating diamond sentry, heavy fixed turret, round spore leaper; distinct readable silhouettes; pixel-art-inspired concept rendering.",
+      "backdrop": "perfectly flat solid #ff00ff chroma-key background",
+      "constraints": "four separated subjects, no shadows, no labels, no text, no logo, no watermark, do not use #ff00ff on subjects",
+      "status": "planned"
+    },
+    {
+      "id": "core-guardian-anchor",
+      "useCase": "stylized-concept",
+      "assetType": "game boss character concept",
+      "prompt": "Original circular mechanical reactor guardian with a luminous cyan core and three hovering armor plates, ominous but readable side-view game silhouette, pixel-art-inspired industrial design.",
+      "backdrop": "perfectly flat solid #00ff00 chroma-key background",
+      "constraints": "single centered boss, generous padding, no shadow, no text, no logo, no watermark, do not use #00ff00 on subject",
+      "status": "planned"
+    },
+    {
+      "id": "vestibule-background",
+      "useCase": "stylized-concept",
+      "assetType": "game environment background",
+      "prompt": "Abandoned orbital station vestibule with broken observation windows, tall steel ribs, distant stars and amber emergency lamps, side-view 2D platform game background, layered depth, restrained pixel-art texture.",
+      "backdrop": "deep navy space station interior",
+      "constraints": "wide 16:9 composition, no foreground platforms, no characters, no text, no logos, no watermark",
+      "status": "planned"
+    },
+    {
+      "id": "bioforge-background",
+      "useCase": "stylized-concept",
+      "assetType": "game environment background",
+      "prompt": "Alien bioforge chamber where crystal mycelium grows through industrial pipes, indigo shadows, muted spore green and restrained magenta glow, side-view 2D platform game background, layered depth, pixel-art texture.",
+      "backdrop": "cavernous biotech facility",
+      "constraints": "wide 16:9 composition, no foreground platforms, no characters, no text, no logos, no watermark",
+      "status": "planned"
+    },
+    {
+      "id": "reactor-background",
+      "useCase": "stylized-concept",
+      "assetType": "game environment background",
+      "prompt": "Zero-point reactor interior with concentric machinery, black metal, cold cyan energy arcs and pale white core light, side-view 2D platform game background, monumental scale, restrained pixel-art texture.",
+      "backdrop": "dark circular reactor chamber",
+      "constraints": "wide 16:9 composition, no foreground platforms, no characters, no text, no logos, no watermark",
+      "status": "planned"
+    },
+    {
+      "id": "title-key-art",
+      "useCase": "stylized-concept",
+      "assetType": "game title background",
+      "prompt": "A lone original salvage pilot viewed from behind at the threshold of a colossal derelict station core, cyan signal echo reflected across broken steel, cinematic pixel-art-inspired science-fiction key art.",
+      "backdrop": "deep orbital ruin with strong central core silhouette",
+      "constraints": "wide 16:9 composition with quiet title space above, no text, no logos, no watermark",
+      "status": "planned"
+    }
+  ]
+}
