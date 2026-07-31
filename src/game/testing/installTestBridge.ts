@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { REGISTRY_KEYS } from '../constants';
+import { setInputDevice, type InputDevice } from '../input/device';
 import { createNewSession, type GameSessionState } from '../state/GameSession';
 import { RoomRepository } from '../world/RoomRepository';
 import type { BiomeId } from '../world/types';
@@ -29,6 +30,7 @@ export interface StarEchoTestBridge {
   startNewGame(): void;
   warp(roomId: string, patch?: TestProgressPatch): Promise<void>;
   completeBoss(): void;
+  showHelp(device: InputDevice): void;
 }
 
 type TestWindow = Window & { __STAR_ECHO_TEST__?: StarEchoTestBridge };
@@ -46,6 +48,7 @@ export function installTestBridge(game: Phaser.Game): void {
     startNewGame: () => startNewGame(game),
     warp: (roomId, patch = {}) => warp(game, roomId, patch),
     completeBoss: () => playInternals(game).finishBoss(),
+    showHelp: (device) => showHelp(game, device),
   };
 
   game.events.once('destroy', () => {
@@ -57,7 +60,7 @@ function snapshot(game: Phaser.Game): TestSnapshot {
   const session = game.registry.get(REGISTRY_KEYS.session) as GameSessionState;
   const active = game.scene.getScenes(true).map((scene) => scene.scene.key);
   const scene =
-    ['ending', 'tutorial', 'play', 'title', 'boot'].find((key) => active.includes(key)) ??
+    ['help', 'ending', 'tutorial', 'play', 'title', 'boot'].find((key) => active.includes(key)) ??
     'unknown';
   return {
     scene,
@@ -69,6 +72,12 @@ function snapshot(game: Phaser.Game): TestSnapshot {
     bossHealth: (game.registry.get(REGISTRY_KEYS.bossHealth) as number | undefined) ?? null,
     uiMode: (game.registry.get(REGISTRY_KEYS.uiMode) as string | undefined) ?? 'game',
   };
+}
+
+function showHelp(game: Phaser.Game, device: InputDevice): void {
+  setInputDevice(game.registry, game.events, device);
+  const returnScene = ['title', 'ending'].find((key) => game.scene.isActive(key)) ?? 'title';
+  game.scene.getScene(returnScene).scene.start('help', { returnScene });
 }
 
 function startNewGame(game: Phaser.Game): void {

@@ -19,5 +19,6 @@ export const REGISTRY_KEYS = {
   bossHealth: 'star-echo.boss-health',
   bossPhase: 'star-echo.boss-phase',
   uiMode: 'star-echo.ui-mode',
+  inputDevice: 'star-echo.input-device',
   audio: 'star-echo.audio',
 } as const;

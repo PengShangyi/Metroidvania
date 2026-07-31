@@ -25,6 +25,7 @@ interface BrowserTestBridge {
     },
   ): Promise<void>;
   completeBoss(): void;
+  showHelp(device: 'keyboardMouse' | 'gamepad'): void;
 }
 
 type TestWindow = Window & { __STAR_ECHO_TEST__: BrowserTestBridge };
@@ -61,6 +62,11 @@ test('starts a new game and opens map, pause, settings and controls', async ({ p
   await page.mouse.click(480, 272);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('play');
   await expect.poll(async () => (await snapshot(page)).roomId).toBe('vestibule_dock');
+  await page.keyboard.press('h');
+  await expect.poll(async () => (await snapshot(page)).uiMode).toBe('help-keyboardMouse');
+  await page.keyboard.press('h');
+  await expect.poll(async () => (await snapshot(page)).uiMode).toBe('game');
+  await waitForGameFrame(page);
   await page.keyboard.press('Tab');
   await expect.poll(async () => (await snapshot(page)).uiMode).toBe('map');
   await waitForGameFrame(page);
@@ -135,6 +141,27 @@ test('opens the playable tutorial and safely returns to the title', async ({ pag
   expect(errors).toEqual([]);
 });
 
+test('opens help anywhere and follows the most recent input device', async ({ page }) => {
+  const errors = await openGame(page);
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
+
+  await page.keyboard.press('h');
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('help');
+  await expect.poll(async () => (await snapshot(page)).uiMode).toBe('help-keyboardMouse');
+  await page.keyboard.press('h');
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
+
+  await page.evaluate(() =>
+    (window as unknown as TestWindow).__STAR_ECHO_TEST__.showHelp('gamepad'),
+  );
+  await expect.poll(async () => (await snapshot(page)).uiMode).toBe('help-gamepad');
+  await page.keyboard.press('j');
+  await expect.poll(async () => (await snapshot(page)).uiMode).toBe('help-keyboardMouse');
+  await page.keyboard.press('Escape');
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
+  expect(errors).toEqual([]);
+});
+
 test('completes the two-ability route, ending and post-game exploration', async ({ page }) => {
   const errors = await openGame(page);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
@@ -163,6 +190,12 @@ test('completes the two-ability route, ending and post-game exploration', async 
   await expect.poll(async () => (await snapshot(page)).scene, { timeout: 4_000 }).toBe('ending');
   expect((await snapshot(page)).bossDefeated).toBe(true);
 
+  await page.evaluate(() =>
+    (window as unknown as TestWindow).__STAR_ECHO_TEST__.showHelp('gamepad'),
+  );
+  await expect.poll(async () => (await snapshot(page)).uiMode).toBe('help-gamepad');
+  await page.keyboard.press('Escape');
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('ending');
   await page.keyboard.press('Enter');
   await expect.poll(async () => (await snapshot(page)).scene).toBe('play');
   expect((await snapshot(page)).roomId).toBe('core_guardian');

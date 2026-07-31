@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { GAME_HEIGHT, GAME_WIDTH } from './constants';
 import { BootScene } from './scenes/BootScene';
 import { EndingScene } from './scenes/EndingScene';
+import { HelpScene } from './scenes/HelpScene';
 import { HudScene } from './scenes/HudScene';
 import { PlayScene } from './scenes/PlayScene';
 import { TitleScene } from './scenes/TitleScene';
@@ -40,6 +41,6 @@ export function createGameConfig(): Phaser.Types.Core.GameConfig {
       pixelArt: true,
       roundPixels: true,
     },
-    scene: [BootScene, TitleScene, TutorialScene, PlayScene, HudScene, EndingScene],
+    scene: [BootScene, TitleScene, TutorialScene, PlayScene, HudScene, HelpScene, EndingScene],
   };
 }

@@ -7,6 +7,7 @@ import {
   type ActionSnapshot,
   type ActionValues,
 } from './actions';
+import { getInputDevice, resolveInputDevice, setInputDevice, type InputDevice } from './device';
 
 type KeyMap = Record<ActionName, Phaser.Input.Keyboard.Key[]>;
 
@@ -15,10 +16,14 @@ export class InputController {
   private readonly keys: KeyMap;
   private previous = emptyActionValues();
   private snapshot = createActionSnapshot(this.previous, this.previous);
+  private lastDevice: InputDevice;
   private readonly blurHandler: () => void;
+  private readonly keyboardActivityHandler: () => void;
+  private readonly pointerActivityHandler: () => void;
 
   public constructor(scene: Phaser.Scene) {
     this.scene = scene;
+    this.lastDevice = getInputDevice(scene.registry);
     const keyboard = scene.input.keyboard;
     if (!keyboard) throw new Error('键盘输入不可用');
 
@@ -35,16 +40,25 @@ export class InputController {
       interact: [key(Phaser.Input.Keyboard.KeyCodes.E)],
       map: [key(Phaser.Input.Keyboard.KeyCodes.TAB)],
       pause: [key(Phaser.Input.Keyboard.KeyCodes.ESC)],
+      help: [key(Phaser.Input.Keyboard.KeyCodes.H)],
     };
 
     this.blurHandler = () => this.clear();
+    this.keyboardActivityHandler = () => this.useDevice('keyboardMouse');
+    this.pointerActivityHandler = () => this.useDevice('keyboardMouse');
     window.addEventListener('blur', this.blurHandler);
+    keyboard.on('keydown', this.keyboardActivityHandler);
+    scene.input.on(Phaser.Input.Events.POINTER_DOWN, this.pointerActivityHandler);
   }
 
   public update(): ActionSnapshot {
     const keyboard = this.readKeyboard();
     const gamepad = this.readGamepad();
-    const hasGamepadActivity = Object.values(gamepad.actions).some(Boolean) || gamepad.axisX !== 0;
+    const hasKeyboardActivity = Object.values(keyboard).some(Boolean);
+    const hasGamepadActivity =
+      Object.values(gamepad.actions).some(Boolean) || gamepad.axisX !== 0 || gamepad.axisY !== 0;
+    this.lastDevice = resolveInputDevice(this.lastDevice, hasKeyboardActivity, hasGamepadActivity);
+    if (hasKeyboardActivity || hasGamepadActivity) this.useDevice(this.lastDevice);
     const current = hasGamepadActivity ? gamepad.actions : keyboard;
 
     this.snapshot = createActionSnapshot(
@@ -52,7 +66,7 @@ export class InputController {
       this.previous,
       gamepad.axisX,
       gamepad.axisY,
-      hasGamepadActivity ? 'gamepad' : 'keyboard',
+      this.lastDevice === 'gamepad' ? 'gamepad' : 'keyboard',
     );
     this.previous = { ...current };
     return this.snapshot;
@@ -72,6 +86,8 @@ export class InputController {
 
   public destroy(): void {
     window.removeEventListener('blur', this.blurHandler);
+    this.scene.input.keyboard?.off('keydown', this.keyboardActivityHandler);
+    this.scene.input.off(Phaser.Input.Events.POINTER_DOWN, this.pointerActivityHandler);
     this.clear();
   }
 
@@ -104,7 +120,13 @@ export class InputController {
     actions.interact = pad.buttons[5]?.pressed ?? false;
     actions.map = pad.buttons[8]?.pressed ?? false;
     actions.pause = pad.buttons[9]?.pressed ?? false;
+    actions.help = pad.buttons[4]?.pressed ?? false;
 
     return { actions, axisX, axisY };
+  }
+
+  private useDevice(device: InputDevice): void {
+    this.lastDevice = device;
+    setInputDevice(this.scene.registry, this.scene.game.events, device);
   }
 }

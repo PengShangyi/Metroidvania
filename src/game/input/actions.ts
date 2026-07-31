@@ -10,6 +10,7 @@ export const ACTION_NAMES = [
   'interact',
   'map',
   'pause',
+  'help',
 ] as const;
 
 export type ActionName = (typeof ACTION_NAMES)[number];

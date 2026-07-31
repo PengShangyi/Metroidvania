@@ -3,12 +3,14 @@ import Phaser from 'phaser';
 import type { ProceduralAudio } from '../audio/ProceduralAudio';
 import { CombatSystem } from '../combat/CombatSystem';
 import { COLORS, REGISTRY_KEYS } from '../constants';
+import { getInputDevice, type InputDevice } from '../input/device';
 import { InputController } from '../input/InputController';
 import { Player } from '../player/Player';
 import { releaseArcadeImage } from '../render/arcadePool';
 import { queueRegionAssets } from '../render/regionAssets';
 import { createNewSession, type GameSessionState } from '../state/GameSession';
 import { TUTORIAL_STEPS, tutorialAbilities } from '../tutorial/tutorialPlan';
+import { tutorialControlHint } from '../ui/helpContent';
 import { bodyTextStyle } from '../ui/text';
 
 export class TutorialScene extends Phaser.Scene {
@@ -31,6 +33,7 @@ export class TutorialScene extends Phaser.Scene {
   private meleeComplete = false;
   private advancing = false;
   private complete = false;
+  private renderedDevice?: InputDevice;
 
   public constructor() {
     super('tutorial');
@@ -67,13 +70,15 @@ export class TutorialScene extends Phaser.Scene {
     this.effectText = this.add
       .text(240, 50, '', { ...bodyTextStyle('#8ce7ff'), align: 'center' })
       .setOrigin(0.5, 0);
-    this.add.text(468, 10, 'ESC 返回标题', bodyTextStyle('#8da1c8')).setOrigin(1, 0);
+    this.add.text(468, 10, 'H 帮助 · ESC 标题', bodyTextStyle('#8da1c8')).setOrigin(1, 0);
 
+    this.input.keyboard?.on('keydown-H', this.openHelp, this);
     this.input.keyboard?.on('keydown-ESC', this.returnToTitle, this);
     (this.registry.get(REGISTRY_KEYS.audio) as ProceduralAudio | undefined)?.setBiome('vestibule');
     this.enterStage();
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.keyboard?.off('keydown-H', this.openHelp, this);
       this.input.keyboard?.off('keydown-ESC', this.returnToTitle, this);
       this.controls.destroy();
       this.combat.destroy();
@@ -85,6 +90,12 @@ export class TutorialScene extends Phaser.Scene {
   public update(_time: number, delta: number): void {
     if (this.complete || this.advancing) return;
     const input = this.controls.update();
+    if (input.pressed.help) {
+      this.openHelp();
+      return;
+    }
+    const device = getInputDevice(this.registry);
+    if (device !== this.renderedDevice) this.renderStageInstruction(device);
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     const touchingWallBeforeUpdate =
       body.blocked.left || body.blocked.right || body.touching.left || body.touching.right;
@@ -130,7 +141,8 @@ export class TutorialScene extends Phaser.Scene {
     this.session.abilities = tutorialAbilities(step.id);
     this.progressText.setText(`训练 ${this.stageIndex + 1}/${TUTORIAL_STEPS.length}`);
     this.titleText.setText(step.title);
-    this.objectiveText.setText(step.objective);
+    this.renderedDevice = undefined;
+    this.renderStageInstruction(getInputDevice(this.registry));
     this.effectText.setText(step.effect);
     this.combat.clearTransient();
     this.player.resetTraversalState();
@@ -288,6 +300,19 @@ export class TutorialScene extends Phaser.Scene {
     graphics.fillStyle(COLORS.void, 0.42).fillRect(0, 0, 480, 270);
     graphics.lineStyle(1, COLORS.cyan, 0.15);
     for (let x = 24; x < 480; x += 48) graphics.strokeRect(x, 78, 28, 164);
+  }
+
+  private renderStageInstruction(device: InputDevice): void {
+    const step = TUTORIAL_STEPS[this.stageIndex];
+    if (!step) return;
+    this.renderedDevice = device;
+    this.objectiveText.setText(`${tutorialControlHint(step.id, device)}：${step.objective}`);
+  }
+
+  private openHelp(): void {
+    this.controls.clear();
+    this.scene.launch('help', { returnScene: 'tutorial', resumeScene: true });
+    this.scene.pause();
   }
 
   private returnToTitle(): void {

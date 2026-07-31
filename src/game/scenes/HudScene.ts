@@ -1,17 +1,19 @@
 import Phaser from 'phaser';
 
 import { COLORS, REGISTRY_KEYS } from '../constants';
+import { getInputDevice, setInputDevice, type InputDevice } from '../input/device';
 import { createBrowserSaveService, type SaveService } from '../save/SaveService';
 import type { GameSessionState } from '../state/GameSession';
 import { completionPercent } from '../ui/completion';
 import { bindFullscreenKey } from '../ui/fullscreen';
 import { ROOM_MAP_LAYOUT } from '../ui/mapLayout';
+import { renderHelpPanel } from '../ui/renderHelpPanel';
 import { bodyTextStyle } from '../ui/text';
 import rawRooms from '../world/rooms.json';
 import type { RoomDefinition } from '../world/types';
 import type { PlayScene } from './PlayScene';
 
-type OverlayMode = 'game' | 'map' | 'pause' | 'settings' | 'controls';
+type OverlayMode = 'game' | 'map' | 'pause' | 'settings' | 'help';
 
 export class HudScene extends Phaser.Scene {
   private healthText!: Phaser.GameObjects.Text;
@@ -26,23 +28,37 @@ export class HudScene extends Phaser.Scene {
   private saveService!: SaveService;
   private previousGamepadMap = false;
   private previousGamepadPause = false;
+  private previousGamepadHelp = false;
+  private helpReturnMode: Exclude<OverlayMode, 'help'> = 'game';
+  private renderedHelpDevice?: InputDevice;
   private renderedHealth = '';
   private renderedExploration = '';
   private renderedMessage = '';
   private renderedBoss = '';
   private renderedDash?: boolean;
   private renderedGrip?: boolean;
-  private readonly blurHandler = (): void => this.openOverlay('pause');
+  private readonly blurHandler = (): void => {
+    if (this.mode === 'game') this.openOverlay('pause');
+  };
   private readonly mapKeyHandler = (event: KeyboardEvent): void => {
     event.preventDefault();
     if (this.mode === 'map') this.closeOverlay();
     else if (this.mode === 'game') this.openOverlay('map');
   };
   private readonly pauseKeyHandler = (): void => {
-    if (this.mode === 'game') this.openOverlay('pause');
+    if (this.mode === 'help') this.closeHelp();
+    else if (this.mode === 'game') this.openOverlay('pause');
     else if (this.mode === 'pause') this.closeOverlay();
     else this.openOverlay('pause');
   };
+  private readonly helpKeyHandler = (event: KeyboardEvent): void => {
+    if (event.code !== 'KeyH' || event.repeat) return;
+    event.preventDefault();
+    if (this.mode === 'help') this.closeHelp();
+    else this.openHelp();
+  };
+  private readonly keyboardDeviceHandler = (): void => this.useInputDevice('keyboardMouse');
+  private readonly pointerDeviceHandler = (): void => this.useInputDevice('keyboardMouse');
 
   public constructor() {
     super('hud');
@@ -63,7 +79,7 @@ export class HudScene extends Phaser.Scene {
       .setOrigin(1, 0)
       .setScrollFactor(0);
     this.add
-      .text(468, 28, 'TAB 地图  ·  ESC 暂停', bodyTextStyle('#7184a8'))
+      .text(468, 28, 'TAB 地图 · H 帮助 · ESC 暂停', bodyTextStyle('#8da1c8'))
       .setOrigin(1, 0)
       .setScrollFactor(0);
     this.messageText = this.add
@@ -86,11 +102,17 @@ export class HudScene extends Phaser.Scene {
 
     this.input.keyboard?.on('keydown-TAB', this.mapKeyHandler);
     this.input.keyboard?.on('keydown-ESC', this.pauseKeyHandler);
+    this.input.keyboard?.on('keydown', this.keyboardDeviceHandler);
+    this.input.on(Phaser.Input.Events.POINTER_DOWN, this.pointerDeviceHandler);
     window.addEventListener('blur', this.blurHandler);
+    window.addEventListener('keydown', this.helpKeyHandler);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.keyboard?.off('keydown-TAB', this.mapKeyHandler);
       this.input.keyboard?.off('keydown-ESC', this.pauseKeyHandler);
+      this.input.keyboard?.off('keydown', this.keyboardDeviceHandler);
+      this.input.off(Phaser.Input.Events.POINTER_DOWN, this.pointerDeviceHandler);
       window.removeEventListener('blur', this.blurHandler);
+      window.removeEventListener('keydown', this.helpKeyHandler);
       this.overlay?.destroy(true);
     });
   }
@@ -145,13 +167,26 @@ export class HudScene extends Phaser.Scene {
     const pad = this.input.gamepad?.getPad(0);
     const mapPressed = pad?.buttons[8]?.pressed ?? false;
     const pausePressed = pad?.buttons[9]?.pressed ?? false;
-    if (mapPressed && !this.previousGamepadMap) {
+    const helpPressed = pad?.buttons[4]?.pressed ?? false;
+    const gamepadActive =
+      Boolean(pad) &&
+      ((pad?.buttons.some((button) => button.pressed) ?? false) ||
+        Math.abs(pad?.axes[0]?.getValue() ?? 0) > 0.24 ||
+        Math.abs(pad?.axes[1]?.getValue() ?? 0) > 0.24);
+    if (gamepadActive) this.useInputDevice('gamepad');
+    if (helpPressed && !this.previousGamepadHelp) {
+      if (this.mode === 'help') this.closeHelp();
+      else this.openHelp();
+    } else if (mapPressed && !this.previousGamepadMap && this.mode !== 'help') {
       if (this.mode === 'map') this.closeOverlay();
       else if (this.mode === 'game') this.openOverlay('map');
     }
-    if (pausePressed && !this.previousGamepadPause) this.pauseKeyHandler();
+    if (pausePressed && !this.previousGamepadPause && this.mode !== 'help') {
+      this.pauseKeyHandler();
+    }
     this.previousGamepadMap = mapPressed;
     this.previousGamepadPause = pausePressed;
+    this.previousGamepadHelp = helpPressed;
   }
 
   private openOverlay(mode: Exclude<OverlayMode, 'game'>): void {
@@ -182,10 +217,23 @@ export class HudScene extends Phaser.Scene {
         .setStrokeStyle(1, COLORS.cyan, 0.7),
     );
     this.overlay = container;
-    if (this.mode === 'map') this.renderMap(container);
+    if (this.mode === 'help') {
+      this.renderedHelpDevice = getInputDevice(this.registry);
+      this.registry.set(REGISTRY_KEYS.uiMode, `help-${this.renderedHelpDevice}`);
+      renderHelpPanel(this, container, this.renderedHelpDevice);
+      const close = this.add
+        .text(454, 28, '关闭 ×', {
+          ...bodyTextStyle('#d8f7ff'),
+          backgroundColor: '#25385c',
+          padding: { x: 7, y: 4 },
+        })
+        .setOrigin(1, 0.5)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => this.closeHelp());
+      container.add(close);
+    } else if (this.mode === 'map') this.renderMap(container);
     else if (this.mode === 'pause') this.renderPause(container);
     else if (this.mode === 'settings') this.renderSettings(container);
-    else this.renderControls(container);
   }
 
   private renderPause(container: Phaser.GameObjects.Container): void {
@@ -193,7 +241,7 @@ export class HudScene extends Phaser.Scene {
     this.menuButton(container, 88, '继续任务', () => this.closeOverlay());
     this.menuButton(container, 116, '探索地图', () => this.openOverlay('map'));
     this.menuButton(container, 144, '设置', () => this.openOverlay('settings'));
-    this.menuButton(container, 172, '控制说明', () => this.openOverlay('controls'));
+    this.menuButton(container, 172, '帮助与控制', () => this.openHelp());
     this.menuButton(container, 210, '保存于终端 · 返回标题', () => {
       const play = this.scene.get('play') as PlayScene;
       play.returnToTitle();
@@ -236,35 +284,6 @@ export class HudScene extends Phaser.Scene {
         .setOrigin(0.5),
     );
     this.menuButton(container, 222, '返回暂停菜单', () => this.openOverlay('pause'));
-  }
-
-  private renderControls(container: Phaser.GameObjects.Container): void {
-    container.add(this.heading('控制说明'));
-    const controls = [
-      '移动        A/D 或 ←/→          左摇杆 / D-pad',
-      '跳跃        SPACE               A',
-      '能量枪      J                   X',
-      '能量刃      K                   Y',
-      '相位冲刺    SHIFT               B',
-      '交互        E                   RB',
-      '地图        TAB                 View',
-      '暂停        ESC                 Menu',
-      '全屏        F                   —',
-    ];
-    container.add(
-      this.add
-        .text(88, 80, controls.join('\n'), {
-          ...bodyTextStyle('#d8f7ff'),
-          lineSpacing: 7,
-        })
-        .setOrigin(0, 0),
-    );
-    container.add(
-      this.add
-        .text(240, 204, '鼠标仅用于菜单 · 不支持触屏与按键重绑', bodyTextStyle('#8da1c8'))
-        .setOrigin(0.5),
-    );
-    this.menuButton(container, 228, '返回暂停菜单', () => this.openOverlay('pause'));
   }
 
   private renderMap(container: Phaser.GameObjects.Container): void {
@@ -346,6 +365,35 @@ export class HudScene extends Phaser.Scene {
       .on('pointerout', () => button.setBackgroundColor('#152445').setColor('#d8f7ff'))
       .on('pointerdown', action);
     container.add(button);
+  }
+
+  private openHelp(): void {
+    if (this.mode === 'help') return;
+    this.helpReturnMode = this.mode;
+    if (this.mode === 'game') this.scene.pause('play');
+    this.mode = 'help';
+    this.renderedHelpDevice = undefined;
+    this.renderOverlay();
+  }
+
+  private closeHelp(): void {
+    if (this.mode !== 'help') return;
+    const returnMode = this.helpReturnMode;
+    if (returnMode === 'game') {
+      this.closeOverlay();
+      return;
+    }
+    this.mode = returnMode;
+    this.registry.set(REGISTRY_KEYS.uiMode, returnMode);
+    this.renderOverlay();
+  }
+
+  private useInputDevice(device: InputDevice): void {
+    const changed = setInputDevice(this.registry, this.game.events, device);
+    if (changed && this.mode === 'help') {
+      this.renderedHelpDevice = undefined;
+      this.renderOverlay();
+    }
   }
 
   private persistSettings(): void {

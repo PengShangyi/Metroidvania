@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import type { ProceduralAudio } from '../audio/ProceduralAudio';
 import { COLORS, REGISTRY_KEYS } from '../constants';
+import { setInputDevice, type InputDevice } from '../input/device';
 import {
   createBrowserSaveService,
   type SaveReadResult,
@@ -15,6 +16,7 @@ export class TitleScene extends Phaser.Scene {
   private saveService!: SaveService;
   private readResult!: SaveReadResult;
   private confirmNewGame = false;
+  private previousGamepadHelp = false;
 
   public constructor() {
     super('title');
@@ -39,6 +41,7 @@ export class TitleScene extends Phaser.Scene {
       this.startNewGame(newButton),
     );
     this.createMenuButton(168, '新手训练', true, () => this.scene.start('tutorial'));
+    this.createMenuButton(200, '帮助与控制', true, () => this.openHelp('keyboardMouse'));
 
     if (hasSave) {
       this.input.keyboard?.once('keydown-ENTER', () => this.continueGame());
@@ -49,12 +52,26 @@ export class TitleScene extends Phaser.Scene {
     }
 
     this.add
-      .text(240, 216, this.saveStatusText(), bodyTextStyle(this.saveStatusColor()))
+      .text(240, 228, this.saveStatusText(), bodyTextStyle(this.saveStatusColor()))
       .setOrigin(0.5);
     this.add
-      .text(240, 240, '鼠标选择 · ENTER 快速开始 · T 新手训练 · F 全屏', bodyTextStyle('#8da1c8'))
+      .text(240, 250, 'ENTER 开始 · T 训练 · H 帮助 · F 全屏', bodyTextStyle('#8da1c8'))
       .setOrigin(0.5);
     this.input.keyboard?.once('keydown-T', () => this.scene.start('tutorial'));
+    this.input.keyboard?.once('keydown-H', () => this.openHelp('keyboardMouse'));
+  }
+
+  public update(): void {
+    const pad = this.input.gamepad?.getPad(0);
+    const helpPressed = pad?.buttons[4]?.pressed ?? false;
+    const active =
+      Boolean(pad) &&
+      ((pad?.buttons.some((button) => button.pressed) ?? false) ||
+        Math.abs(pad?.axes[0]?.getValue() ?? 0) > 0.24 ||
+        Math.abs(pad?.axes[1]?.getValue() ?? 0) > 0.24);
+    if (active) setInputDevice(this.registry, this.game.events, 'gamepad');
+    if (helpPressed && !this.previousGamepadHelp) this.openHelp('gamepad');
+    this.previousGamepadHelp = helpPressed;
   }
 
   private createMenuButton(
@@ -70,7 +87,12 @@ export class TitleScene extends Phaser.Scene {
         padding: { x: 14, y: 7 },
       })
       .setOrigin(0.5);
-    if (enabled) button.setInteractive({ useHandCursor: true }).on('pointerdown', action);
+    if (enabled) {
+      button.setInteractive({ useHandCursor: true }).on('pointerdown', () => {
+        setInputDevice(this.registry, this.game.events, 'keyboardMouse');
+        action();
+      });
+    }
     return button;
   }
 
@@ -78,6 +100,11 @@ export class TitleScene extends Phaser.Scene {
     if (this.readResult.status !== 'valid') return;
     this.registry.set(REGISTRY_KEYS.session, this.readResult.session);
     this.scene.start('play');
+  }
+
+  private openHelp(device: InputDevice): void {
+    setInputDevice(this.registry, this.game.events, device);
+    this.scene.start('help', { returnScene: 'title' });
   }
 
   private startNewGame(button: Phaser.GameObjects.Text): void {
