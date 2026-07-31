@@ -1,0 +1,681 @@
+[
+  {
+    "id": "vestibule_dock",
+    "name": "坠星船坞",
+    "biome": "vestibule",
+    "width": 480,
+    "height": 270,
+    "spawns": [
+      { "id": "start", "x": 64, "y": 238 },
+      { "id": "from_gallery", "x": 408, "y": 238 }
+    ],
+    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
+    "hazards": [],
+    "exits": [
+      {
+        "id": "to_gallery",
+        "x": 438,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "vestibule_gallery",
+        "targetSpawnId": "from_dock",
+        "requirement": "none"
+      }
+    ],
+    "enemies": [],
+    "pickups": [],
+    "checkpoint": { "id": "terminal-dock", "x": 110, "y": 222 }
+  },
+  {
+    "id": "vestibule_gallery",
+    "name": "断光长廊",
+    "biome": "vestibule",
+    "width": 480,
+    "height": 270,
+    "spawns": [
+      { "id": "from_dock", "x": 56, "y": 238 },
+      { "id": "from_shaft", "x": 408, "y": 238 }
+    ],
+    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
+    "hazards": [],
+    "exits": [
+      {
+        "id": "to_dock",
+        "x": 18,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "vestibule_dock",
+        "targetSpawnId": "from_gallery",
+        "requirement": "none"
+      },
+      {
+        "id": "to_shaft",
+        "x": 438,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "vestibule_shaft",
+        "targetSpawnId": "from_gallery",
+        "requirement": "none"
+      }
+    ],
+    "enemies": [],
+    "pickups": []
+  },
+  {
+    "id": "vestibule_shaft",
+    "name": "中央井",
+    "biome": "vestibule",
+    "width": 480,
+    "height": 270,
+    "spawns": [
+      { "id": "from_gallery", "x": 48, "y": 238 },
+      { "id": "from_depot", "x": 160, "y": 238 },
+      { "id": "from_vault", "x": 280, "y": 238 },
+      { "id": "from_causeway", "x": 408, "y": 238 },
+      { "id": "from_spire", "x": 224, "y": 120 }
+    ],
+    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
+    "hazards": [],
+    "exits": [
+      {
+        "id": "to_gallery",
+        "x": 18,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "vestibule_gallery",
+        "targetSpawnId": "from_shaft",
+        "requirement": "none"
+      },
+      {
+        "id": "to_depot",
+        "x": 128,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "vestibule_depot",
+        "targetSpawnId": "from_shaft",
+        "requirement": "none"
+      },
+      {
+        "id": "to_vault",
+        "x": 248,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "vestibule_vault",
+        "targetSpawnId": "from_shaft",
+        "requirement": "none"
+      },
+      {
+        "id": "to_causeway",
+        "x": 438,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "vestibule_causeway",
+        "targetSpawnId": "from_shaft",
+        "requirement": "phaseDash"
+      },
+      {
+        "id": "to_spire",
+        "x": 212,
+        "y": 64,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "bioforge_spire",
+        "targetSpawnId": "from_shaft",
+        "requirement": "magneticGrip"
+      }
+    ],
+    "enemies": [],
+    "pickups": []
+  },
+  {
+    "id": "vestibule_depot",
+    "name": "测绘仓",
+    "biome": "vestibule",
+    "width": 480,
+    "height": 270,
+    "spawns": [{ "id": "from_shaft", "x": 56, "y": 238 }],
+    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
+    "hazards": [],
+    "exits": [
+      {
+        "id": "to_shaft",
+        "x": 18,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "vestibule_shaft",
+        "targetSpawnId": "from_depot",
+        "requirement": "none"
+      }
+    ],
+    "enemies": [],
+    "pickups": [
+      {
+        "id": "lore-survey",
+        "type": "lore",
+        "x": 236,
+        "y": 232,
+        "requirement": "none",
+        "text": "记录 01：求救信号并非来自幸存者。它在复制我们的声音。"
+      },
+      {
+        "id": "health-depot",
+        "type": "healthCell",
+        "x": 414,
+        "y": 112,
+        "requirement": "magneticGrip"
+      }
+    ]
+  },
+  {
+    "id": "vestibule_vault",
+    "name": "回声库",
+    "biome": "vestibule",
+    "width": 480,
+    "height": 270,
+    "spawns": [{ "id": "from_shaft", "x": 56, "y": 238 }],
+    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
+    "hazards": [],
+    "exits": [
+      {
+        "id": "to_shaft",
+        "x": 18,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "vestibule_shaft",
+        "targetSpawnId": "from_vault",
+        "requirement": "none"
+      }
+    ],
+    "enemies": [],
+    "pickups": [
+      { "id": "ability-phase-dash", "type": "phaseDash", "x": 382, "y": 226, "requirement": "none" }
+    ]
+  },
+  {
+    "id": "vestibule_causeway",
+    "name": "封锁堤道",
+    "biome": "vestibule",
+    "width": 480,
+    "height": 270,
+    "spawns": [
+      { "id": "from_shaft", "x": 56, "y": 238 },
+      { "id": "from_intake", "x": 408, "y": 238 }
+    ],
+    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
+    "hazards": [],
+    "exits": [
+      {
+        "id": "to_shaft",
+        "x": 18,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "vestibule_shaft",
+        "targetSpawnId": "from_causeway",
+        "requirement": "none"
+      },
+      {
+        "id": "to_intake",
+        "x": 438,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "bioforge_intake",
+        "targetSpawnId": "from_causeway",
+        "requirement": "phaseDash"
+      }
+    ],
+    "enemies": [],
+    "pickups": []
+  },
+  {
+    "id": "bioforge_intake",
+    "name": "孢流入口",
+    "biome": "bioforge",
+    "width": 480,
+    "height": 270,
+    "spawns": [
+      { "id": "from_causeway", "x": 56, "y": 238 },
+      { "id": "from_pump", "x": 408, "y": 238 }
+    ],
+    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
+    "hazards": [],
+    "exits": [
+      {
+        "id": "to_causeway",
+        "x": 18,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "vestibule_causeway",
+        "targetSpawnId": "from_intake",
+        "requirement": "none"
+      },
+      {
+        "id": "to_pump",
+        "x": 438,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "bioforge_pump",
+        "targetSpawnId": "from_intake",
+        "requirement": "none"
+      }
+    ],
+    "enemies": [],
+    "pickups": [],
+    "checkpoint": { "id": "terminal-intake", "x": 98, "y": 222 }
+  },
+  {
+    "id": "bioforge_pump",
+    "name": "脉冲泵室",
+    "biome": "bioforge",
+    "width": 480,
+    "height": 270,
+    "spawns": [
+      { "id": "from_intake", "x": 56, "y": 238 },
+      { "id": "from_lattice", "x": 408, "y": 238 }
+    ],
+    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
+    "hazards": [],
+    "exits": [
+      {
+        "id": "to_intake",
+        "x": 18,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "bioforge_intake",
+        "targetSpawnId": "from_pump",
+        "requirement": "none"
+      },
+      {
+        "id": "to_lattice",
+        "x": 438,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "bioforge_lattice",
+        "targetSpawnId": "from_pump",
+        "requirement": "none"
+      }
+    ],
+    "enemies": [],
+    "pickups": []
+  },
+  {
+    "id": "bioforge_lattice",
+    "name": "淹没晶格",
+    "biome": "bioforge",
+    "width": 480,
+    "height": 270,
+    "spawns": [
+      { "id": "from_pump", "x": 56, "y": 238 },
+      { "id": "from_nursery", "x": 408, "y": 238 }
+    ],
+    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
+    "hazards": [],
+    "exits": [
+      {
+        "id": "to_pump",
+        "x": 18,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "bioforge_pump",
+        "targetSpawnId": "from_lattice",
+        "requirement": "none"
+      },
+      {
+        "id": "to_nursery",
+        "x": 438,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "bioforge_nursery",
+        "targetSpawnId": "from_lattice",
+        "requirement": "none"
+      }
+    ],
+    "enemies": [],
+    "pickups": [
+      {
+        "id": "health-lattice",
+        "type": "healthCell",
+        "x": 238,
+        "y": 152,
+        "requirement": "phaseDash"
+      }
+    ]
+  },
+  {
+    "id": "bioforge_nursery",
+    "name": "静默育床",
+    "biome": "bioforge",
+    "width": 480,
+    "height": 270,
+    "spawns": [
+      { "id": "from_lattice", "x": 56, "y": 238 },
+      { "id": "from_cradle", "x": 408, "y": 238 }
+    ],
+    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
+    "hazards": [],
+    "exits": [
+      {
+        "id": "to_lattice",
+        "x": 18,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "bioforge_lattice",
+        "targetSpawnId": "from_nursery",
+        "requirement": "none"
+      },
+      {
+        "id": "to_cradle",
+        "x": 438,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "bioforge_cradle",
+        "targetSpawnId": "from_nursery",
+        "requirement": "none"
+      }
+    ],
+    "enemies": [],
+    "pickups": [
+      {
+        "id": "lore-nursery",
+        "type": "lore",
+        "x": 250,
+        "y": 232,
+        "requirement": "none",
+        "text": "记录 02：菌晶不是入侵者。核心把它们塑造成了自己的神经。"
+      }
+    ]
+  },
+  {
+    "id": "bioforge_cradle",
+    "name": "磁巢",
+    "biome": "bioforge",
+    "width": 480,
+    "height": 270,
+    "spawns": [
+      { "id": "from_nursery", "x": 56, "y": 238 },
+      { "id": "from_spire", "x": 408, "y": 238 }
+    ],
+    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
+    "hazards": [],
+    "exits": [
+      {
+        "id": "to_nursery",
+        "x": 18,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "bioforge_nursery",
+        "targetSpawnId": "from_cradle",
+        "requirement": "none"
+      },
+      {
+        "id": "to_spire",
+        "x": 438,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "bioforge_spire",
+        "targetSpawnId": "from_cradle",
+        "requirement": "magneticGrip"
+      }
+    ],
+    "enemies": [],
+    "pickups": [
+      {
+        "id": "ability-magnetic-grip",
+        "type": "magneticGrip",
+        "x": 372,
+        "y": 226,
+        "requirement": "none"
+      }
+    ]
+  },
+  {
+    "id": "bioforge_spire",
+    "name": "垂直花塔",
+    "biome": "bioforge",
+    "width": 480,
+    "height": 270,
+    "spawns": [
+      { "id": "from_cradle", "x": 56, "y": 238 },
+      { "id": "from_shaft", "x": 230, "y": 238 },
+      { "id": "from_reactor", "x": 408, "y": 238 }
+    ],
+    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
+    "hazards": [],
+    "exits": [
+      {
+        "id": "to_cradle",
+        "x": 18,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "bioforge_cradle",
+        "targetSpawnId": "from_spire",
+        "requirement": "none"
+      },
+      {
+        "id": "to_shaft",
+        "x": 218,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "vestibule_shaft",
+        "targetSpawnId": "from_spire",
+        "requirement": "magneticGrip"
+      },
+      {
+        "id": "to_reactor",
+        "x": 438,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "reactor_antechamber",
+        "targetSpawnId": "from_spire",
+        "requirement": "magneticGrip"
+      }
+    ],
+    "enemies": [],
+    "pickups": []
+  },
+  {
+    "id": "reactor_antechamber",
+    "name": "零点前室",
+    "biome": "reactor",
+    "width": 480,
+    "height": 270,
+    "spawns": [
+      { "id": "from_spire", "x": 56, "y": 238 },
+      { "id": "from_conduit", "x": 408, "y": 238 }
+    ],
+    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
+    "hazards": [],
+    "exits": [
+      {
+        "id": "to_spire",
+        "x": 18,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "bioforge_spire",
+        "targetSpawnId": "from_reactor",
+        "requirement": "none"
+      },
+      {
+        "id": "to_conduit",
+        "x": 438,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "reactor_conduit",
+        "targetSpawnId": "from_antechamber",
+        "requirement": "none"
+      }
+    ],
+    "enemies": [],
+    "pickups": [],
+    "checkpoint": { "id": "terminal-reactor", "x": 98, "y": 222 }
+  },
+  {
+    "id": "reactor_conduit",
+    "name": "相移导管",
+    "biome": "reactor",
+    "width": 480,
+    "height": 270,
+    "spawns": [
+      { "id": "from_antechamber", "x": 56, "y": 238 },
+      { "id": "from_coreway", "x": 408, "y": 238 }
+    ],
+    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
+    "hazards": [],
+    "exits": [
+      {
+        "id": "to_antechamber",
+        "x": 18,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "reactor_antechamber",
+        "targetSpawnId": "from_conduit",
+        "requirement": "none"
+      },
+      {
+        "id": "to_coreway",
+        "x": 438,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "reactor_coreway",
+        "targetSpawnId": "from_conduit",
+        "requirement": "phaseDash"
+      }
+    ],
+    "enemies": [],
+    "pickups": []
+  },
+  {
+    "id": "reactor_coreway",
+    "name": "核心回廊",
+    "biome": "reactor",
+    "width": 480,
+    "height": 270,
+    "spawns": [
+      { "id": "from_conduit", "x": 56, "y": 238 },
+      { "id": "from_threshold", "x": 408, "y": 238 }
+    ],
+    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
+    "hazards": [],
+    "exits": [
+      {
+        "id": "to_conduit",
+        "x": 18,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "reactor_conduit",
+        "targetSpawnId": "from_coreway",
+        "requirement": "none"
+      },
+      {
+        "id": "to_threshold",
+        "x": 438,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "reactor_threshold",
+        "targetSpawnId": "from_coreway",
+        "requirement": "magneticGrip"
+      }
+    ],
+    "enemies": [],
+    "pickups": [
+      {
+        "id": "lore-core",
+        "type": "lore",
+        "x": 246,
+        "y": 232,
+        "requirement": "none",
+        "text": "记录 03：它不是在求救。它在确认宇宙中是否还有人会回答。"
+      }
+    ]
+  },
+  {
+    "id": "reactor_threshold",
+    "name": "静滞门槛",
+    "biome": "reactor",
+    "width": 480,
+    "height": 270,
+    "spawns": [
+      { "id": "from_coreway", "x": 56, "y": 238 },
+      { "id": "from_boss", "x": 408, "y": 238 }
+    ],
+    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
+    "hazards": [],
+    "exits": [
+      {
+        "id": "to_coreway",
+        "x": 18,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "reactor_coreway",
+        "targetSpawnId": "from_threshold",
+        "requirement": "none"
+      },
+      {
+        "id": "to_boss",
+        "x": 438,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "core_guardian",
+        "targetSpawnId": "from_threshold",
+        "requirement": "none"
+      }
+    ],
+    "enemies": [],
+    "pickups": []
+  },
+  {
+    "id": "core_guardian",
+    "name": "零点核心",
+    "biome": "reactor",
+    "width": 480,
+    "height": 270,
+    "spawns": [{ "id": "from_threshold", "x": 56, "y": 238 }],
+    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
+    "hazards": [],
+    "exits": [
+      {
+        "id": "to_threshold",
+        "x": 18,
+        "y": 210,
+        "width": 24,
+        "height": 44,
+        "targetRoomId": "reactor_threshold",
+        "targetSpawnId": "from_boss",
+        "requirement": "none"
+      }
+    ],
+    "enemies": [],
+    "pickups": []
+  }
+]
