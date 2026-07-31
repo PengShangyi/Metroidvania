@@ -17,7 +17,7 @@ export class RoomRuntime {
   private readonly repository: RoomRepository;
   private readonly session: GameSessionState;
   private room!: RoomDefinition;
-  private platforms!: Phaser.Physics.Arcade.StaticGroup;
+  private platforms?: Phaser.Physics.Arcade.StaticGroup;
   private collider?: Phaser.Physics.Arcade.Collider;
   private roomObjects: Phaser.GameObjects.GameObject[] = [];
   private pickupObjects = new Map<string, Phaser.GameObjects.Image>();
@@ -46,9 +46,10 @@ export class RoomRuntime {
     if (!spawn) throw new Error(`房间 ${roomId} 没有有效生成点`);
 
     this.drawBackground(this.room);
-    this.platforms = this.scene.physics.add.staticGroup();
+    const platforms = this.scene.physics.add.staticGroup();
+    this.platforms = platforms;
     for (const definition of this.room.platforms) {
-      const platform = this.platforms
+      const platform = platforms
         .create(definition.x + definition.width / 2, definition.y + definition.height / 2, 'pixel')
         .setDisplaySize(definition.width, definition.height)
         .setTint(this.platformColor(this.room));
@@ -74,7 +75,7 @@ export class RoomRuntime {
       }
       platform.refreshBody();
     }
-    this.collider = this.scene.physics.add.collider(player, this.platforms);
+    this.collider = this.scene.physics.add.collider(player, platforms);
     player.setPosition(spawn.x, spawn.y).setVelocity(0, 0).setAcceleration(0, 0);
     player.resetTraversalState();
     this.safePosition.set(spawn.x, spawn.y);
@@ -155,6 +156,7 @@ export class RoomRuntime {
   }
 
   public get collisionPlatforms(): Phaser.Physics.Arcade.StaticGroup {
+    if (!this.platforms) throw new Error('房间碰撞层尚未初始化');
     return this.platforms;
   }
 
@@ -369,7 +371,13 @@ export class RoomRuntime {
 
   private clearRoom(): void {
     this.collider?.destroy();
-    this.platforms?.clear(true, true);
+    this.collider = undefined;
+    const platforms = this.platforms;
+    this.platforms = undefined;
+    if (platforms?.children) {
+      platforms.clear(true, true);
+      platforms.destroy();
+    }
     for (const object of this.roomObjects) {
       this.scene.tweens.killTweensOf(object);
       object.destroy();

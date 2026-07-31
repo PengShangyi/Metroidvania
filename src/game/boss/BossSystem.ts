@@ -115,7 +115,7 @@ export class BossSystem {
     this.contactCollider = undefined;
     this.boss?.destroy();
     this.boss = undefined;
-    this.projectiles.clear(true, true);
+    if (this.projectiles.children) this.projectiles.clear(true, true);
     for (const effect of this.effects) effect.destroy();
     this.effects.clear();
     this.activeBeam = undefined;
@@ -126,7 +126,7 @@ export class BossSystem {
   public destroy(): void {
     this.clear();
     this.projectileCollider?.destroy();
-    this.projectiles.destroy(true);
+    if (this.projectiles.children) this.projectiles.destroy(true);
   }
 
   private beginAttack(attack: BossAttack): void {
@@ -264,7 +264,7 @@ export class BossSystem {
     boss.disableBody(true, true);
     this.generation += 1;
     this.boss = undefined;
-    this.projectiles.clear(true, true);
+    if (this.projectiles.children) this.projectiles.clear(true, true);
     for (const effect of this.effects) effect.destroy();
     this.effects.clear();
     this.activeBeam = undefined;

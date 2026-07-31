@@ -90,9 +90,9 @@ export class EnemySystem {
   public clear(): void {
     this.platformCollider?.destroy();
     this.projectileCollider?.destroy();
-    this.enemies.clear(true, true);
-    this.hostileProjectiles.clear(true, true);
-    this.repairDrops.clear(true, true);
+    if (this.enemies.children) this.enemies.clear(true, true);
+    if (this.hostileProjectiles.children) this.hostileProjectiles.clear(true, true);
+    if (this.repairDrops.children) this.repairDrops.clear(true, true);
   }
 
   public destroy(): void {
@@ -100,9 +100,9 @@ export class EnemySystem {
     this.contactCollider?.destroy();
     this.hostileCollider?.destroy();
     this.dropCollider?.destroy();
-    this.enemies.destroy(true);
-    this.hostileProjectiles.destroy(true);
-    this.repairDrops.destroy(true);
+    if (this.enemies.children) this.enemies.destroy(true);
+    if (this.hostileProjectiles.children) this.hostileProjectiles.destroy(true);
+    if (this.repairDrops.children) this.repairDrops.destroy(true);
   }
 
   private updateEnemy(enemy: EnemySprite, now: number, delta: number): void {

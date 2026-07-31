@@ -13,12 +13,21 @@ export default defineConfig({
     viewport: { width: 960, height: 540 },
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'], viewport: { width: 960, height: 540 } },
+    },
+    {
+      name: 'firefox',
+      use: { ...devices['Desktop Firefox'], viewport: { width: 960, height: 540 } },
+    },
+    {
+      name: 'webkit',
+      use: { ...devices['Desktop Safari'], viewport: { width: 960, height: 540 } },
+    },
   ],
   webServer: {
-    command: 'pnpm preview --host 127.0.0.1',
+    command: 'pnpm build:test && pnpm preview --host 127.0.0.1',
     url: 'http://127.0.0.1:4173',
     reuseExistingServer: !process.env.CI,
   },

@@ -5,6 +5,12 @@ import './style.css';
 
 const game = new Phaser.Game(createGameConfig());
 
+if (import.meta.env.MODE === 'test') {
+  void import('./game/testing/installTestBridge').then(({ installTestBridge }) =>
+    installTestBridge(game),
+  );
+}
+
 window.addEventListener('beforeunload', () => game.destroy(true));
 
 function showRuntimeError(message: string): void {

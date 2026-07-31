@@ -30,6 +30,10 @@ describe('save service', () => {
     session.currentRoomId = 'bioforge_intake';
     session.checkpointRoomId = 'bioforge_intake';
     session.abilities.phaseDash = true;
+    session.abilities.magneticGrip = true;
+    session.collectedPickups.add('ability-phase-dash');
+    session.collectedPickups.add('ability-magnetic-grip');
+    session.bossDefeated = true;
     session.visitedRooms.add('vestibule_gallery');
 
     expect(service.write(session)).toBe(true);
@@ -37,7 +41,10 @@ describe('save service', () => {
     expect(result.status).toBe('valid');
     if (result.status === 'valid') {
       expect(result.session.abilities.phaseDash).toBe(true);
+      expect(result.session.abilities.magneticGrip).toBe(true);
       expect(result.session.visitedRooms.has('vestibule_gallery')).toBe(true);
+      expect(result.session.collectedPickups.has('ability-magnetic-grip')).toBe(true);
+      expect(result.session.bossDefeated).toBe(true);
     }
   });
 

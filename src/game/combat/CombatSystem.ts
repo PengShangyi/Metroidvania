@@ -104,13 +104,13 @@ export class CombatSystem {
   }
 
   public clearTransient(): void {
-    this.projectiles.clear(true, true);
+    if (this.projectiles.children) this.projectiles.clear(true, true);
     this.meleeBounds = undefined;
   }
 
   public destroy(): void {
     this.worldCollider?.destroy();
-    this.projectiles.destroy(true);
+    if (this.projectiles.children) this.projectiles.destroy(true);
   }
 
   private fireBlaster(now: number): void {
