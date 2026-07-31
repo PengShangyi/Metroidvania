@@ -29,6 +29,7 @@ export class EnemySprite extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this);
     this.setDepth(4);
     this.configureBody();
+    if (this.enemyType === 'spore') this.play('spore-pulse');
   }
 
   private configureBody(): void {

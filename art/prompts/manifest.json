@@ -55,7 +55,14 @@
       "prompt": "Alien bioforge chamber where crystal mycelium grows through industrial pipes, indigo shadows, muted spore green and restrained magenta glow, side-view 2D platform game background, layered depth, pixel-art texture.",
       "backdrop": "cavernous biotech facility",
       "constraints": "wide 16:9 composition, no foreground platforms, no characters, no text, no logos, no watermark",
-      "status": "planned"
+      "status": "selected",
+      "source": "art/source/bioforge-background.png",
+      "outputs": [
+        "public/assets/backgrounds/bioforge.webp",
+        "public/assets/sprites/spore-atlas.png",
+        "public/assets/tiles/bioforge-tile.png"
+      ],
+      "processing": "Sharp 480x270 nearest-neighbour cover crop; deterministic four-frame spore atlas and seamless 16px tile assembled from the selected environment and enemy anchors"
     },
     {
       "id": "reactor-background",

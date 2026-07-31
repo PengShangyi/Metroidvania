@@ -10,6 +10,7 @@ const publicAssets = fileURLToPath(new URL('../public/assets/', import.meta.url)
 
 const required = [
   `${source}vestibule-background.png`,
+  `${source}bioforge-background.png`,
   `${prepared}iya-cutout.png`,
   `${prepared}enemy-cutout.png`,
 ];
@@ -34,6 +35,10 @@ await Promise.all([
     .resize(480, 270, { fit: 'cover', position: 'centre', kernel: sharp.kernel.nearest })
     .webp({ quality: 84, smartSubsample: false, effort: 6 })
     .toFile(`${publicAssets}backgrounds/vestibule.webp`),
+  sharp(`${source}bioforge-background.png`)
+    .resize(480, 270, { fit: 'cover', position: 'centre', kernel: sharp.kernel.nearest })
+    .webp({ quality: 84, smartSubsample: false, effort: 6 })
+    .toFile(`${publicAssets}backgrounds/bioforge.webp`),
   sharp(`${prepared}iya-cutout.png`)
     .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .resize({ height: 384, kernel: sharp.kernel.nearest, withoutEnlargement: true })
@@ -48,6 +53,7 @@ await Promise.all([
 
 const expectations = new Map([
   [`${publicAssets}backgrounds/vestibule.webp`, [480, 270]],
+  [`${publicAssets}backgrounds/bioforge.webp`, [480, 270]],
   [`${publicAssets}sprites/iya-portrait.png`, [undefined, 384]],
   [`${publicAssets}sprites/enemy-lineup.png`, [768, undefined]],
 ]);
@@ -62,4 +68,4 @@ for (const [file, [expectedWidth, expectedHeight]] of expectations) {
   }
 }
 
-console.log('Processed ImageGen sources into three optimized runtime assets.');
+console.log('Processed ImageGen sources into four optimized runtime assets.');

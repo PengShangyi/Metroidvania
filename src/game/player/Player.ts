@@ -37,6 +37,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this);
 
     this.setOrigin(0.5, 1);
+    this.setDepth(6);
     this.setCollideWorldBounds(true);
     this.setDragX(MOVEMENT.deceleration);
     this.setMaxVelocity(MOVEMENT.speed, MOVEMENT.maxFallSpeed);

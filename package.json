@@ -20,6 +20,7 @@
     "test:e2e": "playwright test",
     "art:process": "node scripts/process-art.mjs",
     "art:atlas": "node scripts/generate-sprite-atlas.mjs",
+    "art:bioforge": "node scripts/generate-bioforge-atlas.mjs",
     "assets:validate": "node scripts/validate-assets.mjs",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },

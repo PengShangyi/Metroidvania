@@ -51,6 +51,20 @@ export class RoomRuntime {
         .create(definition.x + definition.width / 2, definition.y + definition.height / 2, 'pixel')
         .setDisplaySize(definition.width, definition.height)
         .setTint(this.platformColor(this.room));
+      if (this.room.biome === 'bioforge' && this.scene.textures.exists('bioforge-tile')) {
+        platform.setVisible(false);
+        this.roomObjects.push(
+          this.scene.add
+            .tileSprite(
+              definition.x + definition.width / 2,
+              definition.y + definition.height / 2,
+              definition.width,
+              definition.height,
+              'bioforge-tile',
+            )
+            .setDepth(1),
+        );
+      }
       platform.refreshBody();
     }
     this.collider = this.scene.physics.add.collider(player, this.platforms);
@@ -163,19 +177,25 @@ export class RoomRuntime {
           : { base: 0x030712, haze: 0x102c42, light: COLORS.cyan };
     this.scene.cameras.main.setBackgroundColor(palette.base);
 
-    if (room.biome === 'vestibule' && this.scene.textures.exists('vestibule-bg')) {
+    const backgroundKey =
+      room.biome === 'vestibule'
+        ? 'vestibule-bg'
+        : room.biome === 'bioforge'
+          ? 'bioforge-bg'
+          : undefined;
+    if (backgroundKey && this.scene.textures.exists(backgroundKey)) {
       const background = this.scene.add
-        .image(0, 0, 'vestibule-bg')
+        .image(0, 0, backgroundKey)
         .setOrigin(0)
         .setDisplaySize(room.width, room.height)
-        .setAlpha(0.56)
+        .setAlpha(room.biome === 'bioforge' ? 0.5 : 0.56)
         .setDepth(-12);
       this.roomObjects.push(background);
     }
 
     const graphics = this.scene.add.graphics().setDepth(-10);
     graphics
-      .fillStyle(palette.haze, room.biome === 'vestibule' ? 0.3 : 0.55)
+      .fillStyle(palette.haze, room.biome === 'reactor' ? 0.55 : 0.3)
       .fillRect(0, 0, room.width, room.height);
     graphics.lineStyle(2, palette.light, 0.12);
     for (let x = 24; x < room.width; x += 64) graphics.strokeRect(x, 18, 30, 208);

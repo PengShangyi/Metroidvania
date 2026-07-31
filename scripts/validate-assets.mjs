@@ -25,10 +25,23 @@ let totalBytes = 0;
 for (const file of files) {
   const fileStat = await stat(file);
   const metadata = await sharp(file).metadata();
+  const assetPath = relative(root, file);
   totalBytes += fileStat.size;
   if (!metadata.width || !metadata.height) throw new Error(`无法读取图像尺寸：${file}`);
   if (metadata.width > 4096 || metadata.height > 4096) {
-    throw new Error(`资源尺寸超过 4096px：${relative(root, file)}`);
+    throw new Error(`资源尺寸超过 4096px：${assetPath}`);
+  }
+  if (assetPath === 'tiles/bioforge-tile.png') {
+    if (metadata.width !== 16 || metadata.height !== 16) {
+      throw new Error('生化区瓦片必须为 16×16px');
+    }
+    await assertSeamlessTile(file);
+  }
+  if (
+    assetPath === 'sprites/spore-atlas.png' &&
+    (metadata.width !== 88 || metadata.height !== 22)
+  ) {
+    throw new Error('孢子跃兽图集必须为四帧 22×22px');
   }
 }
 
@@ -37,3 +50,18 @@ if (totalBytes > budgetBytes) {
 }
 
 console.log(`Validated ${files.length} image assets (${(totalBytes / 1024 / 1024).toFixed(2)}MB).`);
+
+async function assertSeamlessTile(file) {
+  const { data, info } = await sharp(file)
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const pixel = (x, y) => {
+    const offset = (y * info.width + x) * info.channels;
+    return data.subarray(offset, offset + info.channels);
+  };
+  for (let index = 0; index < 16; index += 1) {
+    if (!pixel(0, index).equals(pixel(15, index))) throw new Error('生化区瓦片左右接缝不一致');
+    if (!pixel(index, 0).equals(pixel(index, 15))) throw new Error('生化区瓦片上下接缝不一致');
+  }
+}
