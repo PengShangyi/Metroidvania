@@ -8,7 +8,6 @@ import { InputController } from '../input/InputController';
 import { Player } from '../player/Player';
 import { createBrowserSaveService, type SaveService } from '../save/SaveService';
 import type { GameSessionState } from '../state/GameSession';
-import { bindFullscreenKey } from '../ui/fullscreen';
 import { RoomRepository } from '../world/RoomRepository';
 import { RoomRuntime } from '../world/RoomRuntime';
 import type { ExitDefinition } from '../world/types';
@@ -33,7 +32,6 @@ export class PlayScene extends Phaser.Scene {
     this.session = this.registry.get(REGISTRY_KEYS.session) as GameSessionState;
     this.cameras.main.setBackgroundColor(COLORS.void);
     this.scene.launch('hud');
-    bindFullscreenKey(this);
 
     this.controls = new InputController(this);
     this.saveService = createBrowserSaveService();
@@ -72,6 +70,14 @@ export class PlayScene extends Phaser.Scene {
       }
     }
     this.session.elapsedMs += delta;
+  }
+
+  public clearInput(): void {
+    this.controls.clear();
+  }
+
+  public returnToTitle(): void {
+    this.scene.start('title');
   }
 
   private loadRoom(roomId: string, spawnId: string): void {

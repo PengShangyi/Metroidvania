@@ -18,4 +18,5 @@ export const REGISTRY_KEYS = {
   runtimeMessage: 'star-echo.runtime-message',
   bossHealth: 'star-echo.boss-health',
   bossPhase: 'star-echo.boss-phase',
+  uiMode: 'star-echo.ui-mode',
 } as const;
