@@ -6,6 +6,7 @@ import { EndingScene } from './scenes/EndingScene';
 import { HudScene } from './scenes/HudScene';
 import { PlayScene } from './scenes/PlayScene';
 import { TitleScene } from './scenes/TitleScene';
+import { TutorialScene } from './scenes/TutorialScene';
 
 export function createGameConfig(): Phaser.Types.Core.GameConfig {
   return {
@@ -39,6 +40,6 @@ export function createGameConfig(): Phaser.Types.Core.GameConfig {
       pixelArt: true,
       roundPixels: true,
     },
-    scene: [BootScene, TitleScene, PlayScene, HudScene, EndingScene],
+    scene: [BootScene, TitleScene, TutorialScene, PlayScene, HudScene, EndingScene],
   };
 }

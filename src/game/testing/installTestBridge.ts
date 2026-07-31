@@ -57,7 +57,8 @@ function snapshot(game: Phaser.Game): TestSnapshot {
   const session = game.registry.get(REGISTRY_KEYS.session) as GameSessionState;
   const active = game.scene.getScenes(true).map((scene) => scene.scene.key);
   const scene =
-    ['ending', 'play', 'title', 'boot'].find((key) => active.includes(key)) ?? 'unknown';
+    ['ending', 'tutorial', 'play', 'title', 'boot'].find((key) => active.includes(key)) ??
+    'unknown';
   return {
     scene,
     roomId: session.currentRoomId,

@@ -58,7 +58,7 @@ test('starts a new game and opens map, pause, settings and controls', async ({ p
   const errors = await openGame(page);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
 
-  await page.mouse.click(480, 320);
+  await page.mouse.click(480, 272);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('play');
   await expect.poll(async () => (await snapshot(page)).roomId).toBe('vestibule_dock');
   await page.keyboard.press('Tab');
@@ -109,7 +109,7 @@ test('restores a valid save and safely replaces a corrupt save', async ({ page }
   await page.reload();
   await page.waitForFunction(() => Boolean((window as unknown as TestWindow).__STAR_ECHO_TEST__));
   await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
-  await page.mouse.click(480, 256);
+  await page.mouse.click(480, 208);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('play');
   await expect.poll(async () => (await snapshot(page)).roomId).toBe('bioforge_intake');
   expect((await snapshot(page)).abilities.phaseDash).toBe(true);
@@ -118,9 +118,20 @@ test('restores a valid save and safely replaces a corrupt save', async ({ page }
   await page.reload();
   await page.waitForFunction(() => Boolean((window as unknown as TestWindow).__STAR_ECHO_TEST__));
   await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
-  await page.mouse.click(480, 320);
+  await page.mouse.click(480, 272);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('play');
   await expect.poll(async () => (await snapshot(page)).roomId).toBe('vestibule_dock');
+  expect(errors).toEqual([]);
+});
+
+test('opens the playable tutorial and safely returns to the title', async ({ page }) => {
+  const errors = await openGame(page);
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
+
+  await page.keyboard.press('t');
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('tutorial');
+  await page.keyboard.press('Escape');
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
   expect(errors).toEqual([]);
 });
 

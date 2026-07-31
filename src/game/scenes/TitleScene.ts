@@ -28,16 +28,17 @@ export class TitleScene extends Phaser.Scene {
     this.saveService = createBrowserSaveService();
     this.readResult = this.saveService.read();
 
-    this.add.text(240, 52, '星骸回声', titleTextStyle()).setOrigin(0.5);
-    this.add.text(240, 78, 'STAR ECHO // v0.1.0', bodyTextStyle('#7184a8')).setOrigin(0.5);
+    this.add.text(240, 38, '星骸回声', titleTextStyle()).setOrigin(0.5);
+    this.add.text(240, 68, 'STAR ECHO // v0.1.0', bodyTextStyle('#8da1c8')).setOrigin(0.5);
 
     const hasSave = this.readResult.status === 'valid';
-    const continueButton = this.createMenuButton(128, '继续任务', hasSave, () =>
+    const continueButton = this.createMenuButton(104, '继续任务', hasSave, () =>
       this.continueGame(),
     );
-    const newButton = this.createMenuButton(160, '新建任务', true, () =>
+    const newButton = this.createMenuButton(136, '新建任务', true, () =>
       this.startNewGame(newButton),
     );
+    this.createMenuButton(168, '新手训练', true, () => this.scene.start('tutorial'));
 
     if (hasSave) {
       this.input.keyboard?.once('keydown-ENTER', () => this.continueGame());
@@ -48,11 +49,12 @@ export class TitleScene extends Phaser.Scene {
     }
 
     this.add
-      .text(240, 205, this.saveStatusText(), bodyTextStyle(this.saveStatusColor()))
+      .text(240, 216, this.saveStatusText(), bodyTextStyle(this.saveStatusColor()))
       .setOrigin(0.5);
     this.add
-      .text(240, 224, '鼠标选择 · ENTER 快速开始 · F 全屏', bodyTextStyle('#7184a8'))
+      .text(240, 240, '鼠标选择 · ENTER 快速开始 · T 新手训练 · F 全屏', bodyTextStyle('#8da1c8'))
       .setOrigin(0.5);
+    this.input.keyboard?.once('keydown-T', () => this.scene.start('tutorial'));
   }
 
   private createMenuButton(
