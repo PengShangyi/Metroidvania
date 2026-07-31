@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import { CombatSystem } from '../combat/CombatSystem';
 import { COLORS, REGISTRY_KEYS } from '../constants';
+import { EnemySystem } from '../enemies/EnemySystem';
 import { InputController } from '../input/InputController';
 import { Player } from '../player/Player';
 import type { GameSessionState } from '../state/GameSession';
@@ -17,6 +18,7 @@ export class PlayScene extends Phaser.Scene {
   private rooms!: RoomRepository;
   private roomRuntime!: RoomRuntime;
   private combat!: CombatSystem;
+  private enemySystem!: EnemySystem;
   private transitioning = false;
 
   public constructor() {
@@ -34,12 +36,14 @@ export class PlayScene extends Phaser.Scene {
     this.player = new Player(this, 0, 0);
     this.roomRuntime = new RoomRuntime(this, this.rooms, this.session);
     this.combat = new CombatSystem(this, this.player, this.session, () => this.respawn());
+    this.enemySystem = new EnemySystem(this, this.player, this.combat);
     this.loadRoom(this.session.currentRoomId, this.session.checkpointSpawnId);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.controls.destroy();
       this.roomRuntime.destroy();
       this.combat.destroy();
+      this.enemySystem.destroy();
       this.scene.stop('hud');
     });
   }
@@ -49,7 +53,8 @@ export class PlayScene extends Phaser.Scene {
     if (!this.transitioning) {
       this.player.updateMovement(delta, input);
       this.roomRuntime.update(this.player, input, (exit) => this.transition(exit));
-      this.combat.update(input);
+      const attack = this.combat.update(input);
+      this.enemySystem.update(delta, attack);
       if (this.roomRuntime.isTouchingHazard(this.player)) {
         if (this.combat.damagePlayer(1)) this.roomRuntime.returnPlayerToSafety(this.player);
       }
@@ -62,6 +67,7 @@ export class PlayScene extends Phaser.Scene {
     this.session.visitedRooms.add(roomId);
     this.roomRuntime.load(roomId, spawnId, this.player);
     this.combat.bindWorld(this.roomRuntime.collisionPlatforms);
+    this.enemySystem.load(this.roomRuntime.definition.enemies, this.roomRuntime.collisionPlatforms);
     this.cameras.main.setBounds(0, 0, 480, 270);
     this.physics.world.setBounds(0, 0, 480, 270);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
@@ -71,6 +77,7 @@ export class PlayScene extends Phaser.Scene {
     if (this.transitioning) return;
     this.transitioning = true;
     this.combat.clearTransient();
+    this.enemySystem.clear();
     this.player.setVelocity(0, 0).setAcceleration(0, 0);
     (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
     this.cameras.main.fadeOut(140, 7, 11, 24);
@@ -88,6 +95,7 @@ export class PlayScene extends Phaser.Scene {
     if (this.transitioning) return;
     this.transitioning = true;
     this.combat.clearTransient();
+    this.enemySystem.clear();
     this.player.setVelocity(0, 0).setAcceleration(0, 0);
     (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
     this.cameras.main.fadeOut(220, 255, 86, 120);

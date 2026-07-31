@@ -122,6 +122,10 @@ export class RoomRuntime {
     return this.platforms;
   }
 
+  public get definition(): RoomDefinition {
+    return this.room;
+  }
+
   public isTouchingHazard(player: Player): boolean {
     const playerBounds = player.getBounds();
     return this.room.hazards.some((hazard) =>

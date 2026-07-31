@@ -88,6 +88,17 @@ export class CombatSystem {
     return true;
   }
 
+  public healPlayer(amount: number): void {
+    this.session.health = Math.min(
+      this.session.maxHealth,
+      this.session.health + Math.max(0, amount),
+    );
+  }
+
+  public get projectileGroup(): Phaser.Physics.Arcade.Group {
+    return this.projectiles;
+  }
+
   public clearTransient(): void {
     this.projectiles.clear(true, true);
     this.meleeBounds = undefined;

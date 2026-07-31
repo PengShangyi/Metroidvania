@@ -70,7 +70,7 @@
         "requirement": "none"
       }
     ],
-    "enemies": [],
+    "enemies": [{ "id": "crawler-gallery", "type": "crawler", "x": 286, "y": 236 }],
     "pickups": []
   },
   {
@@ -146,7 +146,7 @@
         "requirement": "magneticGrip"
       }
     ],
-    "enemies": [],
+    "enemies": [{ "id": "sentry-shaft", "type": "sentry", "x": 356, "y": 92 }],
     "pickups": []
   },
   {
@@ -175,7 +175,7 @@
         "requirement": "none"
       }
     ],
-    "enemies": [],
+    "enemies": [{ "id": "turret-depot", "type": "turret", "x": 286, "y": 242 }],
     "pickups": [
       {
         "id": "lore-survey",
@@ -220,7 +220,10 @@
         "requirement": "none"
       }
     ],
-    "enemies": [],
+    "enemies": [
+      { "id": "crawler-vault", "type": "crawler", "x": 330, "y": 236 },
+      { "id": "sentry-vault", "type": "sentry", "x": 240, "y": 132 }
+    ],
     "pickups": [
       { "id": "ability-phase-dash", "type": "phaseDash", "x": 382, "y": 226, "requirement": "none" }
     ]
@@ -267,7 +270,10 @@
         "requirement": "phaseDash"
       }
     ],
-    "enemies": [],
+    "enemies": [
+      { "id": "turret-causeway", "type": "turret", "x": 242, "y": 166 },
+      { "id": "crawler-causeway", "type": "crawler", "x": 352, "y": 236 }
+    ],
     "pickups": []
   },
   {
