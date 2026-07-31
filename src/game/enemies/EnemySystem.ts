@@ -1,13 +1,21 @@
 import Phaser from 'phaser';
 
 import type { AttackFrame, CombatSystem } from '../combat/CombatSystem';
+import { COMBAT_EVENTS, type ShieldCoreHitEvent, type ShieldOpenedEvent } from '../combat/events';
 import { hitReaction, projectileImpactKind, type HitImpactKind } from '../combat/feedbackRules';
+import { configureProjectileMetadata, getProjectileMetadata } from '../combat/projectileMetadata';
 import type { Player } from '../player/Player';
 import { activateArcadeImage, releaseArcadeGroup, releaseArcadeImage } from '../render/arcadePool';
 import type { EnemySpawn } from '../world/types';
-import { configureProjectileMetadata, getProjectileMetadata } from '../combat/projectileMetadata';
 import { sporeLeapVelocity } from './aiMath';
 import { EnemySprite } from './EnemySprite';
+import {
+  dashCrossingSide,
+  SHIELD_CRAWLER,
+  shieldCanTakeDamage,
+  shieldClosingSoon,
+  type HorizontalSide,
+} from './shieldRules';
 
 export class EnemySystem {
   private readonly scene: Phaser.Scene;
@@ -22,11 +30,13 @@ export class EnemySystem {
   private contactCollider?: Phaser.Physics.Arcade.Collider;
   private dropCollider?: Phaser.Physics.Arcade.Collider;
   private projectileSerial = 0;
+  private previousPlayerX: number;
 
   public constructor(scene: Phaser.Scene, player: Player, combat: CombatSystem) {
     this.scene = scene;
     this.player = player;
     this.combat = combat;
+    this.previousPlayerX = player.x;
     this.enemies = scene.add.group();
     this.hostileProjectiles = scene.physics.add.group({ allowGravity: false, maxSize: 24 });
     this.repairDrops = scene.physics.add.group({ allowGravity: false, maxSize: 8 });
@@ -54,6 +64,7 @@ export class EnemySystem {
 
   public load(spawns: EnemySpawn[], platforms: Phaser.Physics.Arcade.StaticGroup): void {
     this.clear();
+    this.previousPlayerX = this.player.x;
     for (const spawn of spawns) this.enemies.add(new EnemySprite(this.scene, spawn));
     this.platformCollider = this.scene.physics.add.collider(this.enemies, platforms);
     this.projectileCollider = this.scene.physics.add.collider(
@@ -68,11 +79,18 @@ export class EnemySystem {
     this.enemies.children.each((child) => {
       const enemy = child as EnemySprite;
       if (!enemy.active) return true;
+      this.updateShieldCrawler(enemy, now);
       this.updateEnemy(enemy, now, delta);
       if (attack.meleeBounds && enemy.lastMeleeSerial !== attack.meleeSerial) {
         if (Phaser.Geom.Intersects.RectangleToRectangle(enemy.getBounds(), attack.meleeBounds)) {
           enemy.lastMeleeSerial = attack.meleeSerial;
-          this.damageEnemy(enemy, 2, 'blade', this.player.facingDirection);
+          this.resolveEnemyHit(
+            enemy,
+            2,
+            'blade',
+            this.player.facingDirection,
+            this.sideOfEnemy(this.player.x, enemy.x),
+          );
         }
       }
       return true;
@@ -83,11 +101,12 @@ export class EnemySystem {
       const target = enemy as EnemySprite;
       const metadata = getProjectileMetadata(shot);
       const velocityX = (shot.body as Phaser.Physics.Arcade.Body).velocity.x;
-      this.damageEnemy(
+      this.resolveEnemyHit(
         target,
         metadata.damage || 1,
         projectileImpactKind(metadata.kind),
         velocityX < 0 ? -1 : 1,
+        velocityX < 0 ? 1 : -1,
       );
       releaseArcadeImage(shot);
     });
@@ -107,6 +126,7 @@ export class EnemySystem {
       }
       return true;
     });
+    this.previousPlayerX = this.player.x;
   }
 
   public clear(): void {
@@ -129,6 +149,7 @@ export class EnemySystem {
 
   private updateEnemy(enemy: EnemySprite, now: number, delta: number): void {
     const body = enemy.body as Phaser.Physics.Arcade.Body;
+    if (enemy.isShieldedCrawler && enemy.shieldState === 'exposed') return;
     if (now < enemy.stunnedUntil) return;
     if (enemy.enemyType === 'crawler') {
       if (body.blocked.left || body.blocked.right) enemy.patrolDirection *= -1;
@@ -165,6 +186,50 @@ export class EnemySystem {
     }
   }
 
+  private updateShieldCrawler(enemy: EnemySprite, now: number): void {
+    if (!enemy.isShieldedCrawler) return;
+    if (enemy.shieldState === 'exposed') {
+      enemy.setVelocityX(0);
+      if (now >= enemy.shieldExposedUntil) {
+        enemy.shieldState = 'closed';
+        enemy.shieldExposedUntil = 0;
+        enemy
+          .setTexture('crawler-shielded')
+          .setFlipX(enemy.patrolDirection < 0)
+          .setAlpha(1);
+      } else if (shieldClosingSoon(now, enemy.shieldExposedUntil)) {
+        enemy.setAlpha(Math.floor(now / 70) % 2 === 0 ? 1 : 0.42);
+      } else {
+        enemy.setAlpha(1);
+      }
+      return;
+    }
+
+    if (this.player.movementState !== 'dash') return;
+    const overlapping = Phaser.Geom.Intersects.RectangleToRectangle(
+      this.player.getBounds(),
+      enemy.getBounds(),
+    );
+    const coreSide = dashCrossingSide(this.previousPlayerX, this.player.x, enemy.x, overlapping);
+    if (coreSide === undefined) return;
+
+    enemy.shieldState = 'exposed';
+    enemy.shieldCoreSide = coreSide;
+    enemy.shieldExposedUntil = now + SHIELD_CRAWLER.exposureMs;
+    enemy.stunnedUntil = enemy.shieldExposedUntil;
+    enemy
+      .setVelocity(0, 0)
+      .setTexture('crawler-exposed')
+      .setFlipX(coreSide < 0)
+      .setAlpha(1);
+    this.combat.shieldOpenFeedback(enemy.x + coreSide * 8, enemy.y - 8, coreSide);
+    this.scene.events.emit(COMBAT_EVENTS.shieldOpened, {
+      enemyId: enemy.enemyId,
+      coreSide,
+      exposedUntil: enemy.shieldExposedUntil,
+    } satisfies ShieldOpenedEvent);
+  }
+
   private fireAtPlayer(enemy: EnemySprite): void {
     const direction = this.player.x < enemy.x ? -1 : 1;
     const shot = this.hostileProjectiles.get(
@@ -187,36 +252,58 @@ export class EnemySystem {
     });
   }
 
-  private damageEnemy(
+  private resolveEnemyHit(
     enemy: EnemySprite,
     amount: number,
     impact: HitImpactKind,
-    direction: -1 | 1,
-  ): void {
-    if (!enemy.active) return;
+    knockbackDirection: HorizontalSide,
+    impactSide: HorizontalSide,
+  ): boolean {
+    if (!enemy.active) return false;
+    if (
+      enemy.isShieldedCrawler &&
+      !shieldCanTakeDamage(enemy.shieldState, enemy.shieldCoreSide, impactSide)
+    ) {
+      this.combat.shieldBlockFeedback(enemy.x + impactSide * 8, enemy.y - 8, impactSide);
+      return false;
+    }
     const reaction = hitReaction(impact);
     enemy.health -= amount;
     enemy.stunnedUntil = this.scene.time.now + reaction.stunMs;
-    this.applyKnockback(enemy, direction, reaction.knockbackSpeed);
-    this.combat.enemyHitFeedback(impact, enemy.x, enemy.y - enemy.displayHeight / 2, direction);
+    this.applyKnockback(enemy, knockbackDirection, reaction.knockbackSpeed);
+    this.combat.enemyHitFeedback(
+      impact,
+      enemy.x,
+      enemy.y - enemy.displayHeight / 2,
+      knockbackDirection,
+    );
+    if (enemy.isShieldedCrawler) {
+      this.scene.events.emit(COMBAT_EVENTS.shieldCoreHit, {
+        enemyId: enemy.enemyId,
+        damage: amount,
+        remainingHealth: Math.max(0, enemy.health),
+      } satisfies ShieldCoreHitEvent);
+    }
     enemy.setTintFill(0xffffff);
     this.scene.time.delayedCall(55, () => {
       if (enemy.active) enemy.clearTint();
     });
-    if (enemy.health > 0) return;
+    if (enemy.health > 0) return true;
 
     const { x, y, enemyId } = enemy;
     enemy.destroy();
     if (this.dropHash(enemyId) % 3 === 0) {
       const drop = this.repairDrops.get(x, y, 'health-cell') as Phaser.Physics.Arcade.Image | null;
-      if (!drop) return;
+      if (!drop) return true;
       activateArcadeImage(drop, 'health-cell', x, y)
         .setScale(0.55)
         .setData('expiresAt', this.scene.time.now + 5_000);
     }
+    return true;
   }
 
   private applyKnockback(enemy: EnemySprite, direction: -1 | 1, speed: number): void {
+    if (enemy.isShieldedCrawler) return;
     if (enemy.enemyType === 'crawler' || enemy.enemyType === 'spore') {
       enemy.setVelocityX(direction * speed);
       return;
@@ -228,6 +315,10 @@ export class EnemySystem {
       duration: 45,
       yoyo: true,
     });
+  }
+
+  private sideOfEnemy(valueX: number, enemyX: number): HorizontalSide {
+    return valueX < enemyX ? -1 : 1;
   }
 
   private dropHash(value: string): number {

@@ -58,6 +58,20 @@ export function createProceduralTextures(scene: Phaser.Scene): void {
     g.fillStyle(COLORS.amber).fillRect(7, 10, 10, 2);
   });
 
+  createTexture(scene, 'crawler-shielded', 24, 16, (g) => {
+    g.fillStyle(0x1b2f51).fillTriangle(0, 14, 12, 2, 24, 14);
+    g.fillStyle(COLORS.steel).fillRect(14, 4, 8, 10);
+    g.fillStyle(COLORS.pale).fillRect(20, 5, 2, 8);
+    g.fillStyle(COLORS.cyan).fillRect(15, 7, 5, 3);
+  });
+
+  createTexture(scene, 'crawler-exposed', 24, 16, (g) => {
+    g.fillStyle(0x1b2f51).fillTriangle(0, 14, 12, 2, 24, 14);
+    g.fillStyle(0x334b76).fillRect(5, 7, 9, 6);
+    g.fillStyle(COLORS.amber).fillCircle(19, 9, 4);
+    g.fillStyle(COLORS.pale).fillCircle(19, 9, 2);
+  });
+
   createTexture(scene, 'sentry', 20, 20, (g) => {
     g.fillStyle(0x263e67).fillTriangle(10, 0, 20, 10, 10, 20).fillTriangle(10, 0, 0, 10, 10, 20);
     g.fillStyle(COLORS.cyan).fillCircle(10, 10, 3);

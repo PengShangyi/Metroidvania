@@ -1,5 +1,5 @@
 import rawRooms from './rooms.json';
-import type { GateRequirement, RoomDefinition } from './types';
+import type { EnemyType, GateRequirement, RoomDefinition } from './types';
 
 const VALID_REQUIREMENTS = new Set<GateRequirement>([
   'none',
@@ -8,6 +8,7 @@ const VALID_REQUIREMENTS = new Set<GateRequirement>([
   'dualAbility',
   'bossDefeated',
 ]);
+const VALID_ENEMY_TYPES = new Set<EnemyType>(['crawler', 'sentry', 'turret', 'spore']);
 
 export class RoomRepository {
   private readonly rooms: Map<string, RoomDefinition>;
@@ -33,6 +34,7 @@ export function validateRooms(definitions: RoomDefinition[]): void {
     throw new Error(`世界必须包含 17 个房间，当前为 ${definitions.length}`);
   const ids = new Set<string>();
   const pickupIds = new Set<string>();
+  const enemyIds = new Set<string>();
 
   for (const room of definitions) {
     if (!room.id || ids.has(room.id)) throw new Error(`房间 ID 重复或为空：${room.id}`);
@@ -50,6 +52,18 @@ export function validateRooms(definitions: RoomDefinition[]): void {
       if (pickupIds.has(pickup.id)) throw new Error(`拾取物 ID 重复：${pickup.id}`);
       pickupIds.add(pickup.id);
       assertPointInRoom(room, pickup.x, pickup.y, `拾取物 ${pickup.id}`);
+    }
+    for (const enemy of room.enemies) {
+      if (!enemy.id || enemyIds.has(enemy.id)) throw new Error(`敌人 ID 重复或为空：${enemy.id}`);
+      enemyIds.add(enemy.id);
+      if (!VALID_ENEMY_TYPES.has(enemy.type)) throw new Error(`敌人类型非法：${enemy.id}`);
+      if (enemy.variant !== undefined && enemy.variant !== 'shielded') {
+        throw new Error(`敌人变体非法：${enemy.id}`);
+      }
+      if (enemy.variant === 'shielded' && enemy.type !== 'crawler') {
+        throw new Error(`只有爬行体可使用护盾变体：${enemy.id}`);
+      }
+      assertPointInRoom(room, enemy.x, enemy.y, `敌人 ${enemy.id}`);
     }
     if (room.checkpoint && !room.spawns.some((spawn) => spawn.id === room.checkpoint?.spawnId)) {
       throw new Error(`终端 ${room.checkpoint.id} 指向未知生成点 ${room.checkpoint.spawnId}`);

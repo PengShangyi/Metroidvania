@@ -2,6 +2,7 @@ export type BiomeId = 'vestibule' | 'bioforge' | 'reactor';
 export type GateRequirement =
   'none' | 'phaseDash' | 'magneticGrip' | 'dualAbility' | 'bossDefeated';
 export type EnemyType = 'crawler' | 'sentry' | 'turret' | 'spore';
+export type EnemyVariant = 'shielded';
 export type PickupType = 'phaseDash' | 'magneticGrip' | 'healthCell' | 'lore';
 
 export interface RectDefinition {
@@ -27,6 +28,7 @@ export interface ExitDefinition extends RectDefinition {
 export interface EnemySpawn {
   id: string;
   type: EnemyType;
+  variant?: EnemyVariant;
   x: number;
   y: number;
 }

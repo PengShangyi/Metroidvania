@@ -36,4 +36,21 @@ describe('room repository', () => {
     ).toBe('dualAbility');
     expect(repository.get('core_guardian').exits[0]?.requirement).toBe('bossDefeated');
   });
+
+  it('rejects shield variants on non-crawler enemies', () => {
+    const repository = new RoomRepository();
+    const rooms = repository.all();
+    const room = rooms.find((candidate) => candidate.enemies.length > 0);
+    if (!room) throw new Error('测试世界缺少敌人');
+    const enemy = room.enemies[0];
+    if (!enemy) throw new Error('测试房间缺少敌人');
+    const invalidRoom = {
+      ...room,
+      enemies: [{ ...enemy, type: 'turret' as const, variant: 'shielded' as const }],
+    };
+
+    expect(() =>
+      validateRooms(rooms.map((candidate) => (candidate.id === room.id ? invalidRoom : candidate))),
+    ).toThrow(/只有爬行体/);
+  });
 });

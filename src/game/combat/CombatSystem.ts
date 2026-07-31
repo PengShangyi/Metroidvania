@@ -136,6 +136,14 @@ export class CombatSystem {
     this.feedback.bossHit(kind, x, y, direction);
   }
 
+  public shieldBlockFeedback(x: number, y: number, direction: -1 | 1): void {
+    this.feedback.shieldBlock(x, y, direction);
+  }
+
+  public shieldOpenFeedback(x: number, y: number, direction: -1 | 1): void {
+    this.feedback.shieldOpen(x, y, direction);
+  }
+
   private fireBlaster(now: number): void {
     const direction = this.player.facingDirection;
     const projectile = this.projectiles.get(

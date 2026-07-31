@@ -1,7 +1,16 @@
 import type { BiomeId } from '../world/types';
 
 export type AudioCue =
-  'blaster' | 'blade' | 'enemyHit' | 'hurt' | 'pickup' | 'terminal' | 'bossHit' | 'bossDefeat';
+  | 'blaster'
+  | 'blade'
+  | 'enemyHit'
+  | 'shieldBlock'
+  | 'shieldOpen'
+  | 'hurt'
+  | 'pickup'
+  | 'terminal'
+  | 'bossHit'
+  | 'bossDefeat';
 
 export interface TonePreset {
   startFrequency: number;
@@ -47,6 +56,20 @@ export const TONE_PRESETS: Record<AudioCue, TonePreset> = {
     duration: 0.07,
     gain: 0.07,
     wave: 'square',
+  },
+  shieldBlock: {
+    startFrequency: 920,
+    endFrequency: 360,
+    duration: 0.06,
+    gain: 0.08,
+    wave: 'triangle',
+  },
+  shieldOpen: {
+    startFrequency: 130,
+    endFrequency: 720,
+    duration: 0.16,
+    gain: 0.11,
+    wave: 'sawtooth',
   },
   hurt: {
     startFrequency: 105,

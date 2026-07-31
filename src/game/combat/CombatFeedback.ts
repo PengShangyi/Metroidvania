@@ -28,6 +28,20 @@ export class CombatFeedback {
     this.playImpact(kind, x, y, direction);
   }
 
+  public shieldBlock(x: number, y: number, direction: -1 | 1): void {
+    this.requestHitStop(16);
+    this.scene.events.emit(AUDIO_EVENT, 'shieldBlock');
+    this.spawnImpact(x, y, direction, 0x8ce7ff);
+  }
+
+  public shieldOpen(x: number, y: number, direction: -1 | 1): void {
+    this.requestHitStop(45);
+    this.scene.events.emit(AUDIO_EVENT, 'shieldOpen');
+    if (this.session.settings.screenShake) this.scene.cameras.main.shake(60, 0.002);
+    this.spawnImpact(x, y, direction, 0xffb454);
+    this.spawnImpact(x, y - 4, direction, 0xd8f7ff);
+  }
+
   public clear(): void {
     this.hitStopToken += 1;
     this.hitStopUntil = 0;
