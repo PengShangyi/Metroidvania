@@ -1,5 +1,7 @@
 import type Phaser from 'phaser';
 
+import { resetProjectileMetadata } from '../combat/projectileMetadata';
+
 export function activateArcadeImage(
   image: Phaser.Physics.Arcade.Image,
   texture: string,
@@ -13,9 +15,8 @@ export function activateArcadeImage(
     .setAlpha(1)
     .setAngle(0)
     .setFlip(false, false)
-    .clearTint()
-    .setData('damage', 0)
-    .setData('expiresAt', 0);
+    .clearTint();
+  resetProjectileMetadata(image);
   image.enableBody(true, x, y, true, true);
   const body = image.body as Phaser.Physics.Arcade.Body;
   body
@@ -30,7 +31,8 @@ export function releaseArcadeImage(image: Phaser.Physics.Arcade.Image): void {
   if (!image.active) return;
   const body = image.body as Phaser.Physics.Arcade.Body;
   body.setVelocity(0, 0).setAcceleration(0, 0);
-  image.setData('damage', 0).setData('expiresAt', 0).disableBody(true, true);
+  resetProjectileMetadata(image);
+  image.disableBody(true, true);
 }
 
 export function releaseArcadeGroup(group: Phaser.Physics.Arcade.Group): void {

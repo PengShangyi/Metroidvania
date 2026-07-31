@@ -6,6 +6,7 @@ import { COLORS, REGISTRY_KEYS } from '../constants';
 import type { Player } from '../player/Player';
 import { activateArcadeImage, releaseArcadeGroup, releaseArcadeImage } from '../render/arcadePool';
 import type { GameSessionState } from '../state/GameSession';
+import { configureProjectileMetadata, getProjectileMetadata } from '../combat/projectileMetadata';
 import { BOSS, bossAttackAt, bossCadence, bossPhase, type BossAttack } from './rules';
 
 export class BossSystem {
@@ -25,6 +26,7 @@ export class BossSystem {
   private lastMeleeSerial = -1;
   private activeBeam?: { bounds: Phaser.Geom.Rectangle; expiresAt: number };
   private generation = 0;
+  private projectileSerial = 0;
 
   public constructor(
     scene: Phaser.Scene,
@@ -46,7 +48,7 @@ export class BossSystem {
         const shot = projectile as Phaser.Physics.Arcade.Image;
         const velocity = (shot.body as Phaser.Physics.Arcade.Body).velocity.x;
         releaseArcadeImage(shot);
-        this.combat.damagePlayer(1, velocity < 0 ? -120 : 120);
+        this.combat.damagePlayer(getProjectileMetadata(shot).damage, velocity < 0 ? -120 : 120);
       },
     );
   }
@@ -79,7 +81,7 @@ export class BossSystem {
 
     this.scene.physics.overlap(attack.projectiles, boss, (projectile) => {
       const shot = projectile as Phaser.Physics.Arcade.Image;
-      this.damageBoss((shot.getData('damage') as number) || 1);
+      this.damageBoss(getProjectileMetadata(shot).damage || 1);
       releaseArcadeImage(shot);
     });
     if (!boss.active) return;
@@ -103,7 +105,7 @@ export class BossSystem {
 
     this.projectiles.children.each((child) => {
       const projectile = child as Phaser.Physics.Arcade.Image;
-      if (projectile.active && (projectile.getData('expiresAt') as number) <= now) {
+      if (projectile.active && getProjectileMetadata(projectile).expiresAt <= now) {
         releaseArcadeImage(projectile);
       }
       return true;
@@ -228,8 +230,16 @@ export class BossSystem {
     if (!shot) return;
     activateArcadeImage(shot, 'projectile', boss.x, boss.y)
       .setTint(COLORS.danger)
-      .setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed)
-      .setData('expiresAt', this.scene.time.now + 2_600);
+      .setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
+    this.projectileSerial += 1;
+    configureProjectileMetadata(shot, {
+      faction: 'hostile',
+      kind: 'bossVolley',
+      damage: 1,
+      reflectable: true,
+      serial: this.projectileSerial,
+      expiresAt: this.scene.time.now + 2_600,
+    });
   }
 
   private fireWave(direction: -1 | 1, phase: 1 | 2): void {
@@ -243,8 +253,15 @@ export class BossSystem {
     if (!wave) return;
     activateArcadeImage(wave, 'hazard-reactor', boss.x, 241)
       .setDisplaySize(24, phase === 1 ? 10 : 15)
-      .setVelocityX(direction * (phase === 1 ? 150 : 205))
-      .setData('expiresAt', this.scene.time.now + 2_700);
+      .setVelocityX(direction * (phase === 1 ? 150 : 205));
+    this.projectileSerial += 1;
+    configureProjectileMetadata(wave, {
+      faction: 'hostile',
+      kind: 'shockwave',
+      damage: 1,
+      serial: this.projectileSerial,
+      expiresAt: this.scene.time.now + 2_700,
+    });
     (wave.body as Phaser.Physics.Arcade.Body).setAllowGravity(false).setSize(22, 10);
   }
 

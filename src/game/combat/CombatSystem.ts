@@ -5,6 +5,7 @@ import type { ActionSnapshot } from '../input/actions';
 import type { Player } from '../player/Player';
 import { activateArcadeImage, releaseArcadeGroup, releaseArcadeImage } from '../render/arcadePool';
 import type { GameSessionState } from '../state/GameSession';
+import { configureProjectileMetadata, getProjectileMetadata } from './projectileMetadata';
 import { COMBAT, cooldownReady, resolveDamage } from './rules';
 
 export interface AttackFrame {
@@ -25,6 +26,7 @@ export class CombatSystem {
   private invulnerableUntil = 0;
   private meleeBounds?: Phaser.Geom.Rectangle;
   private meleeSerial = 0;
+  private projectileSerial = 0;
 
   public constructor(
     scene: Phaser.Scene,
@@ -49,7 +51,7 @@ export class CombatSystem {
 
     this.projectiles.children.each((child) => {
       const projectile = child as Phaser.Physics.Arcade.Image;
-      if (projectile.active && (projectile.getData('expiresAt') as number) <= now) {
+      if (projectile.active && getProjectileMetadata(projectile).expiresAt <= now) {
         releaseArcadeImage(projectile);
       }
       return true;
@@ -131,9 +133,15 @@ export class CombatSystem {
       this.player.y - 17,
     )
       .setFlipX(direction < 0)
-      .setVelocityX(direction * COMBAT.projectileSpeed)
-      .setData('damage', 1)
-      .setData('expiresAt', now + COMBAT.projectileLifetimeMs);
+      .setVelocityX(direction * COMBAT.projectileSpeed);
+    this.projectileSerial += 1;
+    configureProjectileMetadata(projectile, {
+      faction: 'player',
+      kind: 'blaster',
+      damage: 1,
+      serial: this.projectileSerial,
+      expiresAt: now + COMBAT.projectileLifetimeMs,
+    });
     this.player.playAction('shoot');
     this.scene.events.emit(AUDIO_EVENT, 'blaster');
     this.shootReadyAt = now + COMBAT.blasterCooldownMs;

@@ -4,6 +4,7 @@ import type { AttackFrame, CombatSystem } from '../combat/CombatSystem';
 import type { Player } from '../player/Player';
 import { activateArcadeImage, releaseArcadeGroup, releaseArcadeImage } from '../render/arcadePool';
 import type { EnemySpawn } from '../world/types';
+import { configureProjectileMetadata, getProjectileMetadata } from '../combat/projectileMetadata';
 import { sporeLeapVelocity } from './aiMath';
 import { EnemySprite } from './EnemySprite';
 
@@ -19,6 +20,7 @@ export class EnemySystem {
   private hostileCollider?: Phaser.Physics.Arcade.Collider;
   private contactCollider?: Phaser.Physics.Arcade.Collider;
   private dropCollider?: Phaser.Physics.Arcade.Collider;
+  private projectileSerial = 0;
 
   public constructor(scene: Phaser.Scene, player: Player, combat: CombatSystem) {
     this.scene = scene;
@@ -39,7 +41,10 @@ export class EnemySystem {
         const projectile = shot as Phaser.Physics.Arcade.Image;
         const velocity = (projectile.body as Phaser.Physics.Arcade.Body).velocity.x;
         releaseArcadeImage(projectile);
-        this.combat.damagePlayer(1, velocity < 0 ? -110 : 110);
+        this.combat.damagePlayer(
+          getProjectileMetadata(projectile).damage,
+          velocity < 0 ? -110 : 110,
+        );
       },
     );
     this.dropCollider = scene.physics.add.overlap(player, this.repairDrops, (_player, drop) => {
@@ -77,13 +82,13 @@ export class EnemySystem {
     this.scene.physics.overlap(attack.projectiles, this.enemies, (projectile, enemy) => {
       const shot = projectile as Phaser.Physics.Arcade.Image;
       const target = enemy as EnemySprite;
-      this.damageEnemy(target, (shot.getData('damage') as number) || 1);
+      this.damageEnemy(target, getProjectileMetadata(shot).damage || 1);
       releaseArcadeImage(shot);
     });
 
     this.hostileProjectiles.children.each((child) => {
       const shot = child as Phaser.Physics.Arcade.Image;
-      if (shot.active && (shot.getData('expiresAt') as number) <= now) {
+      if (shot.active && getProjectileMetadata(shot).expiresAt <= now) {
         releaseArcadeImage(shot);
       }
       return true;
@@ -163,8 +168,16 @@ export class EnemySystem {
     if (!shot) return;
     activateArcadeImage(shot, 'projectile', enemy.x, enemy.y - 14)
       .setTint(0xff5678)
-      .setVelocity(direction * 145, 0)
-      .setData('expiresAt', this.scene.time.now + 2_200);
+      .setVelocity(direction * 145, 0);
+    this.projectileSerial += 1;
+    configureProjectileMetadata(shot, {
+      faction: 'hostile',
+      kind: 'turret',
+      damage: 1,
+      reflectable: true,
+      serial: this.projectileSerial,
+      expiresAt: this.scene.time.now + 2_200,
+    });
   }
 
   private damageEnemy(enemy: EnemySprite, amount: number): void {
