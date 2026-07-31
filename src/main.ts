@@ -11,8 +11,19 @@ async function startGame(): Promise<void> {
   game = new Phaser.Game(createGameConfig());
   if (import.meta.env.MODE === 'test') {
     const { installTestBridge } = await import('./game/testing/installTestBridge');
+    await waitForTitleScene(game);
     installTestBridge(game);
   }
+}
+
+async function waitForTitleScene(activeGame: Phaser.Game): Promise<void> {
+  await new Promise<void>((resolve) => {
+    const check = (): void => {
+      if (activeGame.scene.isActive('title')) resolve();
+      else requestAnimationFrame(check);
+    };
+    check();
+  });
 }
 
 void startGame().catch(() => showRuntimeError('中文界面字体加载失败，请检查资源后重新加载。'));
