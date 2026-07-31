@@ -210,7 +210,7 @@ export class RoomRuntime {
         hazard.y + hazard.height / 2,
         hazard.width,
         hazard.height,
-        'hazard',
+        this.room.biome === 'bioforge' ? 'hazard-acid' : 'hazard',
       )
       .setDepth(2);
     this.roomObjects.push(warning);

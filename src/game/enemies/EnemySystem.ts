@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import type { AttackFrame, CombatSystem } from '../combat/CombatSystem';
 import type { Player } from '../player/Player';
 import type { EnemySpawn } from '../world/types';
+import { sporeLeapVelocity } from './aiMath';
 import { EnemySprite } from './EnemySprite';
 
 export class EnemySystem {
@@ -120,6 +121,18 @@ export class EnemySystem {
       );
       enemy.x = Phaser.Math.Linear(enemy.x, targetX, Math.min(1, delta / 800));
       enemy.y = enemy.originPoint.y + Math.sin(now / 340) * 9;
+      return;
+    }
+
+    if (enemy.enemyType === 'spore') {
+      const grounded = body.blocked.down || body.touching.down;
+      if (grounded && now >= enemy.nextActionAt) {
+        const velocity = sporeLeapVelocity(this.player.x, enemy.x);
+        enemy.setVelocity(velocity.x, velocity.y);
+        enemy.setFlipX(velocity.x < 0);
+        enemy.nextActionAt = now + 1_050;
+      }
+      enemy.setRotation(grounded ? 0 : Phaser.Math.Clamp(body.velocity.x / 500, -0.16, 0.16));
       return;
     }
 

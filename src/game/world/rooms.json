@@ -286,8 +286,13 @@
       { "id": "from_causeway", "x": 56, "y": 238 },
       { "id": "from_pump", "x": 408, "y": 238 }
     ],
-    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
-    "hazards": [],
+    "platforms": [
+      { "x": 0, "y": 254, "width": 176, "height": 16 },
+      { "x": 224, "y": 254, "width": 256, "height": 16 },
+      { "x": 112, "y": 206, "width": 96, "height": 12 },
+      { "x": 264, "y": 174, "width": 80, "height": 12 }
+    ],
+    "hazards": [{ "x": 176, "y": 246, "width": 48, "height": 24 }],
     "exits": [
       {
         "id": "to_causeway",
@@ -310,7 +315,10 @@
         "requirement": "none"
       }
     ],
-    "enemies": [],
+    "enemies": [
+      { "id": "spore-intake", "type": "spore", "x": 330, "y": 236 },
+      { "id": "crawler-intake", "type": "crawler", "x": 260, "y": 236 }
+    ],
     "pickups": [],
     "checkpoint": {
       "id": "terminal-intake",
@@ -329,8 +337,16 @@
       { "id": "from_intake", "x": 56, "y": 238 },
       { "id": "from_lattice", "x": 408, "y": 238 }
     ],
-    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
-    "hazards": [],
+    "platforms": [
+      { "x": 0, "y": 254, "width": 480, "height": 16 },
+      { "x": 72, "y": 218, "width": 72, "height": 12 },
+      { "x": 176, "y": 184, "width": 96, "height": 12 },
+      { "x": 310, "y": 146, "width": 94, "height": 12 }
+    ],
+    "hazards": [
+      { "x": 148, "y": 246, "width": 28, "height": 24 },
+      { "x": 282, "y": 246, "width": 28, "height": 24 }
+    ],
     "exits": [
       {
         "id": "to_intake",
@@ -353,7 +369,10 @@
         "requirement": "none"
       }
     ],
-    "enemies": [],
+    "enemies": [
+      { "id": "spore-pump", "type": "spore", "x": 226, "y": 236 },
+      { "id": "turret-pump", "type": "turret", "x": 356, "y": 134 }
+    ],
     "pickups": []
   },
   {
@@ -366,8 +385,14 @@
       { "id": "from_pump", "x": 56, "y": 238 },
       { "id": "from_nursery", "x": 408, "y": 238 }
     ],
-    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
-    "hazards": [],
+    "platforms": [
+      { "x": 0, "y": 254, "width": 140, "height": 16 },
+      { "x": 340, "y": 254, "width": 140, "height": 16 },
+      { "x": 104, "y": 216, "width": 80, "height": 12 },
+      { "x": 198, "y": 178, "width": 84, "height": 12 },
+      { "x": 296, "y": 140, "width": 80, "height": 12 }
+    ],
+    "hazards": [{ "x": 140, "y": 246, "width": 200, "height": 24 }],
     "exits": [
       {
         "id": "to_pump",
@@ -390,13 +415,16 @@
         "requirement": "none"
       }
     ],
-    "enemies": [],
+    "enemies": [
+      { "id": "sentry-lattice", "type": "sentry", "x": 244, "y": 116 },
+      { "id": "spore-lattice", "type": "spore", "x": 392, "y": 236 }
+    ],
     "pickups": [
       {
         "id": "health-lattice",
         "type": "healthCell",
         "x": 238,
-        "y": 152,
+        "y": 158,
         "requirement": "phaseDash"
       }
     ]
@@ -411,8 +439,16 @@
       { "id": "from_lattice", "x": 56, "y": 238 },
       { "id": "from_cradle", "x": 408, "y": 238 }
     ],
-    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
-    "hazards": [],
+    "platforms": [
+      { "x": 0, "y": 254, "width": 480, "height": 16 },
+      { "x": 82, "y": 208, "width": 80, "height": 12 },
+      { "x": 224, "y": 170, "width": 76, "height": 12 },
+      { "x": 340, "y": 210, "width": 72, "height": 12 }
+    ],
+    "hazards": [
+      { "x": 178, "y": 246, "width": 44, "height": 24 },
+      { "x": 306, "y": 246, "width": 28, "height": 24 }
+    ],
     "exits": [
       {
         "id": "to_lattice",
@@ -435,7 +471,11 @@
         "requirement": "none"
       }
     ],
-    "enemies": [],
+    "enemies": [
+      { "id": "spore-nursery-a", "type": "spore", "x": 128, "y": 236 },
+      { "id": "spore-nursery-b", "type": "spore", "x": 370, "y": 196 },
+      { "id": "sentry-nursery", "type": "sentry", "x": 258, "y": 126 }
+    ],
     "pickups": [
       {
         "id": "lore-nursery",
@@ -457,8 +497,14 @@
       { "id": "from_nursery", "x": 56, "y": 238 },
       { "id": "from_spire", "x": 408, "y": 238 }
     ],
-    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
-    "hazards": [],
+    "platforms": [
+      { "x": 0, "y": 254, "width": 176, "height": 16 },
+      { "x": 232, "y": 254, "width": 248, "height": 16 },
+      { "x": 124, "y": 206, "width": 72, "height": 12 },
+      { "x": 220, "y": 170, "width": 72, "height": 12 },
+      { "x": 320, "y": 134, "width": 96, "height": 12 }
+    ],
+    "hazards": [{ "x": 176, "y": 246, "width": 56, "height": 24 }],
     "exits": [
       {
         "id": "to_nursery",
@@ -481,13 +527,16 @@
         "requirement": "magneticGrip"
       }
     ],
-    "enemies": [],
+    "enemies": [
+      { "id": "spore-cradle", "type": "spore", "x": 272, "y": 236 },
+      { "id": "turret-cradle", "type": "turret", "x": 260, "y": 158 }
+    ],
     "pickups": [
       {
         "id": "ability-magnetic-grip",
         "type": "magneticGrip",
         "x": 372,
-        "y": 226,
+        "y": 116,
         "requirement": "none"
       }
     ]
@@ -500,11 +549,21 @@
     "height": 270,
     "spawns": [
       { "id": "from_cradle", "x": 56, "y": 238 },
-      { "id": "from_shaft", "x": 230, "y": 238 },
-      { "id": "from_reactor", "x": 408, "y": 238 }
+      { "id": "from_shaft", "x": 230, "y": 82 },
+      { "id": "from_reactor", "x": 408, "y": 102 }
     ],
-    "platforms": [{ "x": 0, "y": 254, "width": 480, "height": 16 }],
-    "hazards": [],
+    "platforms": [
+      { "x": 0, "y": 254, "width": 480, "height": 16 },
+      { "x": 72, "y": 214, "width": 72, "height": 12 },
+      { "x": 158, "y": 174, "width": 66, "height": 12 },
+      { "x": 204, "y": 88, "width": 72, "height": 12 },
+      { "x": 246, "y": 136, "width": 64, "height": 12 },
+      { "x": 328, "y": 110, "width": 82, "height": 12 }
+    ],
+    "hazards": [
+      { "x": 144, "y": 246, "width": 30, "height": 24 },
+      { "x": 310, "y": 246, "width": 28, "height": 24 }
+    ],
     "exits": [
       {
         "id": "to_cradle",
@@ -519,9 +578,9 @@
       {
         "id": "to_shaft",
         "x": 218,
-        "y": 210,
+        "y": 38,
         "width": 24,
-        "height": 44,
+        "height": 50,
         "targetRoomId": "vestibule_shaft",
         "targetSpawnId": "from_spire",
         "requirement": "magneticGrip"
@@ -529,7 +588,7 @@
       {
         "id": "to_reactor",
         "x": 438,
-        "y": 210,
+        "y": 62,
         "width": 24,
         "height": 44,
         "targetRoomId": "reactor_antechamber",
@@ -537,7 +596,10 @@
         "requirement": "magneticGrip"
       }
     ],
-    "enemies": [],
+    "enemies": [
+      { "id": "spore-spire", "type": "spore", "x": 112, "y": 200 },
+      { "id": "sentry-spire", "type": "sentry", "x": 288, "y": 104 }
+    ],
     "pickups": []
   },
   {

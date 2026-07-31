@@ -27,6 +27,13 @@ export function createProceduralTextures(scene: Phaser.Scene): void {
     for (let x = 0; x < 16; x += 4) g.fillTriangle(x, 16, x + 2, 4, x + 4, 16);
   });
 
+  createTexture(scene, 'hazard-acid', 16, 16, (g) => {
+    g.fillStyle(0x102c2a).fillRect(0, 5, 16, 11);
+    g.fillStyle(0x7adf8a).fillRect(0, 5, 16, 3);
+    g.fillStyle(0xd8f7aa, 0.8).fillCircle(4, 4, 2).fillCircle(12, 6, 1);
+    g.fillStyle(0xed63d6, 0.45).fillRect(2, 10, 4, 2).fillRect(10, 13, 3, 1);
+  });
+
   createTexture(scene, 'projectile', 8, 4, (g) => {
     g.fillStyle(COLORS.pale).fillRect(0, 1, 8, 2);
     g.fillStyle(COLORS.cyan).fillRect(2, 0, 4, 4);
