@@ -7,6 +7,12 @@ import { activateArcadeImage, releaseArcadeGroup, releaseArcadeImage } from '../
 import type { GameSessionState } from '../state/GameSession';
 import { CombatFeedback } from './CombatFeedback';
 import type { HitImpactKind } from './feedbackRules';
+import {
+  consumePiercingCharge,
+  resetPiercingCharge,
+  updatePiercingCharge,
+  type PiercingChargeState,
+} from './piercingRules';
 import { configureProjectileMetadata, getProjectileMetadata } from './projectileMetadata';
 import { REFLECTION, reflectionWindowActive } from './reflectionRules';
 import { COMBAT, cooldownReady, resolveDamage } from './rules';
@@ -33,6 +39,8 @@ export class CombatSystem {
   private meleeReflectiveUntil = 0;
   private projectileSerial = 0;
   private readonly feedback: CombatFeedback;
+  private piercingCharge: PiercingChargeState;
+  private readonly piercingOutline: Phaser.GameObjects.Sprite;
 
   public constructor(
     scene: Phaser.Scene,
@@ -49,10 +57,22 @@ export class CombatSystem {
       allowGravity: false,
     });
     this.feedback = new CombatFeedback(scene, session);
+    this.piercingCharge = resetPiercingCharge(player.wallJumpSerial);
+    this.piercingOutline = scene.add
+      .sprite(player.x, player.y, player.texture.key, player.frame.name)
+      .setOrigin(player.originX, player.originY)
+      .setDepth(player.depth - 0.1)
+      .setTintFill(0xffb454)
+      .setVisible(false);
   }
 
   public update(input: ActionSnapshot): AttackFrame {
     const now = this.scene.time.now;
+    this.piercingCharge = updatePiercingCharge(
+      this.piercingCharge,
+      this.player.wallJumpSerial,
+      this.player.isGrounded,
+    );
     if (input.pressed.shoot && cooldownReady(now, this.shootReadyAt)) this.fireBlaster(now);
     if (input.pressed.melee && cooldownReady(now, this.bladeReadyAt)) this.swingBlade(now);
 
@@ -63,6 +83,7 @@ export class CombatSystem {
       }
       return true;
     });
+    this.syncPiercingOutline(now);
 
     return {
       projectiles: this.projectiles,
@@ -116,16 +137,23 @@ export class CombatSystem {
     return this.projectiles;
   }
 
+  public get piercingArmed(): boolean {
+    return this.piercingCharge.armed;
+  }
+
   public clearTransient(): void {
     if (this.projectiles.children) releaseArcadeGroup(this.projectiles);
     this.meleeBounds = undefined;
     this.meleeReflectiveUntil = 0;
+    this.piercingCharge = resetPiercingCharge(this.player.wallJumpSerial);
+    this.piercingOutline.setVisible(false);
     this.feedback.clear();
   }
 
   public destroy(): void {
     this.feedback.clear();
     this.worldCollider?.destroy();
+    this.piercingOutline.destroy();
     if (this.projectiles.children) this.projectiles.destroy(true);
   }
 
@@ -155,31 +183,43 @@ export class CombatSystem {
 
   private fireBlaster(now: number): void {
     const direction = this.player.facingDirection;
+    const piercing = this.piercingCharge.armed;
+    const texture = piercing ? 'projectile-piercing' : 'projectile';
     const projectile = this.projectiles.get(
       this.player.x + direction * 15,
       this.player.y - 17,
-      'projectile',
+      texture,
     ) as Phaser.Physics.Arcade.Image | null;
     if (!projectile) return;
-    activateArcadeImage(
-      projectile,
-      'projectile',
-      this.player.x + direction * 15,
-      this.player.y - 17,
-    )
+    activateArcadeImage(projectile, texture, this.player.x + direction * 15, this.player.y - 17)
       .setFlipX(direction < 0)
       .setVelocityX(direction * COMBAT.projectileSpeed);
     this.projectileSerial += 1;
     configureProjectileMetadata(projectile, {
       faction: 'player',
-      kind: 'blaster',
+      kind: piercing ? 'piercing' : 'blaster',
       damage: 1,
       serial: this.projectileSerial,
       expiresAt: now + COMBAT.projectileLifetimeMs,
     });
+    this.piercingCharge = consumePiercingCharge(this.piercingCharge).state;
     this.player.playAction('shoot');
-    this.scene.events.emit(AUDIO_EVENT, 'blaster');
+    this.scene.events.emit(AUDIO_EVENT, piercing ? 'piercingShot' : 'blaster');
     this.shootReadyAt = now + COMBAT.blasterCooldownMs;
+  }
+
+  private syncPiercingOutline(now: number): void {
+    if (!this.piercingCharge.armed) {
+      this.piercingOutline.setVisible(false);
+      return;
+    }
+    this.piercingOutline
+      .setVisible(true)
+      .setPosition(this.player.x, this.player.y)
+      .setTexture(this.player.texture.key, this.player.frame.name)
+      .setFlipX(this.player.flipX)
+      .setScale(this.player.scaleX * 1.1, this.player.scaleY * 1.08)
+      .setAlpha(0.2 + Math.sin(now / 75) * 0.07);
   }
 
   private swingBlade(now: number): void {

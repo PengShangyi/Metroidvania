@@ -3,12 +3,17 @@ import Phaser from 'phaser';
 import type { AttackFrame, CombatSystem } from '../combat/CombatSystem';
 import {
   COMBAT_EVENTS,
+  type PiercingHitEvent,
   type ProjectileReflectedEvent,
   type ShieldCoreHitEvent,
   type ShieldOpenedEvent,
 } from '../combat/events';
 import { hitReaction, projectileImpactKind, type HitImpactKind } from '../combat/feedbackRules';
-import { configureProjectileMetadata, getProjectileMetadata } from '../combat/projectileMetadata';
+import {
+  configureProjectileMetadata,
+  getProjectileMetadata,
+  markProjectileTarget,
+} from '../combat/projectileMetadata';
 import { reflectProjectile } from '../combat/reflectProjectile';
 import type { Player } from '../player/Player';
 import { activateArcadeImage, releaseArcadeGroup, releaseArcadeImage } from '../render/arcadePool';
@@ -96,14 +101,22 @@ export class EnemySystem {
       const shot = projectile as Phaser.Physics.Arcade.Image;
       const target = enemy as EnemySprite;
       const metadata = getProjectileMetadata(shot);
+      if (metadata.kind === 'piercing' && !markProjectileTarget(metadata, target.enemyId)) return;
       const velocityX = (shot.body as Phaser.Physics.Arcade.Body).velocity.x;
-      this.resolveEnemyHit(
+      const hitApplied = this.resolveEnemyHit(
         target,
         metadata.damage || 1,
         projectileImpactKind(metadata.kind),
         velocityX < 0 ? -1 : 1,
         velocityX < 0 ? 1 : -1,
       );
+      if (metadata.kind === 'piercing' && hitApplied) {
+        this.scene.events.emit(COMBAT_EVENTS.piercingHit, {
+          serial: metadata.serial,
+          targetId: target.enemyId,
+        } satisfies PiercingHitEvent);
+        return;
+      }
       releaseArcadeImage(shot);
     });
 

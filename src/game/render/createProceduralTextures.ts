@@ -46,6 +46,12 @@ export function createProceduralTextures(scene: Phaser.Scene): void {
     g.fillStyle(COLORS.cyan).fillRect(2, 0, 4, 4);
   });
 
+  createTexture(scene, 'projectile-piercing', 14, 5, (g) => {
+    g.fillStyle(COLORS.cyan).fillRect(0, 1, 14, 3);
+    g.fillStyle(COLORS.pale).fillRect(2, 2, 10, 1);
+    g.fillStyle(COLORS.amber).fillRect(5, 0, 4, 5);
+  });
+
   createTexture(scene, 'slash', 28, 24, (g) => {
     g.lineStyle(4, COLORS.pale, 0.9);
     g.beginPath().arc(4, 20, 18, -1.35, 0.05).strokePath();

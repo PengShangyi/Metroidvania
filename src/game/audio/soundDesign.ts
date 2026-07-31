@@ -2,6 +2,7 @@ import type { BiomeId } from '../world/types';
 
 export type AudioCue =
   | 'blaster'
+  | 'piercingShot'
   | 'blade'
   | 'enemyHit'
   | 'shieldBlock'
@@ -43,6 +44,13 @@ export const TONE_PRESETS: Record<AudioCue, TonePreset> = {
     duration: 0.08,
     gain: 0.1,
     wave: 'square',
+  },
+  piercingShot: {
+    startFrequency: 420,
+    endFrequency: 1_260,
+    duration: 0.12,
+    gain: 0.12,
+    wave: 'triangle',
   },
   blade: {
     startFrequency: 230,

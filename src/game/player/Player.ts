@@ -30,6 +30,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private dashInvulnerableUntil = 0;
   private actionLockedUntil = 0;
   private wallJumpLockUntil = 0;
+  private wallJumpSerialValue = 0;
 
   public constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'iya-atlas', 0);
@@ -92,6 +93,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.setFlipX(this.facing < 0);
       this.wallJumpLockUntil = now + 120;
       this.jumpBufferedUntil = Number.NEGATIVE_INFINITY;
+      this.wallJumpSerialValue += 1;
     } else if (canConsumeJump(now, this.groundedAt, this.jumpBufferedUntil)) {
       this.setVelocityY(MOVEMENT.jumpVelocity);
       this.jumpBufferedUntil = Number.NEGATIVE_INFINITY;
@@ -118,6 +120,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   public get movementState(): PlayerMovementState {
     return this.movementStateValue;
+  }
+
+  public get wallJumpSerial(): number {
+    return this.wallJumpSerialValue;
+  }
+
+  public get isGrounded(): boolean {
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    return body.blocked.down || body.touching.down;
   }
 
   public isDashInvulnerable(now: number): boolean {
