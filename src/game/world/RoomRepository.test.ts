@@ -34,5 +34,6 @@ describe('room repository', () => {
         .get('reactor_threshold')
         .exits.find((exit) => exit.targetRoomId === 'core_guardian')?.requirement,
     ).toBe('dualAbility');
+    expect(repository.get('core_guardian').exits[0]?.requirement).toBe('bossDefeated');
   });
 });

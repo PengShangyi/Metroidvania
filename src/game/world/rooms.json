@@ -826,7 +826,7 @@
         "height": 44,
         "targetRoomId": "reactor_threshold",
         "targetSpawnId": "from_boss",
-        "requirement": "none"
+        "requirement": "bossDefeated"
       }
     ],
     "enemies": [],

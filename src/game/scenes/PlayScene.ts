@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 
+import { BossSystem } from '../boss/BossSystem';
 import { CombatSystem } from '../combat/CombatSystem';
 import { COLORS, REGISTRY_KEYS } from '../constants';
 import { EnemySystem } from '../enemies/EnemySystem';
@@ -20,6 +21,7 @@ export class PlayScene extends Phaser.Scene {
   private roomRuntime!: RoomRuntime;
   private combat!: CombatSystem;
   private enemySystem!: EnemySystem;
+  private bossSystem!: BossSystem;
   private saveService!: SaveService;
   private transitioning = false;
 
@@ -42,6 +44,9 @@ export class PlayScene extends Phaser.Scene {
     );
     this.combat = new CombatSystem(this, this.player, this.session, () => this.respawn());
     this.enemySystem = new EnemySystem(this, this.player, this.combat);
+    this.bossSystem = new BossSystem(this, this.player, this.combat, this.session, () =>
+      this.finishBoss(),
+    );
     this.loadRoom(this.session.currentRoomId, this.session.checkpointSpawnId);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -49,6 +54,7 @@ export class PlayScene extends Phaser.Scene {
       this.roomRuntime.destroy();
       this.combat.destroy();
       this.enemySystem.destroy();
+      this.bossSystem.destroy();
       this.scene.stop('hud');
     });
   }
@@ -60,6 +66,7 @@ export class PlayScene extends Phaser.Scene {
       this.roomRuntime.update(this.player, input, (exit) => this.transition(exit));
       const attack = this.combat.update(input);
       this.enemySystem.update(delta, attack);
+      this.bossSystem.update(attack);
       if (this.roomRuntime.isTouchingHazard(this.player)) {
         if (this.combat.damagePlayer(1)) this.roomRuntime.returnPlayerToSafety(this.player);
       }
@@ -73,6 +80,7 @@ export class PlayScene extends Phaser.Scene {
     this.roomRuntime.load(roomId, spawnId, this.player);
     this.combat.bindWorld(this.roomRuntime.collisionPlatforms);
     this.enemySystem.load(this.roomRuntime.definition.enemies, this.roomRuntime.collisionPlatforms);
+    this.bossSystem.load(roomId);
     this.cameras.main.setBounds(0, 0, 480, 270);
     this.physics.world.setBounds(0, 0, 480, 270);
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
@@ -114,5 +122,19 @@ export class PlayScene extends Phaser.Scene {
         this.transitioning = false;
       });
     });
+  }
+
+  private finishBoss(): void {
+    if (this.session.bossDefeated) return;
+    this.session.bossDefeated = true;
+    this.session.currentRoomId = 'core_guardian';
+    this.session.health = this.session.maxHealth;
+    this.saveService.write(this.session);
+    this.transitioning = true;
+    this.player.setVelocity(0, 0).setAcceleration(0, 0);
+    (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
+    this.registry.set(REGISTRY_KEYS.runtimeMessage, '守核者 Λ 已离线 · 回声链路解除');
+    if (this.session.settings.strongFlashes) this.cameras.main.flash(260, 216, 247, 255);
+    this.time.delayedCall(1_150, () => this.scene.start('ending'));
   }
 }
