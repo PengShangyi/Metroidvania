@@ -97,9 +97,9 @@ export class EnemySystem {
 
     this.reflectHostileProjectiles(attack, now);
 
-    this.scene.physics.overlap(attack.projectiles, this.enemies, (projectile, enemy) => {
-      const shot = projectile as Phaser.Physics.Arcade.Image;
-      const target = enemy as EnemySprite;
+    this.scene.physics.overlap(attack.projectiles, this.enemies, (first, second) => {
+      const target = (first instanceof EnemySprite ? first : second) as EnemySprite;
+      const shot = (first instanceof EnemySprite ? second : first) as Phaser.Physics.Arcade.Image;
       const metadata = getProjectileMetadata(shot);
       if (metadata.kind === 'piercing' && !markProjectileTarget(metadata, target.enemyId)) return;
       const velocityX = (shot.body as Phaser.Physics.Arcade.Body).velocity.x;
@@ -143,7 +143,9 @@ export class EnemySystem {
 
   public clear(): void {
     this.platformCollider?.destroy();
+    this.platformCollider = undefined;
     this.projectileCollider?.destroy();
+    this.projectileCollider = undefined;
     if (this.enemies.children) this.enemies.clear(true, true);
     if (this.hostileProjectiles.children) releaseArcadeGroup(this.hostileProjectiles);
     if (this.repairDrops.children) releaseArcadeGroup(this.repairDrops);

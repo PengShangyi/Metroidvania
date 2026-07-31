@@ -6,6 +6,7 @@ import {
   cappedWallSlideVelocity,
   WALL_JUMP,
   wallContactDirection,
+  wallJumpFacingInputAllowed,
   wallJumpVelocity,
 } from './wallJumpMath';
 
@@ -26,5 +27,10 @@ describe('magnetic wall jump', () => {
     expect(wallContactDirection(true, false)).toBe(-1);
     expect(wallJumpVelocity(-1)).toEqual({ x: 190, y: -290 });
     expect(wallJumpVelocity(1)).toEqual({ x: -190, y: -290 });
+  });
+
+  it('preserves the away-facing direction during the wall-jump lock', () => {
+    expect(wallJumpFacingInputAllowed(100, 220)).toBe(false);
+    expect(wallJumpFacingInputAllowed(220, 220)).toBe(true);
   });
 });

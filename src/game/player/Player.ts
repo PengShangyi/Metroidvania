@@ -14,6 +14,7 @@ import {
   canWallSlide,
   cappedWallSlideVelocity,
   wallContactDirection,
+  wallJumpFacingInputAllowed,
   wallJumpVelocity,
 } from './wallJumpMath';
 
@@ -57,7 +58,9 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
     if (input.pressed.jump) this.jumpBufferedUntil = now + MOVEMENT.jumpBufferMs;
 
-    if (input.moveX !== 0) this.facing = input.moveX < 0 ? -1 : 1;
+    if (input.moveX !== 0 && wallJumpFacingInputAllowed(now, this.wallJumpLockUntil)) {
+      this.facing = input.moveX < 0 ? -1 : 1;
+    }
     if (canStartDash(abilities.phaseDash, this.dashAvailable, input.pressed.dash)) {
       this.startDash(now, input.moveX);
     }

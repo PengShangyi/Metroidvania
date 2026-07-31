@@ -53,7 +53,8 @@ export class CombatFeedback {
   public clear(): void {
     this.hitStopToken += 1;
     this.hitStopUntil = 0;
-    this.scene.physics.world.timeScale = this.normalTimeScale;
+    const world = this.scene.physics?.world as Phaser.Physics.Arcade.World | null | undefined;
+    if (world) world.timeScale = this.normalTimeScale;
     for (const effect of this.effects) {
       this.scene.tweens.killTweensOf(effect);
       effect.destroy();

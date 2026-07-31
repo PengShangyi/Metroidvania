@@ -39,3 +39,7 @@ export function wallJumpVelocity(wallDirection: number): { x: number; y: number 
     y: WALL_JUMP.verticalVelocity,
   };
 }
+
+export function wallJumpFacingInputAllowed(now: number, lockUntil: number): boolean {
+  return now >= lockUntil;
+}
