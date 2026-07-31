@@ -11,6 +11,7 @@ import {
 } from './movementMath';
 
 export type PlayerMovementState = 'idle' | 'run' | 'jump' | 'fall' | 'dash';
+export type PlayerActionAnimation = 'shoot' | 'slash' | 'hurt' | 'death';
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private groundedAt = Number.NEGATIVE_INFINITY;
@@ -20,9 +21,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private dashAvailable = true;
   private dashEndsAt = 0;
   private dashInvulnerableUntil = 0;
+  private actionLockedUntil = 0;
 
   public constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, 'player');
+    super(scene, x, y, 'iya-atlas', 0);
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
@@ -31,6 +33,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setDragX(MOVEMENT.deceleration);
     this.setMaxVelocity(MOVEMENT.speed, MOVEMENT.maxFallSpeed);
     (this.body as Phaser.Physics.Arcade.Body).setSize(14, 28).setOffset(5, 4);
+    this.play('iya-idle');
   }
 
   public updateMovement(delta: number, input: ActionSnapshot, abilities: AbilityState): void {
@@ -53,6 +56,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       this.setAcceleration(0, 0).setVelocity(dashVelocity(this.facing), 0);
       this.movementStateValue = 'dash';
       this.setTint(0x8ce7ff).setAlpha(0.82);
+      this.play('iya-dash', true);
       return;
     }
 
@@ -76,6 +80,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (input.released.jump) this.setVelocityY(shortenedJumpVelocity(body.velocity.y));
 
     this.updateState(grounded, delta);
+    this.playMovementAnimation(now);
   }
 
   public get facingDirection(): -1 | 1 {
@@ -90,14 +95,22 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     return now < this.dashInvulnerableUntil;
   }
 
+  public playAction(animation: PlayerActionAnimation): void {
+    const duration = animation === 'shoot' ? 150 : animation === 'slash' ? 220 : 180;
+    this.actionLockedUntil = this.scene.time.now + duration;
+    this.play(`iya-${animation}`, true);
+  }
+
   public resetTraversalState(): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
     this.dashEndsAt = 0;
     this.dashInvulnerableUntil = 0;
     this.dashAvailable = true;
+    this.actionLockedUntil = 0;
     body.setAllowGravity(true);
     body.setMaxVelocity(MOVEMENT.speed, MOVEMENT.maxFallSpeed);
     this.clearTint().setAlpha(1);
+    this.play('iya-idle', true);
   }
 
   private startDash(now: number, inputX: number): void {
@@ -119,5 +132,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setScale(1, 1 + runBob * 0.025);
     this.setAlpha(this.movementStateValue === 'fall' ? 0.94 : 1);
     this.rotation = Phaser.Math.Linear(this.rotation, 0, Math.min(1, delta / 80));
+  }
+
+  private playMovementAnimation(now: number): void {
+    if (now < this.actionLockedUntil) return;
+    this.play(`iya-${this.movementStateValue}`, true);
   }
 }

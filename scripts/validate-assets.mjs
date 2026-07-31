@@ -36,5 +36,4 @@ if (totalBytes > budgetBytes) {
   throw new Error(`资源总量 ${(totalBytes / 1024 / 1024).toFixed(2)}MB 超过 20MB 预算`);
 }
 
-// eslint-disable-next-line no-undef
 console.log(`Validated ${files.length} image assets (${(totalBytes / 1024 / 1024).toFixed(2)}MB).`);

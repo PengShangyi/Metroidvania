@@ -163,8 +163,20 @@ export class RoomRuntime {
           : { base: 0x030712, haze: 0x102c42, light: COLORS.cyan };
     this.scene.cameras.main.setBackgroundColor(palette.base);
 
+    if (room.biome === 'vestibule' && this.scene.textures.exists('vestibule-bg')) {
+      const background = this.scene.add
+        .image(0, 0, 'vestibule-bg')
+        .setOrigin(0)
+        .setDisplaySize(room.width, room.height)
+        .setAlpha(0.56)
+        .setDepth(-12);
+      this.roomObjects.push(background);
+    }
+
     const graphics = this.scene.add.graphics().setDepth(-10);
-    graphics.fillStyle(palette.haze, 0.55).fillRect(0, 0, room.width, room.height);
+    graphics
+      .fillStyle(palette.haze, room.biome === 'vestibule' ? 0.3 : 0.55)
+      .fillRect(0, 0, room.width, room.height);
     graphics.lineStyle(2, palette.light, 0.12);
     for (let x = 24; x < room.width; x += 64) graphics.strokeRect(x, 18, 30, 208);
     graphics.fillStyle(palette.light, 0.07);

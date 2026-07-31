@@ -82,6 +82,7 @@ export class CombatSystem {
     this.session.health = result.health;
     this.invulnerableUntil = result.invulnerableUntil;
     this.player.setVelocity(knockbackX, -150).setTintFill(0xffffff);
+    this.player.playAction(this.session.health <= 0 ? 'death' : 'hurt');
     this.scene.time.delayedCall(80, () => this.player.clearTint());
     if (this.session.settings.screenShake) this.scene.cameras.main.shake(90, 0.004);
 
@@ -126,6 +127,7 @@ export class CombatSystem {
       .setData('damage', 1)
       .setData('expiresAt', now + COMBAT.projectileLifetimeMs);
     (projectile.body as Phaser.Physics.Arcade.Body).allowGravity = false;
+    this.player.playAction('shoot');
     this.shootReadyAt = now + COMBAT.blasterCooldownMs;
   }
 
@@ -135,6 +137,7 @@ export class CombatSystem {
     const y = this.player.y - 18;
     this.meleeBounds = new Phaser.Geom.Rectangle(x - 14, y - 12, 28, 24);
     this.meleeSerial += 1;
+    this.player.playAction('slash');
     const slash = this.scene.add
       .image(x, y, 'slash')
       .setFlipX(direction < 0)

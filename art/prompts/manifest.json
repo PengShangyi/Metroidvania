@@ -10,7 +10,10 @@
       "prompt": "Original compact female salvage pilot in a practical sci-fi exosuit, asymmetric cyan visor, right-arm energy blaster and folded left-arm energy blade; full body neutral pose; crisp pixel-art-inspired silhouette; deep navy, cyan and amber palette.",
       "backdrop": "perfectly flat solid #00ff00 chroma-key background",
       "constraints": "single character, generous padding, no shadow, no text, no logo, no watermark, do not use #00ff00 on the subject",
-      "status": "planned"
+      "status": "selected",
+      "source": "art/source/iya-anchor.png",
+      "outputs": ["public/assets/sprites/iya-portrait.png", "public/assets/sprites/iya-atlas.png"],
+      "processing": "remove_chroma_key.py --auto-key border --soft-matte --despill; Sharp trim, nearest-neighbour resize and 128-colour palette; deterministic 24x32 animation atlas assembled from the visual anchor"
     },
     {
       "id": "enemy-lineup",
@@ -19,7 +22,10 @@
       "prompt": "Four original sci-fi ruin enemies in a clean lineup: low triangular crawler, floating diamond sentry, heavy fixed turret, round spore leaper; distinct readable silhouettes; pixel-art-inspired concept rendering.",
       "backdrop": "perfectly flat solid #ff00ff chroma-key background",
       "constraints": "four separated subjects, no shadows, no labels, no text, no logo, no watermark, do not use #ff00ff on subjects",
-      "status": "planned"
+      "status": "selected",
+      "source": "art/source/enemy-lineup.png",
+      "outputs": ["public/assets/sprites/enemy-lineup.png"],
+      "processing": "remove_chroma_key.py --auto-key border --soft-matte --despill; Sharp trim, nearest-neighbour resize and 128-colour palette"
     },
     {
       "id": "core-guardian-anchor",
@@ -37,7 +43,10 @@
       "prompt": "Abandoned orbital station vestibule with broken observation windows, tall steel ribs, distant stars and amber emergency lamps, side-view 2D platform game background, layered depth, restrained pixel-art texture.",
       "backdrop": "deep navy space station interior",
       "constraints": "wide 16:9 composition, no foreground platforms, no characters, no text, no logos, no watermark",
-      "status": "planned"
+      "status": "selected",
+      "source": "art/source/vestibule-background.png",
+      "outputs": ["public/assets/backgrounds/vestibule.webp"],
+      "processing": "Sharp 480x270 cover crop with nearest-neighbour resampling; WebP quality 84"
     },
     {
       "id": "bioforge-background",

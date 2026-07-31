@@ -107,6 +107,13 @@ export class TitleScene extends Phaser.Scene {
   }
 
   private drawBackdrop(): void {
+    if (this.textures.exists('iya-portrait')) {
+      this.add
+        .image(410, 262, 'iya-portrait')
+        .setOrigin(0.5, 1)
+        .setDisplaySize(121, 250)
+        .setAlpha(0.24);
+    }
     const graphics = this.add.graphics();
     graphics.fillStyle(COLORS.steel, 0.22);
     for (let x = 24; x < 480; x += 48) graphics.fillRect(x, 0, 2, 270);

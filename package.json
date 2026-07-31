@@ -18,6 +18,8 @@
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "art:process": "node scripts/process-art.mjs",
+    "art:atlas": "node scripts/generate-sprite-atlas.mjs",
     "assets:validate": "node scripts/validate-assets.mjs",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
