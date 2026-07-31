@@ -9,8 +9,15 @@ import {
   MOVEMENT,
   shortenedJumpVelocity,
 } from './movementMath';
+import {
+  canWallJump,
+  canWallSlide,
+  cappedWallSlideVelocity,
+  wallContactDirection,
+  wallJumpVelocity,
+} from './wallJumpMath';
 
-export type PlayerMovementState = 'idle' | 'run' | 'jump' | 'fall' | 'dash';
+export type PlayerMovementState = 'idle' | 'run' | 'jump' | 'fall' | 'dash' | 'wallSlide';
 export type PlayerActionAnimation = 'shoot' | 'slash' | 'hurt' | 'death';
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
@@ -22,6 +29,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private dashEndsAt = 0;
   private dashInvulnerableUntil = 0;
   private actionLockedUntil = 0;
+  private wallJumpLockUntil = 0;
 
   public constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'iya-atlas', 0);
@@ -40,6 +48,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const body = this.body as Phaser.Physics.Arcade.Body;
     const now = this.scene.time.now;
     const grounded = body.blocked.down || body.touching.down;
+    const wallDirection = wallContactDirection(body.blocked.left, body.blocked.right);
     if (grounded) {
       this.groundedAt = now;
       if (now >= this.dashEndsAt) this.dashAvailable = true;
@@ -64,14 +73,25 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     body.setMaxVelocity(MOVEMENT.speed, MOVEMENT.maxFallSpeed);
     this.clearTint();
 
-    if (input.moveX !== 0) {
+    if (now < this.wallJumpLockUntil) {
+      this.setAccelerationX(0);
+    } else if (input.moveX !== 0) {
       this.setFlipX(this.facing < 0);
       this.setAccelerationX(horizontalAcceleration(input.moveX));
     } else {
       this.setAccelerationX(0);
     }
 
-    if (canConsumeJump(now, this.groundedAt, this.jumpBufferedUntil)) {
+    if (
+      canWallJump(abilities.magneticGrip, grounded, wallDirection, this.jumpBufferedUntil >= now)
+    ) {
+      const velocity = wallJumpVelocity(wallDirection);
+      this.setVelocity(velocity.x, velocity.y);
+      this.facing = velocity.x < 0 ? -1 : 1;
+      this.setFlipX(this.facing < 0);
+      this.wallJumpLockUntil = now + 120;
+      this.jumpBufferedUntil = Number.NEGATIVE_INFINITY;
+    } else if (canConsumeJump(now, this.groundedAt, this.jumpBufferedUntil)) {
       this.setVelocityY(MOVEMENT.jumpVelocity);
       this.jumpBufferedUntil = Number.NEGATIVE_INFINITY;
       this.groundedAt = Number.NEGATIVE_INFINITY;
@@ -79,7 +99,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
     if (input.released.jump) this.setVelocityY(shortenedJumpVelocity(body.velocity.y));
 
-    this.updateState(grounded, delta);
+    const wallSliding = canWallSlide(
+      abilities.magneticGrip,
+      grounded,
+      wallDirection,
+      body.velocity.y,
+    );
+    if (wallSliding) this.setVelocityY(cappedWallSlideVelocity(body.velocity.y));
+
+    this.updateState(grounded, delta, wallSliding);
     this.playMovementAnimation(now);
   }
 
@@ -107,6 +135,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.dashInvulnerableUntil = 0;
     this.dashAvailable = true;
     this.actionLockedUntil = 0;
+    this.wallJumpLockUntil = 0;
     body.setAllowGravity(true);
     body.setMaxVelocity(MOVEMENT.speed, MOVEMENT.maxFallSpeed);
     this.clearTint().setAlpha(1);
@@ -122,9 +151,10 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     (this.body as Phaser.Physics.Arcade.Body).setMaxVelocity(DASH.speed, MOVEMENT.maxFallSpeed);
   }
 
-  private updateState(grounded: boolean, delta: number): void {
+  private updateState(grounded: boolean, delta: number, wallSliding: boolean): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
-    if (!grounded) this.movementStateValue = body.velocity.y < 0 ? 'jump' : 'fall';
+    if (wallSliding) this.movementStateValue = 'wallSlide';
+    else if (!grounded) this.movementStateValue = body.velocity.y < 0 ? 'jump' : 'fall';
     else if (Math.abs(body.velocity.x) > 8) this.movementStateValue = 'run';
     else this.movementStateValue = 'idle';
 
@@ -136,6 +166,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   private playMovementAnimation(now: number): void {
     if (now < this.actionLockedUntil) return;
-    this.play(`iya-${this.movementStateValue}`, true);
+    const animation = this.movementStateValue === 'wallSlide' ? 'fall' : this.movementStateValue;
+    this.play(`iya-${animation}`, true);
   }
 }

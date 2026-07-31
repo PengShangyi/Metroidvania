@@ -555,9 +555,9 @@
     "platforms": [
       { "x": 0, "y": 254, "width": 480, "height": 16 },
       { "x": 72, "y": 214, "width": 72, "height": 12 },
-      { "x": 158, "y": 174, "width": 66, "height": 12 },
-      { "x": 204, "y": 88, "width": 72, "height": 12 },
-      { "x": 246, "y": 136, "width": 64, "height": 12 },
+      { "x": 156, "y": 112, "width": 16, "height": 142 },
+      { "x": 252, "y": 58, "width": 16, "height": 148 },
+      { "x": 184, "y": 88, "width": 84, "height": 12 },
       { "x": 328, "y": 110, "width": 82, "height": 12 }
     ],
     "hazards": [
