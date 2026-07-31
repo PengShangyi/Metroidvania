@@ -26,6 +26,12 @@ export class HudScene extends Phaser.Scene {
   private saveService!: SaveService;
   private previousGamepadMap = false;
   private previousGamepadPause = false;
+  private renderedHealth = '';
+  private renderedExploration = '';
+  private renderedMessage = '';
+  private renderedBoss = '';
+  private renderedDash?: boolean;
+  private renderedGrip?: boolean;
   private readonly blurHandler = (): void => this.openOverlay('pause');
   private readonly mapKeyHandler = (event: KeyboardEvent): void => {
     event.preventDefault();
@@ -90,13 +96,29 @@ export class HudScene extends Phaser.Scene {
   }
 
   public update(): void {
-    this.healthText.setText(`${this.session.health}/${this.session.maxHealth}`);
-    this.explorationText.setText(
-      `探索 ${this.session.visitedRooms.size}/17  ·  ${completionPercent(this.session)}%`,
-    );
-    this.dashIcon.setAlpha(this.session.abilities.phaseDash ? 1 : 0.22);
-    this.gripIcon.setAlpha(this.session.abilities.magneticGrip ? 1 : 0.22);
-    this.messageText.setText((this.registry.get(REGISTRY_KEYS.runtimeMessage) as string) ?? '');
+    const health = `${this.session.health}/${this.session.maxHealth}`;
+    if (health !== this.renderedHealth) {
+      this.renderedHealth = health;
+      this.healthText.setText(health);
+    }
+    const exploration = `探索 ${this.session.visitedRooms.size}/17  ·  ${completionPercent(this.session)}%`;
+    if (exploration !== this.renderedExploration) {
+      this.renderedExploration = exploration;
+      this.explorationText.setText(exploration);
+    }
+    if (this.session.abilities.phaseDash !== this.renderedDash) {
+      this.renderedDash = this.session.abilities.phaseDash;
+      this.dashIcon.setAlpha(this.renderedDash ? 1 : 0.22);
+    }
+    if (this.session.abilities.magneticGrip !== this.renderedGrip) {
+      this.renderedGrip = this.session.abilities.magneticGrip;
+      this.gripIcon.setAlpha(this.renderedGrip ? 1 : 0.22);
+    }
+    const message = (this.registry.get(REGISTRY_KEYS.runtimeMessage) as string) ?? '';
+    if (message !== this.renderedMessage) {
+      this.renderedMessage = message;
+      this.messageText.setText(message);
+    }
     this.messageText.setVisible(this.mode === 'game' && this.messageText.text.length > 0);
     this.updateBossBar();
     this.updateGamepadMenuInput();
@@ -107,11 +129,14 @@ export class HudScene extends Phaser.Scene {
     const phase = this.registry.get(REGISTRY_KEYS.bossPhase) as number | undefined;
     if (typeof bossHealth === 'number' && bossHealth > 0 && this.mode === 'game') {
       const cells = Math.ceil(bossHealth / 2);
-      this.bossText.setText(
-        `守核者 Λ  ${'◆'.repeat(cells)}${'◇'.repeat(15 - cells)}  P${phase ?? 1}`,
-      );
+      const boss = `守核者 Λ  ${'◆'.repeat(cells)}${'◇'.repeat(15 - cells)}  P${phase ?? 1}`;
+      if (boss !== this.renderedBoss) {
+        this.renderedBoss = boss;
+        this.bossText.setText(boss);
+      }
       this.bossText.setVisible(true);
     } else {
+      this.renderedBoss = '';
       this.bossText.setVisible(false);
     }
   }

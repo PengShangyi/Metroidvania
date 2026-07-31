@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 
 import { REGISTRY_KEYS } from '../constants';
 import { createNewSession, type GameSessionState } from '../state/GameSession';
+import { RoomRepository } from '../world/RoomRepository';
+import type { BiomeId } from '../world/types';
 
 interface TestProgressPatch {
   health?: number;
@@ -25,7 +27,7 @@ interface TestSnapshot {
 export interface StarEchoTestBridge {
   snapshot(): TestSnapshot;
   startNewGame(): void;
-  warp(roomId: string, patch?: TestProgressPatch): void;
+  warp(roomId: string, patch?: TestProgressPatch): Promise<void>;
   completeBoss(): void;
 }
 
@@ -33,6 +35,7 @@ type TestWindow = Window & { __STAR_ECHO_TEST__?: StarEchoTestBridge };
 interface PlaySceneInternals {
   transitioning: boolean;
   loadRoom(roomId: string, spawnId: string): void;
+  ensureRegionAssets(biome: BiomeId, onReady: () => void): void;
   finishBoss(): void;
 }
 
@@ -79,7 +82,7 @@ function startNewGame(game: Phaser.Game): void {
   else game.scene.start('play');
 }
 
-function warp(game: Phaser.Game, roomId: string, patch: TestProgressPatch): void {
+async function warp(game: Phaser.Game, roomId: string, patch: TestProgressPatch): Promise<void> {
   const session = game.registry.get(REGISTRY_KEYS.session) as GameSessionState;
   if (patch.health !== undefined)
     session.health = Phaser.Math.Clamp(patch.health, 1, session.maxHealth);
@@ -91,8 +94,14 @@ function warp(game: Phaser.Game, roomId: string, patch: TestProgressPatch): void
   session.visitedRooms.add(roomId);
   if (game.scene.isPaused('play')) game.scene.resume('play');
   const play = playInternals(game);
-  play.transitioning = false;
-  play.loadRoom(roomId, '');
+  const biome = new RoomRepository().get(roomId).biome;
+  await new Promise<void>((resolve) => {
+    play.ensureRegionAssets(biome, () => {
+      play.transitioning = false;
+      play.loadRoom(roomId, '');
+      resolve();
+    });
+  });
 }
 
 function playInternals(game: Phaser.Game): PlaySceneInternals {

@@ -23,7 +23,7 @@ interface BrowserTestBridge {
       bossDefeated?: boolean;
       collectedPickups?: string[];
     },
-  ): void;
+  ): Promise<void>;
   completeBoss(): void;
 }
 
@@ -45,6 +45,15 @@ async function snapshot(page: Page): Promise<TestSnapshot> {
   return page.evaluate(() => (window as unknown as TestWindow).__STAR_ECHO_TEST__.snapshot());
 }
 
+async function waitForGameFrame(page: Page): Promise<void> {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
+}
+
 test('starts a new game and opens map, pause, settings and controls', async ({ page }) => {
   const errors = await openGame(page);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
@@ -54,18 +63,23 @@ test('starts a new game and opens map, pause, settings and controls', async ({ p
   await expect.poll(async () => (await snapshot(page)).roomId).toBe('vestibule_dock');
   await page.keyboard.press('Tab');
   await expect.poll(async () => (await snapshot(page)).uiMode).toBe('map');
+  await waitForGameFrame(page);
   await page.keyboard.press('Tab');
   await expect.poll(async () => (await snapshot(page)).uiMode).toBe('game');
+  await waitForGameFrame(page);
   await page.keyboard.press('Escape');
   await expect.poll(async () => (await snapshot(page)).uiMode).toBe('pause');
+  await waitForGameFrame(page);
 
   await page.mouse.click(480, 288);
   await expect.poll(async () => (await snapshot(page)).uiMode).toBe('settings');
+  await waitForGameFrame(page);
   await page.mouse.click(480, 260);
   const settings = await page.evaluate(() => localStorage.getItem('star-echo.settings.v1'));
   expect(settings).toContain('screenShake');
   await page.keyboard.press('Escape');
   await expect.poll(async () => (await snapshot(page)).uiMode).toBe('pause');
+  await waitForGameFrame(page);
   await page.keyboard.press('Escape');
   await expect.poll(async () => (await snapshot(page)).uiMode).toBe('game');
   expect(errors).toEqual([]);

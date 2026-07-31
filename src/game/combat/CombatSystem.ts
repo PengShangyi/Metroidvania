@@ -3,6 +3,7 @@ import Phaser from 'phaser';
 import { AUDIO_EVENT } from '../audio/soundDesign';
 import type { ActionSnapshot } from '../input/actions';
 import type { Player } from '../player/Player';
+import { activateArcadeImage, releaseArcadeGroup, releaseArcadeImage } from '../render/arcadePool';
 import type { GameSessionState } from '../state/GameSession';
 import { COMBAT, cooldownReady, resolveDamage } from './rules';
 
@@ -48,7 +49,9 @@ export class CombatSystem {
 
     this.projectiles.children.each((child) => {
       const projectile = child as Phaser.Physics.Arcade.Image;
-      if ((projectile.getData('expiresAt') as number) <= now) projectile.destroy();
+      if (projectile.active && (projectile.getData('expiresAt') as number) <= now) {
+        releaseArcadeImage(projectile);
+      }
       return true;
     });
 
@@ -65,7 +68,7 @@ export class CombatSystem {
       this.projectiles,
       platforms,
       (projectile) => {
-        (projectile as Phaser.GameObjects.GameObject).destroy();
+        releaseArcadeImage(projectile as Phaser.Physics.Arcade.Image);
       },
     );
   }
@@ -104,7 +107,7 @@ export class CombatSystem {
   }
 
   public clearTransient(): void {
-    if (this.projectiles.children) this.projectiles.clear(true, true);
+    if (this.projectiles.children) releaseArcadeGroup(this.projectiles);
     this.meleeBounds = undefined;
   }
 
@@ -121,14 +124,16 @@ export class CombatSystem {
       'projectile',
     ) as Phaser.Physics.Arcade.Image | null;
     if (!projectile) return;
-    projectile
-      .setActive(true)
-      .setVisible(true)
+    activateArcadeImage(
+      projectile,
+      'projectile',
+      this.player.x + direction * 15,
+      this.player.y - 17,
+    )
       .setFlipX(direction < 0)
       .setVelocityX(direction * COMBAT.projectileSpeed)
       .setData('damage', 1)
       .setData('expiresAt', now + COMBAT.projectileLifetimeMs);
-    (projectile.body as Phaser.Physics.Arcade.Body).allowGravity = false;
     this.player.playAction('shoot');
     this.scene.events.emit(AUDIO_EVENT, 'blaster');
     this.shootReadyAt = now + COMBAT.blasterCooldownMs;

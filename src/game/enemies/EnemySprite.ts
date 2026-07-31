@@ -19,7 +19,9 @@ export class EnemySprite extends Phaser.Physics.Arcade.Sprite {
   public lastMeleeSerial = -1;
 
   public constructor(scene: Phaser.Scene, spawn: EnemySpawn) {
-    super(scene, spawn.x, spawn.y, spawn.type);
+    const texture =
+      spawn.type === 'spore' && scene.textures.exists('spore-art') ? 'spore-art' : spawn.type;
+    super(scene, spawn.x, spawn.y, texture);
     this.enemyId = spawn.id;
     this.enemyType = spawn.type;
     this.originPoint = new Phaser.Math.Vector2(spawn.x, spawn.y);
@@ -29,7 +31,7 @@ export class EnemySprite extends Phaser.Physics.Arcade.Sprite {
     scene.physics.add.existing(this);
     this.setDepth(4);
     this.configureBody();
-    if (this.enemyType === 'spore') this.play('spore-pulse');
+    if (this.enemyType === 'spore' && scene.anims.exists('spore-pulse')) this.play('spore-pulse');
   }
 
   private configureBody(): void {

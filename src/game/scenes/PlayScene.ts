@@ -8,11 +8,16 @@ import { COLORS, REGISTRY_KEYS } from '../constants';
 import { EnemySystem } from '../enemies/EnemySystem';
 import { InputController } from '../input/InputController';
 import { Player } from '../player/Player';
+import {
+  createRegionAnimations,
+  queueRegionAssets,
+  regionAssetsReady,
+} from '../render/regionAssets';
 import { createBrowserSaveService, type SaveService } from '../save/SaveService';
 import type { GameSessionState } from '../state/GameSession';
 import { RoomRepository } from '../world/RoomRepository';
 import { RoomRuntime } from '../world/RoomRuntime';
-import type { ExitDefinition } from '../world/types';
+import type { BiomeId, ExitDefinition } from '../world/types';
 
 export class PlayScene extends Phaser.Scene {
   private session!: GameSessionState;
@@ -31,6 +36,13 @@ export class PlayScene extends Phaser.Scene {
     super('play');
   }
 
+  public preload(): void {
+    const session = this.registry.get(REGISTRY_KEYS.session) as GameSessionState;
+    const rooms = new RoomRepository();
+    const room = rooms.get(session.currentRoomId);
+    queueRegionAssets(this, room.biome);
+  }
+
   public create(): void {
     this.session = this.registry.get(REGISTRY_KEYS.session) as GameSessionState;
     this.cameras.main.setBackgroundColor(COLORS.void);
@@ -45,6 +57,7 @@ export class PlayScene extends Phaser.Scene {
     this.events.on(Phaser.Scenes.Events.PAUSE, () => this.audio.setPaused(true));
     this.events.on(Phaser.Scenes.Events.RESUME, () => this.audio.setPaused(false));
     this.rooms = new RoomRepository();
+    createRegionAnimations(this, this.rooms.get(this.session.currentRoomId).biome);
     this.player = new Player(this, 0, 0);
     this.roomRuntime = new RoomRuntime(this, this.rooms, this.session, () =>
       this.saveService.write(this.session),
@@ -116,11 +129,14 @@ export class PlayScene extends Phaser.Scene {
     (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
     this.cameras.main.fadeOut(140, 7, 11, 24);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-      this.loadRoom(exit.targetRoomId, exit.targetSpawnId);
-      (this.player.body as Phaser.Physics.Arcade.Body).enable = true;
-      this.cameras.main.fadeIn(140, 7, 11, 24);
-      this.time.delayedCall(140, () => {
-        this.transitioning = false;
+      const targetBiome = this.rooms.get(exit.targetRoomId).biome;
+      this.ensureRegionAssets(targetBiome, () => {
+        this.loadRoom(exit.targetRoomId, exit.targetSpawnId);
+        (this.player.body as Phaser.Physics.Arcade.Body).enable = true;
+        this.cameras.main.fadeIn(140, 7, 11, 24);
+        this.time.delayedCall(140, () => {
+          this.transitioning = false;
+        });
       });
     });
   }
@@ -134,15 +150,42 @@ export class PlayScene extends Phaser.Scene {
     (this.player.body as Phaser.Physics.Arcade.Body).enable = false;
     this.cameras.main.fadeOut(220, 255, 86, 120);
     this.cameras.main.once(Phaser.Cameras.Scene2D.Events.FADE_OUT_COMPLETE, () => {
-      this.session.health = this.session.maxHealth;
-      this.loadRoom(this.session.checkpointRoomId, this.session.checkpointSpawnId);
-      (this.player.body as Phaser.Physics.Arcade.Body).enable = true;
-      this.cameras.main.fadeIn(240, 7, 11, 24);
-      this.registry.set(REGISTRY_KEYS.runtimeMessage, '外骨骼已由终端重构');
-      this.time.delayedCall(280, () => {
-        this.transitioning = false;
+      const targetBiome = this.rooms.get(this.session.checkpointRoomId).biome;
+      this.ensureRegionAssets(targetBiome, () => {
+        this.session.health = this.session.maxHealth;
+        this.loadRoom(this.session.checkpointRoomId, this.session.checkpointSpawnId);
+        (this.player.body as Phaser.Physics.Arcade.Body).enable = true;
+        this.cameras.main.fadeIn(240, 7, 11, 24);
+        this.registry.set(REGISTRY_KEYS.runtimeMessage, '外骨骼已由终端重构');
+        this.time.delayedCall(280, () => {
+          this.transitioning = false;
+        });
       });
     });
+  }
+
+  private ensureRegionAssets(biome: BiomeId, onReady: () => void): void {
+    if (regionAssetsReady(this, biome)) {
+      createRegionAnimations(this, biome);
+      onReady();
+      return;
+    }
+
+    queueRegionAssets(this, biome);
+    let failed = false;
+    const onLoadError = (): void => {
+      failed = true;
+    };
+    this.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, onLoadError);
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => {
+      this.load.off(Phaser.Loader.Events.FILE_LOAD_ERROR, onLoadError);
+      createRegionAnimations(this, biome);
+      if (failed) {
+        this.registry.set(REGISTRY_KEYS.runtimeMessage, '区域美术未能载入 · 已切换安全渲染');
+      }
+      onReady();
+    });
+    this.load.start();
   }
 
   private finishBoss(): void {

@@ -4,6 +4,7 @@ import { AUDIO_EVENT } from '../audio/soundDesign';
 import type { AttackFrame, CombatSystem } from '../combat/CombatSystem';
 import { COLORS, REGISTRY_KEYS } from '../constants';
 import type { Player } from '../player/Player';
+import { activateArcadeImage, releaseArcadeGroup, releaseArcadeImage } from '../render/arcadePool';
 import type { GameSessionState } from '../state/GameSession';
 import { BOSS, bossAttackAt, bossCadence, bossPhase, type BossAttack } from './rules';
 
@@ -44,7 +45,7 @@ export class BossSystem {
       (_player, projectile) => {
         const shot = projectile as Phaser.Physics.Arcade.Image;
         const velocity = (shot.body as Phaser.Physics.Arcade.Body).velocity.x;
-        shot.destroy();
+        releaseArcadeImage(shot);
         this.combat.damagePlayer(1, velocity < 0 ? -120 : 120);
       },
     );
@@ -57,7 +58,8 @@ export class BossSystem {
     this.health = BOSS.maxHealth;
     this.attackSerial = 0;
     this.lastMeleeSerial = -1;
-    this.boss = this.scene.physics.add.sprite(360, 158, 'boss').setDepth(5);
+    const texture = this.scene.textures.exists('boss-art') ? 'boss-art' : 'boss';
+    this.boss = this.scene.physics.add.sprite(360, 158, texture).setDepth(5);
     this.boss.setImmovable(true);
     (this.boss.body as Phaser.Physics.Arcade.Body).setAllowGravity(false).setCircle(30, 6, 6);
     this.contactCollider = this.scene.physics.add.overlap(this.player, this.boss, () => {
@@ -78,7 +80,7 @@ export class BossSystem {
     this.scene.physics.overlap(attack.projectiles, boss, (projectile) => {
       const shot = projectile as Phaser.Physics.Arcade.Image;
       this.damageBoss((shot.getData('damage') as number) || 1);
-      shot.destroy();
+      releaseArcadeImage(shot);
     });
     if (!boss.active) return;
     if (
@@ -101,7 +103,9 @@ export class BossSystem {
 
     this.projectiles.children.each((child) => {
       const projectile = child as Phaser.Physics.Arcade.Image;
-      if ((projectile.getData('expiresAt') as number) <= now) projectile.destroy();
+      if (projectile.active && (projectile.getData('expiresAt') as number) <= now) {
+        releaseArcadeImage(projectile);
+      }
       return true;
     });
 
@@ -115,7 +119,7 @@ export class BossSystem {
     this.contactCollider = undefined;
     this.boss?.destroy();
     this.boss = undefined;
-    if (this.projectiles.children) this.projectiles.clear(true, true);
+    if (this.projectiles.children) releaseArcadeGroup(this.projectiles);
     for (const effect of this.effects) effect.destroy();
     this.effects.clear();
     this.activeBeam = undefined;
@@ -222,13 +226,10 @@ export class BossSystem {
       'projectile',
     ) as Phaser.Physics.Arcade.Image | null;
     if (!shot) return;
-    shot
-      .setActive(true)
-      .setVisible(true)
+    activateArcadeImage(shot, 'projectile', boss.x, boss.y)
       .setTint(COLORS.danger)
       .setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed)
       .setData('expiresAt', this.scene.time.now + 2_600);
-    (shot.body as Phaser.Physics.Arcade.Body).setAllowGravity(false);
   }
 
   private fireWave(direction: -1 | 1, phase: 1 | 2): void {
@@ -240,9 +241,7 @@ export class BossSystem {
       'hazard-reactor',
     ) as Phaser.Physics.Arcade.Image | null;
     if (!wave) return;
-    wave
-      .setActive(true)
-      .setVisible(true)
+    activateArcadeImage(wave, 'hazard-reactor', boss.x, 241)
       .setDisplaySize(24, phase === 1 ? 10 : 15)
       .setVelocityX(direction * (phase === 1 ? 150 : 205))
       .setData('expiresAt', this.scene.time.now + 2_700);
@@ -264,7 +263,7 @@ export class BossSystem {
     boss.disableBody(true, true);
     this.generation += 1;
     this.boss = undefined;
-    if (this.projectiles.children) this.projectiles.clear(true, true);
+    if (this.projectiles.children) releaseArcadeGroup(this.projectiles);
     for (const effect of this.effects) effect.destroy();
     this.effects.clear();
     this.activeBeam = undefined;

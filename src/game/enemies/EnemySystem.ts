@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import type { AttackFrame, CombatSystem } from '../combat/CombatSystem';
 import type { Player } from '../player/Player';
+import { activateArcadeImage, releaseArcadeGroup, releaseArcadeImage } from '../render/arcadePool';
 import type { EnemySpawn } from '../world/types';
 import { sporeLeapVelocity } from './aiMath';
 import { EnemySprite } from './EnemySprite';
@@ -37,13 +38,13 @@ export class EnemySystem {
       (_player, shot) => {
         const projectile = shot as Phaser.Physics.Arcade.Image;
         const velocity = (projectile.body as Phaser.Physics.Arcade.Body).velocity.x;
-        projectile.destroy();
+        releaseArcadeImage(projectile);
         this.combat.damagePlayer(1, velocity < 0 ? -110 : 110);
       },
     );
     this.dropCollider = scene.physics.add.overlap(player, this.repairDrops, (_player, drop) => {
       this.combat.healPlayer(1);
-      (drop as Phaser.GameObjects.GameObject).destroy();
+      releaseArcadeImage(drop as Phaser.Physics.Arcade.Image);
     });
   }
 
@@ -54,7 +55,7 @@ export class EnemySystem {
     this.projectileCollider = this.scene.physics.add.collider(
       this.hostileProjectiles,
       platforms,
-      (shot) => (shot as Phaser.GameObjects.GameObject).destroy(),
+      (shot) => releaseArcadeImage(shot as Phaser.Physics.Arcade.Image),
     );
   }
 
@@ -77,12 +78,22 @@ export class EnemySystem {
       const shot = projectile as Phaser.Physics.Arcade.Image;
       const target = enemy as EnemySprite;
       this.damageEnemy(target, (shot.getData('damage') as number) || 1);
-      shot.destroy();
+      releaseArcadeImage(shot);
     });
 
     this.hostileProjectiles.children.each((child) => {
       const shot = child as Phaser.Physics.Arcade.Image;
-      if ((shot.getData('expiresAt') as number) <= now) shot.destroy();
+      if (shot.active && (shot.getData('expiresAt') as number) <= now) {
+        releaseArcadeImage(shot);
+      }
+      return true;
+    });
+
+    this.repairDrops.children.each((child) => {
+      const drop = child as Phaser.Physics.Arcade.Image;
+      if (drop.active && (drop.getData('expiresAt') as number) <= now) {
+        releaseArcadeImage(drop);
+      }
       return true;
     });
   }
@@ -91,8 +102,8 @@ export class EnemySystem {
     this.platformCollider?.destroy();
     this.projectileCollider?.destroy();
     if (this.enemies.children) this.enemies.clear(true, true);
-    if (this.hostileProjectiles.children) this.hostileProjectiles.clear(true, true);
-    if (this.repairDrops.children) this.repairDrops.clear(true, true);
+    if (this.hostileProjectiles.children) releaseArcadeGroup(this.hostileProjectiles);
+    if (this.repairDrops.children) releaseArcadeGroup(this.repairDrops);
   }
 
   public destroy(): void {
@@ -150,13 +161,10 @@ export class EnemySystem {
       'projectile',
     ) as Phaser.Physics.Arcade.Image | null;
     if (!shot) return;
-    shot
-      .setActive(true)
-      .setVisible(true)
+    activateArcadeImage(shot, 'projectile', enemy.x, enemy.y - 14)
       .setTint(0xff5678)
       .setVelocity(direction * 145, 0)
       .setData('expiresAt', this.scene.time.now + 2_200);
-    (shot.body as Phaser.Physics.Arcade.Body).allowGravity = false;
   }
 
   private damageEnemy(enemy: EnemySprite, amount: number): void {
@@ -172,9 +180,8 @@ export class EnemySystem {
     enemy.destroy();
     if (this.dropHash(enemyId) % 3 === 0) {
       const drop = this.repairDrops.get(x, y, 'health-cell') as Phaser.Physics.Arcade.Image | null;
-      drop
-        ?.setActive(true)
-        .setVisible(true)
+      if (!drop) return;
+      activateArcadeImage(drop, 'health-cell', x, y)
         .setScale(0.55)
         .setData('expiresAt', this.scene.time.now + 5_000);
     }

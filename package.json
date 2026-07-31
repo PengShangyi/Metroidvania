@@ -24,7 +24,8 @@
     "art:bioforge": "node scripts/generate-bioforge-atlas.mjs",
     "art:reactor": "node scripts/generate-reactor-assets.mjs",
     "assets:validate": "node scripts/validate-assets.mjs",
-    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "perf:budget": "node scripts/check-loading-budgets.mjs",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm perf:budget"
   },
   "dependencies": {
     "phaser": "3.90.0"
