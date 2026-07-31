@@ -1,7 +1,7 @@
 :root {
   color: #d9f4ff;
   background: #03050d;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
   font-synthesis: none;
 }
 
@@ -21,8 +21,7 @@ body,
 body {
   min-width: 320px;
   min-height: 180px;
-  background:
-    radial-gradient(circle at 50% 40%, #101b36 0, #050817 42%, #02030a 100%);
+  background: radial-gradient(circle at 50% 40%, #101b36 0, #050817 42%, #02030a 100%);
 }
 
 canvas {
