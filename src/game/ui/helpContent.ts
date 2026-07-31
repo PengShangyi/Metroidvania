@@ -3,6 +3,7 @@ import type { TutorialStepId } from '../tutorial/tutorialPlan';
 
 export interface HelpRow {
   action: string;
+  compactAction?: string;
   control: string;
   description: string;
 }
@@ -17,20 +18,25 @@ export const HELP_CONTENT: Record<InputDevice, readonly HelpGroup[]> = {
     {
       title: '移动与战斗',
       rows: [
-        { action: '移动', control: 'A/D · ←/→', description: '横向移动' },
-        { action: '跳跃', control: 'SPACE', description: '按住跳得更高' },
-        { action: '能量枪', control: 'J', description: '墙跳首发贯穿' },
-        { action: '能量刃', control: 'K', description: '前 80ms 反射炮弹' },
-        { action: '相位冲刺', control: 'SHIFT', description: '穿盾开核 · 短暂无敌' },
+        { action: '移动', control: 'A/D · ←/→', description: '左右移动' },
+        { action: '跳跃', control: 'SPACE', description: '按住增高' },
+        { action: '能量枪', control: 'J', description: '墙跳贯穿' },
+        { action: '能量刃', control: 'K', description: '80ms 反射' },
+        {
+          action: '相位冲刺',
+          compactAction: '冲刺',
+          control: 'SHIFT',
+          description: '穿盾开核/无敌',
+        },
       ],
     },
     {
       title: '探索与系统',
       rows: [
-        { action: '交互', control: 'E', description: '终端、通道、记录' },
+        { action: '交互', control: 'E', description: '终端/通道/记录' },
         { action: '地图', control: 'TAB', description: '探索地图' },
-        { action: '暂停', control: 'ESC', description: '暂停与设置' },
-        { action: '帮助', control: 'H', description: '随时打开本页' },
+        { action: '暂停', control: 'ESC', description: '设置' },
+        { action: '帮助', control: 'H', description: '随时查看' },
         { action: '全屏', control: 'F', description: '浏览器全屏' },
       ],
     },
@@ -39,21 +45,31 @@ export const HELP_CONTENT: Record<InputDevice, readonly HelpGroup[]> = {
     {
       title: '移动与战斗',
       rows: [
-        { action: '移动', control: '左摇杆/D-pad', description: '横向移动' },
-        { action: '跳跃', control: 'A', description: '按住跳得更高' },
-        { action: '能量枪', control: 'X', description: '墙跳首发贯穿' },
-        { action: '能量刃', control: 'Y', description: '前 80ms 反射炮弹' },
-        { action: '相位冲刺', control: 'B', description: '穿盾开核 · 短暂无敌' },
+        { action: '移动', control: '左摇杆/D-pad', description: '左右移动' },
+        { action: '跳跃', control: 'A', description: '按住增高' },
+        { action: '能量枪', control: 'X', description: '墙跳贯穿' },
+        { action: '能量刃', control: 'Y', description: '80ms 反射' },
+        {
+          action: '相位冲刺',
+          compactAction: '冲刺',
+          control: 'B',
+          description: '穿盾开核/无敌',
+        },
       ],
     },
     {
       title: '探索与系统',
       rows: [
-        { action: '交互', control: 'RB', description: '终端、通道、记录' },
+        { action: '交互', control: 'RB', description: '终端/通道/记录' },
         { action: '地图', control: 'VIEW', description: '探索地图' },
-        { action: '暂停', control: 'MENU', description: '暂停与设置' },
-        { action: '帮助', control: 'LB', description: '随时打开本页' },
-        { action: '菜单选择', control: '鼠标', description: '点击菜单按钮' },
+        { action: '暂停', control: 'MENU', description: '设置' },
+        { action: '帮助', control: 'LB', description: '随时查看' },
+        {
+          action: '菜单选择',
+          compactAction: '菜单',
+          control: '鼠标',
+          description: '点击按钮',
+        },
       ],
     },
   ],

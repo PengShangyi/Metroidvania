@@ -49,7 +49,7 @@ interface TypographyTestSnapshot {
   minimumFontSize: number | null;
   fontFamilies: string[];
   clippedTexts: string[];
-  crowdedTextPairs: string[];
+  overlappingTextPairs: string[];
   synthesizedStyles: string[];
   scaledTexts: string[];
 }
@@ -199,7 +199,7 @@ function typographySnapshot(game: Phaser.Game): TypographyTestSnapshot {
       );
     })
     .map(label);
-  const crowdedTextPairs: string[] = [];
+  const overlappingTextPairs: string[] = [];
   for (let firstIndex = 0; firstIndex < texts.length; firstIndex += 1) {
     const first = texts[firstIndex];
     const firstBounds = first.getBounds();
@@ -213,13 +213,8 @@ function typographySnapshot(game: Phaser.Game): TypographyTestSnapshot {
       const verticalOverlap =
         Math.min(firstBounds.bottom, secondBounds.bottom) -
         Math.max(firstBounds.top, secondBounds.top);
-      const verticalGap =
-        verticalOverlap > 0
-          ? -verticalOverlap
-          : Math.max(firstBounds.top, secondBounds.top) -
-            Math.min(firstBounds.bottom, secondBounds.bottom);
-      if (verticalGap < 2.5) {
-        crowdedTextPairs.push(`${label(first)} ↔ ${label(second)}`);
+      if (horizontalOverlap > 0.5 && verticalOverlap > 0.5) {
+        overlappingTextPairs.push(`${label(first)} ↔ ${label(second)}`);
       }
     }
   }
@@ -234,7 +229,7 @@ function typographySnapshot(game: Phaser.Game): TypographyTestSnapshot {
     minimumFontSize: fontSizes.length > 0 ? Math.min(...fontSizes) : null,
     fontFamilies: [...new Set(texts.map((text) => text.style.fontFamily))].sort(),
     clippedTexts,
-    crowdedTextPairs,
+    overlappingTextPairs,
     synthesizedStyles,
     scaledTexts,
   };

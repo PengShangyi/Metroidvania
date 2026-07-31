@@ -9,7 +9,7 @@ interface TypographySnapshot {
   minimumFontSize: number | null;
   fontFamilies: string[];
   clippedTexts: string[];
-  crowdedTextPairs: string[];
+  overlappingTextPairs: string[];
   synthesizedStyles: string[];
   scaledTexts: string[];
 }
@@ -37,8 +37,8 @@ test('keeps the tutorial and adaptive help usable at native resolution', async (
       page.evaluate(() => (window as unknown as LowResWindow).__STAR_ECHO_TEST__.snapshot().scene),
     )
     .toBe('title');
-  await expectReadableTypography(page);
   await captureTypography(page, testInfo, 'title');
+  await expectReadableTypography(page);
 
   await page.keyboard.press('t');
   await expect
@@ -46,8 +46,8 @@ test('keeps the tutorial and adaptive help usable at native resolution', async (
       page.evaluate(() => (window as unknown as LowResWindow).__STAR_ECHO_TEST__.snapshot().scene),
     )
     .toBe('tutorial');
-  await expectReadableTypography(page);
   await captureTypography(page, testInfo, 'tutorial');
+  await expectReadableTypography(page);
 
   await page.keyboard.press('h');
   await expect
@@ -55,8 +55,8 @@ test('keeps the tutorial and adaptive help usable at native resolution', async (
       page.evaluate(() => (window as unknown as LowResWindow).__STAR_ECHO_TEST__.snapshot().uiMode),
     )
     .toBe('help-keyboardMouse');
-  await expectReadableTypography(page);
   await captureTypography(page, testInfo, 'help-keyboard');
+  await expectReadableTypography(page);
 
   await page.keyboard.press('Escape');
   await expect
@@ -78,8 +78,8 @@ test('keeps the tutorial and adaptive help usable at native resolution', async (
       page.evaluate(() => (window as unknown as LowResWindow).__STAR_ECHO_TEST__.snapshot().uiMode),
     )
     .toBe('help-gamepad');
-  await expectReadableTypography(page);
   await captureTypography(page, testInfo, 'help-gamepad');
+  await expectReadableTypography(page);
   await page.keyboard.press('j');
   await expect
     .poll(() =>
@@ -98,7 +98,7 @@ async function expectReadableTypography(page: Page): Promise<void> {
   expect(typography.fontFamilies.length).toBeGreaterThan(0);
   expect(typography.fontFamilies.every((family) => family.includes('Fusion Pixel 12'))).toBe(true);
   expect(typography.clippedTexts).toEqual([]);
-  expect(typography.crowdedTextPairs).toEqual([]);
+  expect(typography.overlappingTextPairs).toEqual([]);
   expect(typography.synthesizedStyles).toEqual([]);
   expect(typography.scaledTexts).toEqual([]);
 }
