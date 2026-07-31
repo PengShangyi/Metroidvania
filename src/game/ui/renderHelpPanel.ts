@@ -33,9 +33,9 @@ export function renderHelpPanel(
   const groups = HELP_CONTENT[device];
   groups.forEach((group, groupIndex) => {
     const x = groupIndex === 0 ? 22 : 246;
-    container.add(scene.add.text(x, 79, group.title, bodyTextStyle('#ffb454')));
+    container.add(scene.add.text(x, 76, group.title, bodyTextStyle('#ffb454')));
     group.rows.forEach((row, rowIndex) => {
-      const y = 99 + rowIndex * 25;
+      const y = 94 + rowIndex * 30;
       container.add(
         scene.add.text(x, y, row.control, {
           ...bodyTextStyle('#07101d'),
@@ -46,12 +46,12 @@ export function renderHelpPanel(
         }),
       );
       container.add(
-        scene.add.text(x + 89, y - 1, `${row.action}\n${row.description}`, {
+        scene.add.text(x + 89, y - 1, row.action, {
           ...bodyTextStyle('#d8f7ff'),
           fontSize: '12px',
-          lineSpacing: 1,
         }),
       );
+      container.add(scene.add.text(x + 89, y + 14, row.description, bodyTextStyle('#8ce7ff')));
     });
   });
 
@@ -59,7 +59,7 @@ export function renderHelpPanel(
     scene.add
       .text(
         240,
-        238,
+        250,
         device === 'gamepad'
           ? 'LB 再次关闭 · 菜单仍使用鼠标点击'
           : 'H 或 ESC 关闭 · 鼠标仅用于菜单',

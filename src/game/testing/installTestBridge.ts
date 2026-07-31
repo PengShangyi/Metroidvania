@@ -49,6 +49,7 @@ interface TypographyTestSnapshot {
   minimumFontSize: number | null;
   fontFamilies: string[];
   clippedTexts: string[];
+  crowdedTextPairs: string[];
   synthesizedStyles: string[];
   scaledTexts: string[];
 }
@@ -198,6 +199,30 @@ function typographySnapshot(game: Phaser.Game): TypographyTestSnapshot {
       );
     })
     .map(label);
+  const crowdedTextPairs: string[] = [];
+  for (let firstIndex = 0; firstIndex < texts.length; firstIndex += 1) {
+    const first = texts[firstIndex];
+    const firstBounds = first.getBounds();
+    for (let secondIndex = firstIndex + 1; secondIndex < texts.length; secondIndex += 1) {
+      const second = texts[secondIndex];
+      const secondBounds = second.getBounds();
+      const horizontalOverlap =
+        Math.min(firstBounds.right, secondBounds.right) -
+        Math.max(firstBounds.left, secondBounds.left);
+      if (horizontalOverlap <= 0) continue;
+      const verticalOverlap =
+        Math.min(firstBounds.bottom, secondBounds.bottom) -
+        Math.max(firstBounds.top, secondBounds.top);
+      const verticalGap =
+        verticalOverlap > 0
+          ? -verticalOverlap
+          : Math.max(firstBounds.top, secondBounds.top) -
+            Math.min(firstBounds.bottom, secondBounds.bottom);
+      if (verticalGap < 2.5) {
+        crowdedTextPairs.push(`${label(first)} ↔ ${label(second)}`);
+      }
+    }
+  }
   const synthesizedStyles = texts.filter((text) => text.style.fontStyle !== 'normal').map(label);
   const scaledTexts = texts
     .filter((text) => Math.abs(text.scaleX - 1) > 0.001 || Math.abs(text.scaleY - 1) > 0.001)
@@ -209,6 +234,7 @@ function typographySnapshot(game: Phaser.Game): TypographyTestSnapshot {
     minimumFontSize: fontSizes.length > 0 ? Math.min(...fontSizes) : null,
     fontFamilies: [...new Set(texts.map((text) => text.style.fontFamily))].sort(),
     clippedTexts,
+    crowdedTextPairs,
     synthesizedStyles,
     scaledTexts,
   };

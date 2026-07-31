@@ -9,6 +9,7 @@ interface TypographySnapshot {
   minimumFontSize: number | null;
   fontFamilies: string[];
   clippedTexts: string[];
+  crowdedTextPairs: string[];
   synthesizedStyles: string[];
   scaledTexts: string[];
 }
@@ -97,6 +98,7 @@ async function expectReadableTypography(page: Page): Promise<void> {
   expect(typography.fontFamilies.length).toBeGreaterThan(0);
   expect(typography.fontFamilies.every((family) => family.includes('Fusion Pixel 12'))).toBe(true);
   expect(typography.clippedTexts).toEqual([]);
+  expect(typography.crowdedTextPairs).toEqual([]);
   expect(typography.synthesizedStyles).toEqual([]);
   expect(typography.scaledTexts).toEqual([]);
 }
