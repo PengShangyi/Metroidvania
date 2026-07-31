@@ -20,6 +20,7 @@ export class RoomRuntime {
   private collider?: Phaser.Physics.Arcade.Collider;
   private roomObjects: Phaser.GameObjects.GameObject[] = [];
   private messageToken = 0;
+  private safePosition = new Phaser.Math.Vector2();
 
   public constructor(scene: Phaser.Scene, repository: RoomRepository, session: GameSessionState) {
     this.scene = scene;
@@ -45,6 +46,7 @@ export class RoomRuntime {
     }
     this.collider = this.scene.physics.add.collider(player, this.platforms);
     player.setPosition(spawn.x, spawn.y).setVelocity(0, 0).setAcceleration(0, 0);
+    this.safePosition.set(spawn.x, spawn.y);
 
     for (const exit of this.room.exits) this.drawExit(exit);
     for (const hazard of this.room.hazards) this.drawHazard(hazard);
@@ -65,6 +67,10 @@ export class RoomRuntime {
   }
 
   public update(player: Player, input: ActionSnapshot, onExit: ExitHandler): void {
+    const playerBody = player.body as Phaser.Physics.Arcade.Body;
+    if ((playerBody.blocked.down || playerBody.touching.down) && !this.isTouchingHazard(player)) {
+      this.safePosition.set(player.x, player.y);
+    }
     const overlappingExit = this.room.exits.find((exit) =>
       Phaser.Geom.Rectangle.Contains(
         new Phaser.Geom.Rectangle(exit.x, exit.y, exit.width, exit.height),
@@ -110,6 +116,24 @@ export class RoomRuntime {
   public destroy(): void {
     this.clearRoom();
     this.clearMessage();
+  }
+
+  public get collisionPlatforms(): Phaser.Physics.Arcade.StaticGroup {
+    return this.platforms;
+  }
+
+  public isTouchingHazard(player: Player): boolean {
+    const playerBounds = player.getBounds();
+    return this.room.hazards.some((hazard) =>
+      Phaser.Geom.Intersects.RectangleToRectangle(
+        playerBounds,
+        new Phaser.Geom.Rectangle(hazard.x, hazard.y, hazard.width, hazard.height),
+      ),
+    );
+  }
+
+  public returnPlayerToSafety(player: Player): void {
+    player.setPosition(this.safePosition.x, this.safePosition.y - 2).setVelocity(0, -90);
   }
 
   private drawBackground(room: RoomDefinition): void {
@@ -217,7 +241,10 @@ export class RoomRuntime {
   private clearRoom(): void {
     this.collider?.destroy();
     this.platforms?.clear(true, true);
-    for (const object of this.roomObjects) object.destroy();
+    for (const object of this.roomObjects) {
+      this.scene.tweens.killTweensOf(object);
+      object.destroy();
+    }
     this.roomObjects = [];
   }
 }

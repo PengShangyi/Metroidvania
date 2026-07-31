@@ -32,6 +32,13 @@ export function createProceduralTextures(scene: Phaser.Scene): void {
     g.fillStyle(COLORS.cyan).fillRect(2, 0, 4, 4);
   });
 
+  createTexture(scene, 'slash', 28, 24, (g) => {
+    g.lineStyle(4, COLORS.pale, 0.9);
+    g.beginPath().arc(4, 20, 18, -1.35, 0.05).strokePath();
+    g.lineStyle(2, COLORS.cyan, 0.75);
+    g.beginPath().arc(4, 20, 13, -1.35, 0.05).strokePath();
+  });
+
   createTexture(scene, 'crawler', 24, 16, (g) => {
     g.fillStyle(0x1b2f51).fillTriangle(0, 14, 12, 2, 24, 14);
     g.fillStyle(COLORS.amber).fillRect(7, 10, 10, 2);
