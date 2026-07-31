@@ -26,4 +26,15 @@ describe('adaptive help content', () => {
     expect(tutorialControlHint('dash', 'gamepad')).toBe('B');
     expect(tutorialControlHint('wallJump', 'gamepad')).toContain('A');
   });
+
+  it('documents all three combat-fusion techniques for both devices', () => {
+    for (const device of ['keyboardMouse', 'gamepad'] as const) {
+      const combatRows = HELP_CONTENT[device][0]?.rows ?? [];
+      expect(combatRows.find((row) => row.action === '能量枪')?.description).toContain('贯穿');
+      expect(combatRows.find((row) => row.action === '能量刃')?.description).toContain('80ms');
+      expect(combatRows.find((row) => row.action === '相位冲刺')?.description).toContain(
+        '穿盾开核',
+      );
+    }
+  });
 });

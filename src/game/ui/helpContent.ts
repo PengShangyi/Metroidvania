@@ -19,9 +19,9 @@ export const HELP_CONTENT: Record<InputDevice, readonly HelpGroup[]> = {
       rows: [
         { action: '移动', control: 'A/D · ←/→', description: '横向移动' },
         { action: '跳跃', control: 'SPACE', description: '按住跳得更高' },
-        { action: '能量枪', control: 'J', description: '远程 1 伤害' },
-        { action: '能量刃', control: 'K', description: '近战 2 伤害' },
-        { action: '相位冲刺', control: 'SHIFT', description: '短暂无敌' },
+        { action: '能量枪', control: 'J', description: '墙跳首发贯穿' },
+        { action: '能量刃', control: 'K', description: '前 80ms 反射炮弹' },
+        { action: '相位冲刺', control: 'SHIFT', description: '穿盾开核 · 短暂无敌' },
       ],
     },
     {
@@ -41,9 +41,9 @@ export const HELP_CONTENT: Record<InputDevice, readonly HelpGroup[]> = {
       rows: [
         { action: '移动', control: '左摇杆/D-pad', description: '横向移动' },
         { action: '跳跃', control: 'A', description: '按住跳得更高' },
-        { action: '能量枪', control: 'X', description: '远程 1 伤害' },
-        { action: '能量刃', control: 'Y', description: '近战 2 伤害' },
-        { action: '相位冲刺', control: 'B', description: '短暂无敌' },
+        { action: '能量枪', control: 'X', description: '墙跳首发贯穿' },
+        { action: '能量刃', control: 'Y', description: '前 80ms 反射炮弹' },
+        { action: '相位冲刺', control: 'B', description: '穿盾开核 · 短暂无敌' },
       ],
     },
     {
