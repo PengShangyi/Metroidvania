@@ -17,6 +17,7 @@ import { setInputDevice, type InputDevice } from '../input/device';
 import type { Player } from '../player/Player';
 import { activateArcadeImage } from '../render/arcadePool';
 import { createNewSession, type GameSessionState } from '../state/GameSession';
+import { UI_FONT_DESCRIPTOR, UI_FONT_PROBE } from '../ui/fontLoader';
 import { RoomRepository } from '../world/RoomRepository';
 import type { RoomRuntime } from '../world/RoomRuntime';
 import type { BiomeId, EnemySpawn } from '../world/types';
@@ -38,7 +39,18 @@ interface TestSnapshot {
   bossDefeated: boolean;
   bossHealth: number | null;
   uiMode: string;
+  typography: TypographyTestSnapshot;
   combat: CombatTestSnapshot;
+}
+
+interface TypographyTestSnapshot {
+  fontReady: boolean;
+  textCount: number;
+  minimumFontSize: number | null;
+  fontFamilies: string[];
+  clippedTexts: string[];
+  synthesizedStyles: string[];
+  scaledTexts: string[];
 }
 
 export type CombatTestScenario = 'shield' | 'turretReflection' | 'bossReflection' | 'piercing';
@@ -164,8 +176,59 @@ function snapshot(game: Phaser.Game): TestSnapshot {
     bossDefeated: session.bossDefeated,
     bossHealth: (game.registry.get(REGISTRY_KEYS.bossHealth) as number | undefined) ?? null,
     uiMode: (game.registry.get(REGISTRY_KEYS.uiMode) as string | undefined) ?? 'game',
+    typography: typographySnapshot(game),
     combat: combatSnapshot(game),
   };
+}
+
+function typographySnapshot(game: Phaser.Game): TypographyTestSnapshot {
+  const texts = activeTextObjects(game).filter(
+    (text) => text.active && text.visible && text.alpha > 0 && text.text.length > 0,
+  );
+  const fontSizes = texts
+    .map((text) => Number.parseFloat(String(text.style.fontSize)))
+    .filter(Number.isFinite);
+  const label = (text: Phaser.GameObjects.Text): string =>
+    text.text.replaceAll('\n', ' / ').slice(0, 48);
+  const clippedTexts = texts
+    .filter((text) => {
+      const bounds = text.getBounds();
+      return (
+        bounds.left < -0.5 || bounds.top < -0.5 || bounds.right > 480.5 || bounds.bottom > 270.5
+      );
+    })
+    .map(label);
+  const synthesizedStyles = texts.filter((text) => text.style.fontStyle !== 'normal').map(label);
+  const scaledTexts = texts
+    .filter((text) => Math.abs(text.scaleX - 1) > 0.001 || Math.abs(text.scaleY - 1) > 0.001)
+    .map(label);
+
+  return {
+    fontReady: document.fonts.check(UI_FONT_DESCRIPTOR, UI_FONT_PROBE),
+    textCount: texts.length,
+    minimumFontSize: fontSizes.length > 0 ? Math.min(...fontSizes) : null,
+    fontFamilies: [...new Set(texts.map((text) => text.style.fontFamily))].sort(),
+    clippedTexts,
+    synthesizedStyles,
+    scaledTexts,
+  };
+}
+
+function activeTextObjects(game: Phaser.Game): Phaser.GameObjects.Text[] {
+  const texts: Phaser.GameObjects.Text[] = [];
+  const visit = (object: Phaser.GameObjects.GameObject): void => {
+    if (object instanceof Phaser.GameObjects.Text) {
+      texts.push(object);
+      return;
+    }
+    if (object instanceof Phaser.GameObjects.Container) {
+      for (const child of object.list) visit(child);
+    }
+  };
+  for (const scene of game.scene.getScenes(true)) {
+    for (const object of scene.children.list) visit(object);
+  }
+  return texts;
 }
 
 function combatSnapshot(game: Phaser.Game): CombatTestSnapshot {

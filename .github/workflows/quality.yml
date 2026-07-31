@@ -60,3 +60,12 @@ jobs:
 
       - name: Run browser journeys
         run: pnpm test:e2e
+
+      - name: Upload native-resolution typography baselines
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: typography-480x270
+          path: test-results/typography
+          if-no-files-found: error
+          retention-days: 7
