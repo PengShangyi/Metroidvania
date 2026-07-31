@@ -1,4 +1,4 @@
-# `v0.1.0` 发布验收记录
+# `v0.2.0` 发布验收记录
 
 验收日期：2026-07-31（Europe/London）
 
@@ -6,57 +6,61 @@
 
 ## 功能范围
 
-- [x] 17 个房间：坠星前庭 6、生化锻造区 6、零点反应堆 4、Boss 房 1。
-- [x] 3 个存档终端、2 个隐藏生命升级、3 个环境叙事终端。
-- [x] 相位冲刺、磁附跃迁、能力门、中央井捷径和完整回环路线。
-- [x] 四类普通敌人；守核者 Λ 为 30 生命、两阶段、三种明确预警招式。
-- [x] 标题、继续/新游戏、HUD、地图、暂停、设置、控制说明、结局统计和通关后探索。
-- [x] 版本化存档、安全损坏回退、存储拒绝降级和设置独立持久化。
-- [x] 键盘、手柄热插拔、失焦暂停/清输入、全屏与程序化 Web Audio 降级。
+- [x] 保留 17 房间完整能力路线、30 生命 Boss、结局及通关后探索。
+- [x] `star-echo.save.v1` 结构未变，`v0.1.0` 存档继续兼容。
+- [x] 三个指定爬行体使用带盾变体，支持冲刺越心开核、核心侧判定、1.8 秒暴露与 350ms 预警。
+- [x] 能量刃在 105ms 判定的前 80ms 反射炮台弹和 Boss 扇形弹。
+- [x] 实际墙跳武装首发贯穿弹；落地、死亡、换房和战斗重置均会清除。
+- [x] 命中停顿、硬直、击退、局部火花与五项专用程序化音效完整接入辅助设置。
+- [x] 九步新手训练、三处会话内提示及键鼠/手柄自适应 Help 页使用正式战斗判定。
 
 ## 自动验证
 
 - [x] `pnpm install --frozen-lockfile`。
-- [x] `pnpm check`：格式、lint、类型检查、13 个 Vitest 文件 / 29 个测试、生产构建和加载预算。
-- [x] `pnpm assets:validate`：12 个运行时图像、瓦片接缝、图集尺寸与总量检查。
-- [x] `pnpm test:e2e`：Chromium、Firefox、WebKit 各 3 条，共 9 条浏览器旅程。
-- [x] 完整路线覆盖：新游戏 → 两项能力 → Boss → 结局 → 继续探索。
-- [x] 存档恢复、损坏存档替换、地图、暂停、设置和控制菜单覆盖。
-- [x] 菜单帧同步在 Chromium 4 并发下连续重复 10 次通过。
-- [x] 生产构建扫描确认不存在 `__STAR_ECHO_TEST__`。
+- [x] `pnpm check`：格式、lint、类型检查、23 个 Vitest 文件 / 59 个测试、生产构建和加载预算。
+- [x] `pnpm assets:validate`：运行时图像、瓦片接缝、图集尺寸与 20MB 总量检查。
+- [x] `pnpm test:e2e`：Chromium、Firefox、WebKit 共 30 项旅程。
+- [x] 12 项融合战斗旅程使用真实输入覆盖盾兵、炮台/Boss 反射、双目标贯穿及生命周期清理。
+- [x] 世界验证确认仅三个指定盾兵，17 房间能力图及旧存档路线仍完整可达。
+- [x] 生产构建扫描确认不存在 `__STAR_ECHO_TEST__` 或受控战斗场景接口。
 
-## 性能与资源
+## 性能与视觉
 
-- [x] 运行时图像资源 0.15MB / 20MB。
-- [x] 生产首屏 1.25MB / 8MB。
-- [x] 标题仅预载标题图、主角图集和基础 UI；三个区域按进入顺序懒加载。
-- [x] 玩家、敌人和 Boss 投射物使用对象池；房间切换释放临时对象。
-- [x] HUD 文本只在值改变时重绘。
-- [x] Chromium 960×540 活跃游玩 120 帧采样为 60.03 FPS。
+- [x] 运行时图像资源 0.15MB / 20MB，生产首屏 1.29MB / 8MB。
+- [x] 480×270 检查标题、九步训练、键鼠/手柄 Help、盾牌朝向、核心闪烁、反射弹及贯穿状态，无裁切或文字混淆。
+- [x] 960×540 检查三个区域、Boss、战斗特效和结局；像素对齐及最近邻缩放保持正确。
+- [x] 暂停、死亡、换房和场景关闭恢复物理倍率并清理投射物、硬直与贯穿武装。
 
-## 视觉基线
+| 960×540 核心暴露                       | 960×540 短窗反射                   | 960×540 贯穿武装                          |
+| -------------------------------------- | ---------------------------------- | ----------------------------------------- |
+| ![核心暴露](qa/combat-shield-open.png) | ![短窗反射](qa/combat-reflect.png) | ![贯穿武装](qa/combat-piercing-armed.png) |
 
-以下截图由 Chromium 在 960×540 测试构建中生成，并逐张检查了缺图、裁切、前后景对比、HUD、区域调色、Boss 轮廓与结局排版：
+| 480×270 核心暴露                                | 480×270 短窗反射                            | 480×270 贯穿武装                                   |
+| ----------------------------------------------- | ------------------------------------------- | -------------------------------------------------- |
+| ![低分辨率核心暴露](qa/low-res-shield-open.png) | ![低分辨率短窗反射](qa/low-res-reflect.png) | ![低分辨率贯穿武装](qa/low-res-piercing-armed.png) |
 
-| 标题                      | 坠星前庭                      |
-| ------------------------- | ----------------------------- |
-| ![标题画面](qa/title.png) | ![坠星前庭](qa/vestibule.png) |
+应用内浏览器的本地页连接按规定尝试，但本机管理策略拒绝访问 `127.0.0.1`；未绕过该策略。视觉和交互复核由仓库固定的 Playwright Chromium 测试构建完成，控制台无错误。该限制属于验收宿主，不是游戏运行时错误。
 
-| 生化锻造区                     | 零点反应堆                    |
-| ------------------------------ | ----------------------------- |
-| ![生化锻造区](qa/bioforge.png) | ![零点反应堆](qa/reactor.png) |
+## 原子提交
 
-| 守核者 Λ             | 结局                   |
-| -------------------- | ---------------------- |
-| ![Boss](qa/boss.png) | ![结局](qa/ending.png) |
+`v0.2.0` 使用 11 个按主题划分、各自可构建的提交，不 squash：
 
-Codex 应用内浏览器的本地页连接按规定尝试两次，但本机管理策略无法验证并拒绝访问 `127.0.0.1`；未绕过该安全策略。相同测试构建随后通过项目固定的 Playwright Chromium 会话完成截图、交互和控制台错误验收。这是验收宿主的环境限制，不是游戏运行时错误。
+1. `refactor(combat): type projectile ownership and hit metadata`
+2. `feat(combat): add hit stop knockback and impact feedback`
+3. `feat(enemies): add shield crawler counterplay`
+4. `feat(combat): reflect hostile projectiles with the energy blade`
+5. `feat(ability): add piercing shots after wall jumps`
+6. `feat(tutorial): teach combat fusion mechanics`
+7. `feat(world): place shield encounters and contextual hints`
+8. `feat(ui): document advanced combat techniques`
+9. `test: cover shield reflection and piercing journeys`
+10. `docs: document v0.2 combat rules and playtest results`
+11. `chore(release): prepare v0.2.0`
 
-## 发布操作
+## 仓库外发布操作
 
-- [x] 28 个计划主题均保持为可构建的独立提交，不 squash。
-- [x] 高分辨率源图由 Git LFS 跟踪，运行时不引用源图目录。
-- [ ] 推送前执行 `git fetch origin` 并确认 `origin/main` 没有非快进新历史。
-- [ ] 推送 `main` 和 `v0.1.0` 标签后确认 GitHub Actions 绿色。
+- [ ] 本提交完成后执行 `git fetch origin`，确认 `origin/main` 没有非快进新历史。
+- [ ] 推送 `main`，等待 GitHub Actions 的 `check` 与 `browser` 均成功。
+- [ ] 在绿色提交上创建并推送注释标签 `v0.2.0`，不 force-push。
 
-最后两项属于仓库外部发布操作；完成状态以 Git 远端和 GitHub Actions 为准。
+以上三项必须发生在本发布提交之后，因此以远端 Git 历史、Actions 记录和标签对象为最终状态来源。`v0.1.0` 的原始验收快照保存在 [`releases/v0.1.0.md`](releases/v0.1.0.md)。

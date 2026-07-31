@@ -31,7 +31,7 @@ export class TitleScene extends Phaser.Scene {
     this.readResult = this.saveService.read();
 
     this.add.text(240, 38, '星骸回声', titleTextStyle()).setOrigin(0.5);
-    this.add.text(240, 68, 'STAR ECHO // v0.1.0', bodyTextStyle('#8da1c8')).setOrigin(0.5);
+    this.add.text(240, 68, 'STAR ECHO // v0.2.0', bodyTextStyle('#8da1c8')).setOrigin(0.5);
 
     const hasSave = this.readResult.status === 'valid';
     const continueButton = this.createMenuButton(104, '继续任务', hasSave, () =>
