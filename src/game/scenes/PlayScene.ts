@@ -15,6 +15,7 @@ import {
 } from '../render/regionAssets';
 import { createBrowserSaveService, type SaveService } from '../save/SaveService';
 import type { GameSessionState } from '../state/GameSession';
+import { respawnDecision } from '../state/respawnQueue';
 import { RoomRepository } from '../world/RoomRepository';
 import { RoomRuntime } from '../world/RoomRuntime';
 import {
@@ -37,6 +38,8 @@ export class PlayScene extends Phaser.Scene {
   private saveService!: SaveService;
   private audio!: ProceduralAudio;
   private transitioning = false;
+  private respawning = false;
+  private pendingRespawn = false;
   private contextHintToken = 0;
   private hintSession?: GameSessionState;
   private contextHints = new ContextualCombatHintTracker();
@@ -172,13 +175,26 @@ export class PlayScene extends Phaser.Scene {
         this.cameras.main.fadeIn(140, 7, 11, 24);
         this.time.delayedCall(140, () => {
           this.transitioning = false;
+          this.flushPendingRespawn();
         });
       });
     });
   }
 
+  private flushPendingRespawn(): void {
+    if (!this.pendingRespawn) return;
+    this.pendingRespawn = false;
+    this.respawn();
+  }
+
   private respawn(): void {
-    if (this.transitioning) return;
+    const decision = respawnDecision(this.respawning, this.transitioning);
+    if (decision === 'ignore') return;
+    if (decision === 'queue') {
+      this.pendingRespawn = true;
+      return;
+    }
+    this.respawning = true;
     this.transitioning = true;
     this.combat.clearTransient();
     this.enemySystem.clear();
@@ -195,6 +211,8 @@ export class PlayScene extends Phaser.Scene {
         this.registry.set(REGISTRY_KEYS.runtimeMessage, '外骨骼已由终端重构');
         this.time.delayedCall(280, () => {
           this.transitioning = false;
+          this.respawning = false;
+          this.pendingRespawn = false;
         });
       });
     });

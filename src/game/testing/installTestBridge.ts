@@ -101,6 +101,8 @@ export interface StarEchoTestBridge {
 type TestWindow = Window & { __STAR_ECHO_TEST__?: StarEchoTestBridge };
 type PlaySceneInternals = Phaser.Scene & {
   transitioning: boolean;
+  respawning: boolean;
+  pendingRespawn: boolean;
   player: Player;
   combat: CombatSystem;
   enemySystem: EnemySystem;
@@ -336,6 +338,8 @@ async function warp(game: Phaser.Game, roomId: string, patch: TestProgressPatch)
   await new Promise<void>((resolve) => {
     play.ensureRegionAssets(biome, () => {
       play.transitioning = false;
+      play.respawning = false;
+      play.pendingRespawn = false;
       play.loadRoom(roomId, '');
       resolve();
     });
