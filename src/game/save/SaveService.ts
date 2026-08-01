@@ -121,21 +121,30 @@ export class SaveService {
   }
 
   private hydrate(data: SaveDataV1): GameSessionState {
+    const defaults = createNewSession();
+    const maxHealth = positiveCount(data.maxHealth, defaults.maxHealth);
     return {
       currentRoomId: data.currentRoomId,
       checkpointRoomId: data.checkpointRoomId,
       checkpointSpawnId: data.checkpointSpawnId,
-      health: Math.max(1, data.health),
-      maxHealth: data.maxHealth,
+      health: Math.min(maxHealth, positiveCount(data.health, maxHealth)),
+      maxHealth,
       abilities: { ...data.abilities },
       visitedRooms: new Set(data.visitedRooms),
       collectedPickups: new Set(data.collectedPickups),
       readLore: new Set(data.readLore),
       bossDefeated: data.bossDefeated,
-      elapsedMs: data.elapsedMs,
+      elapsedMs: Number.isFinite(data.elapsedMs) ? Math.max(0, data.elapsedMs) : 0,
       settings: this.readSettings(),
     };
   }
+}
+
+/** 存档只做了类型校验，数值区间必须在这里兜住，否则 0 上限会让重生陷入死循环。 */
+function positiveCount(value: number, fallback: number): number {
+  if (!Number.isFinite(value)) return fallback;
+  const whole = Math.floor(value);
+  return whole >= 1 ? whole : fallback;
 }
 
 function isSaveDataV1(value: unknown): value is SaveDataV1 {
