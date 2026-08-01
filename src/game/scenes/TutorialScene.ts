@@ -18,6 +18,7 @@ import { Player } from '../player/Player';
 import { releaseArcadeImage } from '../render/arcadePool';
 import { queueRegionAssets } from '../render/regionAssets';
 import { createNewSession, type GameSessionState } from '../state/GameSession';
+import { tutorialStageComplete } from '../tutorial/stageCompletion';
 import { TUTORIAL_STEPS, tutorialAbilities, tutorialEnemies } from '../tutorial/tutorialPlan';
 import { tutorialControlHint } from '../ui/helpContent';
 import { bodyTextStyle } from '../ui/text';
@@ -126,41 +127,28 @@ export class TutorialScene extends Phaser.Scene {
     const device = getInputDevice(this.registry);
     if (device !== this.renderedDevice) this.renderStageInstruction(device);
     const body = this.player.body as Phaser.Physics.Arcade.Body;
-    const touchingWallBeforeUpdate =
-      body.blocked.left || body.blocked.right || body.touching.left || body.touching.right;
+    const wallJumpSerialBefore = this.player.wallJumpSerial;
     this.player.updateMovement(delta, input, this.session.abilities);
     const attack = this.combat.update(input);
     this.enemySystem.update(delta, attack);
     const step = TUTORIAL_STEPS[this.stageIndex];
     if (!step) return;
+    if (step.id === 'weapons') this.updateWeaponLesson(attack);
 
-    if (step.id === 'move' && this.player.x >= 82) this.advanceStage();
-    else if (
-      step.id === 'jump' &&
-      this.player.x >= 122 &&
-      this.player.x <= 184 &&
-      this.player.y <= 212 &&
-      (body.blocked.down || body.touching.down)
-    ) {
-      this.advanceStage();
-    } else if (step.id === 'weapons') {
-      this.updateWeaponLesson(attack);
-    } else if (step.id === 'dash' && this.player.movementState === 'dash' && this.player.x >= 312) {
-      this.advanceStage();
-    } else if (
-      step.id === 'wallJump' &&
-      input.pressed.jump &&
-      touchingWallBeforeUpdate &&
-      body.velocity.y < 0
-    ) {
-      this.advanceStage();
-    } else if (
-      step.id === 'interact' &&
-      input.pressed.interact &&
-      Phaser.Math.Distance.Between(this.player.x, this.player.y, 448, 232) < 42
-    ) {
-      this.finishTutorial();
-    }
+    const complete = tutorialStageComplete(step.id, {
+      playerX: this.player.x,
+      playerY: this.player.y,
+      grounded: body.blocked.down || body.touching.down,
+      movementState: this.player.movementState,
+      wallJumpSerialBefore,
+      wallJumpSerialAfter: this.player.wallJumpSerial,
+      interactPressed: input.pressed.interact,
+      shootTargetDown: this.shootComplete,
+      meleeTargetDown: this.meleeComplete,
+    });
+    if (!complete) return;
+    if (step.id === 'interact') this.finishTutorial();
+    else this.advanceStage();
   }
 
   private enterStage(): void {
@@ -256,7 +244,6 @@ export class TutorialScene extends Phaser.Scene {
       this.meleeTarget.setTintFill(0xffffff).setAlpha(0.25);
       this.meleeComplete = true;
     }
-    if (this.shootComplete && this.meleeComplete) this.advanceStage();
   }
 
   private advanceStage(): void {
