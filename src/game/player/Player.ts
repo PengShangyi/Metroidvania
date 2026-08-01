@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 
 import type { ActionSnapshot } from '../input/actions';
 import type { AbilityState } from '../state/GameSession';
-import { canStartDash, DASH, dashVelocity } from './dashMath';
+import { canStartDash, DASH, dashRefreshAllowed, dashVelocity } from './dashMath';
 import {
   canConsumeJump,
   horizontalAcceleration,
@@ -28,6 +28,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   private movementStateValue: PlayerMovementState = 'idle';
   private dashAvailable = true;
   private dashEndsAt = 0;
+  private dashCooldownReadyAt = 0;
   private dashInvulnerableUntil = 0;
   private actionLockedUntil = 0;
   private wallJumpLockUntil = 0;
@@ -54,7 +55,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     const wallDirection = wallContactDirection(body.blocked.left, body.blocked.right);
     if (grounded) {
       this.groundedAt = now;
-      if (now >= this.dashEndsAt) this.dashAvailable = true;
+      if (dashRefreshAllowed(now, this.dashCooldownReadyAt, grounded)) this.dashAvailable = true;
     }
     if (input.pressed.jump) this.jumpBufferedUntil = now + MOVEMENT.jumpBufferMs;
 
@@ -147,10 +148,15 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   public resetTraversalState(): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
     this.dashEndsAt = 0;
+    this.dashCooldownReadyAt = 0;
     this.dashInvulnerableUntil = 0;
     this.dashAvailable = true;
     this.actionLockedUntil = 0;
     this.wallJumpLockUntil = 0;
+    // 不清掉这两个的话，换房或重生后会立刻消费上个房间残留的跳跃缓冲、
+    // 或者凭空得到一次土狼跳。
+    this.jumpBufferedUntil = Number.NEGATIVE_INFINITY;
+    this.groundedAt = Number.NEGATIVE_INFINITY;
     body.setAllowGravity(true);
     body.setMaxVelocity(MOVEMENT.speed, MOVEMENT.maxFallSpeed);
     this.clearTint().setAlpha(1);
@@ -162,6 +168,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.setFlipX(this.facing < 0);
     this.dashAvailable = false;
     this.dashEndsAt = now + DASH.durationMs;
+    this.dashCooldownReadyAt = now + DASH.cooldownMs;
     this.dashInvulnerableUntil = now + DASH.invulnerabilityMs;
     (this.body as Phaser.Physics.Arcade.Body).setMaxVelocity(DASH.speed, MOVEMENT.maxFallSpeed);
   }

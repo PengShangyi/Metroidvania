@@ -48,7 +48,7 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
     id: 'dash',
     title: '相位冲刺',
     objective: '向右冲过青色相位门',
-    effect: '冲刺持续 150ms，前 120ms 可免疫伤害；空中次数落地恢复。',
+    effect: '冲刺持续 150ms，全程免疫伤害；落地并等冷却走完后才会恢复。',
   },
   {
     id: 'shield',
