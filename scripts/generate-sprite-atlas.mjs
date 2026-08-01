@@ -7,6 +7,11 @@ import sharp from 'sharp';
 // idle 的帧间差异只有 1px、run 只有 1-2px——在 3fps / 10fps 下看起来「根本不动」。
 // 现在以去背原画降采样出的基准帧为底，程序化派生全部 19 帧。
 // 布局仍是 456×32 / 每帧 24×32，playerAnimations.ts 的帧表不需要改。
+//
+// 原画是朝左的，而 docs/ART_BIBLE.md 的约定是「只绘制朝右帧，朝左由运行时镜像」
+// （Player.setFlipX(facing < 0)）。基准帧必须 flop 成朝右，否则屏幕上的朝向与
+// 移动方向恰好相反——下面手工放的枪口闪光、冲刺残影，以及 CombatSystem 的弹体
+// 与刀光偏移，全都是按朝右写的。
 
 const frameWidth = 24;
 const frameHeight = 32;
@@ -36,10 +41,11 @@ try {
   );
 }
 
-// 基准帧：原画等比缩进 20×28，底部对齐、水平居中。
+// 基准帧：原画镜像成朝右后等比缩进 20×28，底部对齐、水平居中。
 const scaled = await sharp(cutout)
   .ensureAlpha()
   .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
+  .flop()
   .resize(bodyMaxWidth, bodyMaxHeight, {
     fit: 'inside',
     kernel: sharp.kernel.nearest,
@@ -144,9 +150,9 @@ drawBase(7, { bob: 1, legShift: -1, legTop: 24 });
 // shoot 8-9：只点一小簇枪口闪光；弹体本身由 CombatSystem 生成，不用在帧里画
 drawBase(8);
 drawBase(9, { bob: -1 });
-rect(8, 20, 16, 3, 2, palette.cyan);
-rect(9, 20, 15, 3, 2, palette.pale);
-writePixel(9, 23, 16, palette.cyan);
+rect(8, 19, 16, 3, 2, palette.cyan);
+rect(9, 19, 15, 3, 2, palette.pale);
+writePixel(9, 22, 16, palette.cyan);
 
 // slash 10-12：只做出挥砍的身体姿态。刀光是 'slash' 贴图另画的，
 // 帧里再叠一道粗条只会糊成一片。
