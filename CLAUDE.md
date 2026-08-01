@@ -46,7 +46,7 @@ The canvas is a fixed **480×270** on a 16px tile grid, scaled with `Phaser.Scal
 
 Game rules live in Phaser-free modules with colocated Vitest tests; Phaser-coupled classes hold no rules. Vitest runs in the **`node` environment** with no jsdom and no Phaser, so anything under test must not import `phaser` at runtime (type-only `import type Phaser` is fine).
 
-- Pure + unit-tested: `*Math.ts`, `*Rules.ts`, `rules.ts`, `progression.ts`, `respawnQueue.ts`, `resumePoint.ts`, `stageCompletion.ts`, `tutorialPlan.ts`, `gateMessages.ts`, `helpContent.ts`, `completion.ts`, `soundDesign.ts`, `SaveService.ts` (injectable `StorageLike`), …
+- Pure + unit-tested: `*Math.ts`, `*Rules.ts`, `rules.ts`, `progression.ts`, `reachability.ts`, `respawnQueue.ts`, `resumePoint.ts`, `stageCompletion.ts`, `tutorialPlan.ts`, `gateMessages.ts`, `helpContent.ts`, `completion.ts`, `mapVisibility.ts`, `soundDesign.ts`, `SaveService.ts` (injectable `StorageLike`), …
 - Phaser-coupled and deliberately untested by Vitest: `*Scene.ts`, `*System.ts`, `Player`, `EnemySprite`, `RoomRuntime`, `CombatFeedback`. These are covered by the Playwright journeys instead.
 
 When adding a mechanic, extract the decision into a pure function next to its siblings and have the system call it. Existing examples worth imitating: `respawnDecision` (start/queue/ignore), `tutorialStageComplete`, `canWallJump`, `resolveDamage`.
@@ -76,6 +76,8 @@ Cross-system observation uses scene events: `AUDIO_EVENT` for sound cues and `CO
 `src/game/world/rooms.json` is the single source of truth for level layout, and `RoomRepository`'s constructor runs `validateRooms` on it at startup. The invariants it enforces: exactly 17 rooms, unique room/pickup/enemy ids, every point inside room bounds, every exit pointing at a real room + spawn **with a return path**, checkpoints referencing a real spawn, and `variant: 'shielded'` only on `crawler`. `RoomRepository.test.ts` additionally proves via `simulateProgression` that all 17 rooms and both abilities are reachable from `vestibule_dock`, that the boss stays behind `dualAbility`, and that exactly three named shield crawlers exist. Editing `rooms.json` means keeping all of that true.
 
 `meetsRequirement` is the one gate check, shared by exits, pickups, and the reachability simulation — pickups are gated too, not just doors.
+
+**Graph reachability is not geometric reachability.** `simulateProgression` only walks ability-gate booleans; it happily blesses a world whose platforms the player physically cannot jump onto. `world/reachability.ts` closes that hole: it derives a movement envelope by frame-stepping Arcade's semi-implicit Euler from `MOVEMENT`/`DASH`/`WALL_JUMP` (max jump rise is **47.5px**, not the analytic 50), then BFSes the room's platform graph. `roomGeometry.test.ts` asserts against the real `rooms.json` with two envelopes — `conservative` for "must be traversable", `generous` for "must NOT be traversable without the ability". Any edit to platform coordinates, hazards, exits, pickups or checkpoints has to keep those green. Exits auto-trigger on walk-in, so `RoomRuntime` disarms whichever exit contains the spawn until the player steps out of it.
 
 ### Save format
 

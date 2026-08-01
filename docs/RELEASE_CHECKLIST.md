@@ -1,66 +1,69 @@
-# `v0.2.0` 发布验收记录
+# 玩法修复与美术接入 验收记录
 
-验收日期：2026-07-31（Europe/London）
+验收日期：2026-08-01（Europe/London）
 
-基线环境：macOS、Node.js 24.14.0、pnpm 11.9.0
+基线环境：macOS、Node.js 24.18.0、pnpm 11.9.0
 
-## 功能范围
+本轮的目标是修掉一批真实缺陷、把「能力门」从门禁卡变回地形挑战，
+并把仓库里早就画好却从未被加载的美术接进游戏。
 
-- [x] 保留 17 房间完整能力路线、30 生命 Boss、结局及通关后探索。
-- [x] `star-echo.save.v1` 结构未变，`v0.1.0` 存档继续兼容。
-- [x] 三个指定爬行体使用带盾变体，支持冲刺越心开核、核心侧判定、1.8 秒暴露与 350ms 预警。
-- [x] 能量刃在 105ms 判定的前 80ms 反射炮台弹和 Boss 扇形弹。
-- [x] 实际墙跳武装首发贯穿弹；落地、死亡、换房和战斗重置均会清除。
-- [x] 命中停顿、硬直、击退、局部火花与五项专用程序化音效完整接入辅助设置。
-- [x] 九步新手训练、三处会话内提示及键鼠/手柄自适应 Help 页使用正式战斗判定。
+## 修复的缺陷
+
+- [x] **跳不到的平台**：实测最大跳跃上升是 47.5px（Arcade 的半隐式 Euler 比解析式少半帧），
+      而十处平台落差正好是 48px，只靠 4px 的重叠容差才勉强判定为落地。统一降到 44px。
+- [x] **悬在半空的门**：`bioforge_spire.to_reactor` 与 `reactor_coreway.to_threshold` 的判定区
+      前方没有落脚平台（平台止于 x=410，门在 438），拿齐两项能力也进不去。
+- [x] **冲刺没有冷却**：落地即刷新，贴地连按可维持约 250px/s（走路 110），无敌覆盖率近七成。
+      改为 450ms 冷却驱动，并把无敌时长提到与冲刺等长（原先最后 30ms 会掉血，与穿盾教学冲突）。
+- [x] **教学软锁**：反射课与贯穿课的训练体可以被打死，而完成信号来自 COMBAT_EVENTS，
+      靶子没了就再也触发不了；敌人死光后玩家也不会再受伤，唯一的恢复路径走不到。
+- [x] **存档可致白屏**：hydrate 不校验房间 id，未知 id 会让 `PlayScene.preload` 抛出未捕获异常。
+- [x] **地图进度丢失**：换房不写存档，两次写入之间探索的房间会从 `visitedRooms` 里消失。
+- [x] 爬行体无悬崖检测、炮台无索敌范围、近战判定框不跟随玩家、无敌帧仍会吞掉弹体、
+      Boss 弹幕不与地形碰撞、换房后残留跳跃缓冲。
+
+## 银河城结构补强
+
+- [x] **地图战争迷雾**：原先开局就画满 17 个房间和全部连接。现在分「走过 / 见过门 / 未知」三档，
+      并在走过的房间上标出终端、未取道具与能力门。
+- [x] **走入通道即换房**：去掉「按 E 过门」，E 只保留给终端和残留记录；
+      落在返回出口判定区里的两个生成点用「出口武装」机制避免原路弹回。
+- [x] **能力门地形化**：封锁堤道改成 104px 的酸蚀断口，走跳最远 71.5px，必须冲刺才过得去。
+- [x] **Boss 前与生化区后半增设终端**：原先 Boss 失败要重跑四个房间，花塔死亡要退回孢流入口。
+
+## 美术
+
+- [x] 四只敌人的立绘早就画好却零引用，游戏一直在渲染程序化的三角形和矩形；
+      新脚本按 alpha 列投影自动切图并派生护盾/开核变体。
+- [x] 主角 19 帧原先是十来条 `rect()` 拼的色块，帧间只差 1-2px，视觉上「不动」；
+      改为从去背原画派生，跨步、残影、真溶解都做出来了。
+- [x] 前庭六个房间（开局区域）补上 16px 无缝地块，地形不再是纯色矩形。
+- [x] 标题页接上主角立绘（此前 `textures.exists` 分支永远走不到）。
+- [x] 背景图 + 雾层 + 描边网格三层叠加把手绘背景压得几乎看不见，重新调参。
 
 ## 自动验证
 
 - [x] `pnpm install --frozen-lockfile`。
-- [x] `pnpm check`：格式、lint、类型检查、23 个 Vitest 文件 / 59 个测试、生产构建和加载预算。
-- [x] `pnpm assets:validate`：运行时图像、瓦片接缝、图集尺寸与 20MB 总量检查。
-- [x] `pnpm test:e2e`：Chromium、Firefox、WebKit 共 30 项旅程。
-- [x] 12 项融合战斗旅程使用真实输入覆盖盾兵、炮台/Boss 反射、双目标贯穿及生命周期清理。
-- [x] 世界验证确认仅三个指定盾兵，17 房间能力图及旧存档路线仍完整可达。
-- [x] 生产构建扫描确认不存在 `__STAR_ECHO_TEST__` 或受控战斗场景接口。
+- [x] `pnpm check`：格式、lint、类型检查、32 个 Vitest 文件 / 141 项测试、生产构建与加载预算。
+- [x] `pnpm assets:validate`：19 张运行时图像、瓦片接缝、图集与敌人贴图尺寸、20MB 总量。
+- [x] `pnpm test:e2e`：Chromium、Firefox、WebKit 共 33 项旅程。
+- [x] 运行时图像 0.78MB / 20MB，生产首屏 1.94MB / 8MB。
+- [x] 生产构建扫描确认不存在 `__STAR_ECHO_TEST__`。
 
-## 性能与视觉
+## 新增的回归防线
 
-- [x] 运行时图像资源 0.15MB / 20MB，生产首屏 1.29MB / 8MB。
-- [x] 480×270 检查标题、九步训练、键鼠/手柄 Help、盾牌朝向、核心闪烁、反射弹及贯穿状态，无裁切或文字混淆。
-- [x] 960×540 检查三个区域、Boss、战斗特效和结局；像素对齐及最近邻缩放保持正确。
-- [x] 暂停、死亡、换房和场景关闭恢复物理倍率并清理投射物、硬直与贯穿武装。
-
-| 960×540 核心暴露                       | 960×540 短窗反射                   | 960×540 贯穿武装                          |
-| -------------------------------------- | ---------------------------------- | ----------------------------------------- |
-| ![核心暴露](qa/combat-shield-open.png) | ![短窗反射](qa/combat-reflect.png) | ![贯穿武装](qa/combat-piercing-armed.png) |
-
-| 480×270 核心暴露                                | 480×270 短窗反射                            | 480×270 贯穿武装                                   |
-| ----------------------------------------------- | ------------------------------------------- | -------------------------------------------------- |
-| ![低分辨率核心暴露](qa/low-res-shield-open.png) | ![低分辨率短窗反射](qa/low-res-reflect.png) | ![低分辨率贯穿武装](qa/low-res-piercing-armed.png) |
-
-应用内浏览器的本地页连接按规定尝试，但本机管理策略拒绝访问 `127.0.0.1`；未绕过该策略。视觉和交互复核由仓库固定的 Playwright Chromium 测试构建完成，控制台无错误。该限制属于验收宿主，不是游戏运行时错误。
-
-## 原子提交
-
-`v0.2.0` 使用 11 个按主题划分、各自可构建的提交，不 squash：
-
-1. `refactor(combat): type projectile ownership and hit metadata`
-2. `feat(combat): add hit stop knockback and impact feedback`
-3. `feat(enemies): add shield crawler counterplay`
-4. `feat(combat): reflect hostile projectiles with the energy blade`
-5. `feat(ability): add piercing shots after wall jumps`
-6. `feat(tutorial): teach combat fusion mechanics`
-7. `feat(world): place shield encounters and contextual hints`
-8. `feat(ui): document advanced combat techniques`
-9. `test: cover shield reflection and piercing journeys`
-10. `docs: document v0.2 combat rules and playtest results`
-11. `chore(release): prepare v0.2.0`
+- **几何可达性模型**（`world/reachability.ts`）：按 `MOVEMENT`/`DASH`/`WALL_JUMP` 的常量
+  逐帧模拟 Arcade 的半隐式 Euler 推出运动包络，再对房间平台图做 BFS。
+  保守包络断言「必须走得通」，宽松包络断言「没有能力必须走不通」。
+  这一层此前完全缺失——旧的可达性校验只看能力门的布尔值，e2e 又全靠 `warp` 瞬移换房，
+  所以跳不到的平台和悬空的门从来没有被任何测试碰到过。
+- **地形门不许退化**：断言当前四道真正靠几何拦住玩家的门。
+- **世界计数单一来源**：`COMPLETION_TOTAL` 与 `rooms.json` 的实际计数一致。
+- **走过一扇门的浏览器旅程**：整个套件里第一条真正用键盘穿过通道的测试。
 
 ## 仓库外发布操作
 
-- [ ] 本提交完成后执行 `git fetch origin`，确认 `origin/main` 没有非快进新历史。
+- [ ] `git fetch origin` 确认 `origin/main` 没有非快进新历史。
 - [ ] 推送 `main`，等待 GitHub Actions 的 `check` 与 `browser` 均成功。
-- [ ] 在绿色提交上创建并推送注释标签 `v0.2.0`，不 force-push。
 
-以上三项必须发生在本发布提交之后，因此以远端 Git 历史、Actions 记录和标签对象为最终状态来源。`v0.1.0` 的原始验收快照保存在 [`releases/v0.1.0.md`](releases/v0.1.0.md)。
+历史验收快照：[`releases/v0.2.0.md`](releases/v0.2.0.md)、[`releases/v0.1.0.md`](releases/v0.1.0.md)。
