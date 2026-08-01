@@ -28,6 +28,12 @@ export class RoomRuntime {
   private pickupObjects = new Map<string, Phaser.GameObjects.Image>();
   private exitObjects = new Map<string, Phaser.GameObjects.Rectangle>();
   private messageToken = 0;
+  /**
+   * 有两个生成点（中央井的 from_spire、花塔的 from_shaft）正落在返回出口的判定区里。
+   * 走入即换房的话，进门那一帧就会被原路弹回去，两个房间之间无限往返。
+   * 所以进房时先把玩家所在的出口「解除武装」，等他离开判定区再重新启用。
+   */
+  private disarmedExits = new Set<string>();
   private safePosition = new Phaser.Math.Vector2();
   private readonly saveProgress: () => boolean;
 
@@ -84,6 +90,13 @@ export class RoomRuntime {
     player.setPosition(spawn.x, spawn.y).setVelocity(0, 0).setAcceleration(0, 0);
     player.resetTraversalState();
     this.safePosition.set(spawn.x, spawn.y);
+    this.disarmedExits.clear();
+    for (const exit of this.room.exits) {
+      const box = new Phaser.Geom.Rectangle(exit.x, exit.y, exit.width, exit.height);
+      if (Phaser.Geom.Rectangle.Contains(box, spawn.x, spawn.y - 12)) {
+        this.disarmedExits.add(exit.id);
+      }
+    }
 
     for (const exit of this.room.exits) this.drawExit(exit);
     for (const hazard of this.room.hazards) this.drawHazard(hazard);
@@ -117,20 +130,20 @@ export class RoomRuntime {
       ),
     );
 
+    for (const exit of this.room.exits) {
+      if (exit !== overlappingExit) this.disarmedExits.delete(exit.id);
+    }
+
     if (overlappingExit) {
       const unlocked = meetsRequirement(
         overlappingExit.requirement,
         this.session.abilities,
         this.session.bossDefeated,
       );
-      if (input.pressed.interact) {
-        if (unlocked) onExit(overlappingExit);
-        else this.showMessage(exitRequirementMessage(overlappingExit.requirement), 1200);
-      } else if (this.registryMessageEmpty()) {
-        this.showMessage(
-          unlocked ? 'E：进入通道' : exitRequirementMessage(overlappingExit.requirement),
-          400,
-        );
+      if (!unlocked) {
+        this.showMessage(exitRequirementMessage(overlappingExit.requirement), 600);
+      } else if (!this.disarmedExits.has(overlappingExit.id)) {
+        onExit(overlappingExit);
       }
       return;
     }

@@ -33,7 +33,7 @@ export const HELP_CONTENT: Record<InputDevice, readonly HelpGroup[]> = {
     {
       title: '探索与系统',
       rows: [
-        { action: '交互', control: 'E', description: '终端/通道/记录' },
+        { action: '交互', control: 'E', description: '终端/记录' },
         { action: '地图', control: 'TAB', description: '探索地图' },
         { action: '暂停', control: 'ESC', description: '设置' },
         { action: '帮助', control: 'H', description: '随时查看' },
@@ -60,7 +60,7 @@ export const HELP_CONTENT: Record<InputDevice, readonly HelpGroup[]> = {
     {
       title: '探索与系统',
       rows: [
-        { action: '交互', control: 'RB', description: '终端/通道/记录' },
+        { action: '交互', control: 'RB', description: '终端/记录' },
         { action: '地图', control: 'VIEW', description: '探索地图' },
         { action: '暂停', control: 'MENU', description: '设置' },
         { action: '帮助', control: 'LB', description: '随时查看' },

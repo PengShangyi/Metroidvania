@@ -218,3 +218,26 @@ test('completes the two-ability route, ending and post-game exploration', async 
   await page.keyboard.up('ArrowRight');
   expect(errors).toEqual([]);
 });
+
+test('walks through a corridor without pressing interact and does not bounce back', async ({
+  page,
+}) => {
+  const errors = await openGame(page);
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
+  await page.mouse.click(480, 272);
+  await expect.poll(async () => (await snapshot(page)).roomId).toBe('vestibule_dock');
+  // 合成点击不会把键盘焦点交给画布，长按方向键读不到 Key.isDown。
+  await page.locator('canvas').click({ position: { x: 60, y: 60 } });
+
+  // 走进通道就换房：整个套件此前都用 warp 瞬移，没有一条真正用键盘穿过一扇门。
+  await page.keyboard.down('ArrowRight');
+  await expect
+    .poll(async () => (await snapshot(page)).roomId, { timeout: 10_000 })
+    .toBe('vestibule_gallery');
+  await page.keyboard.up('ArrowRight');
+
+  // 落点就在返回出口的判定区附近，未武装的出口不能把玩家原路弹回去。
+  await waitForGameFrame(page);
+  await expect.poll(async () => (await snapshot(page)).roomId).toBe('vestibule_gallery');
+  expect(errors).toEqual([]);
+});
