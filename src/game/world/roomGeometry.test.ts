@@ -100,6 +100,53 @@ describe('关卡几何可达性', () => {
     expect(fragile).toEqual([]);
   });
 
+  it('通往生化区的堤道要真的冲过去，不是刷卡', () => {
+    const causeway = rooms.find((room) => room.id === 'vestibule_causeway');
+    expect(causeway).toBeDefined();
+    const gate = causeway!.exits.find((exit) => exit.id === 'to_intake');
+    expect(gate?.requirement).toBe('phaseDash');
+    // 断口 104px，走跳最远 71.5px：徒手连宽松包络都过不去。
+    expect(
+      roomReachability(causeway!, 'from_shaft', NO_ABILITY, 'generous').exitReachable(gate!),
+    ).toBe(false);
+    // 但拿到冲刺后必须过得去，否则整个生化区都进不了。
+    expect(
+      roomReachability(causeway!, 'from_shaft', DASH_ONLY, 'conservative').exitReachable(gate!),
+    ).toBe(true);
+  });
+
+  it('地形门的数量不会退化', () => {
+    // 「能力门」应当是「这里过不去」而不是「这里没刷卡」。这条断言记录当前
+    // 真正靠几何拦住玩家的门，改动关卡时不许把它们变回纯门禁。
+    const byId = new Map(rooms.map((room) => [room.id, room]));
+    const terrainGates: string[] = [];
+    for (const room of rooms) {
+      for (const exit of room.exits) {
+        if (exit.requirement === 'none' || exit.requirement === 'bossDefeated') continue;
+        // 冲刺先于磁附获得，所以冲刺门前玩家两手空空，磁附门前只有冲刺。
+        const without =
+          exit.requirement === 'phaseDash' ? NO_ABILITY : { phaseDash: true, magneticGrip: false };
+        const back = new Set(
+          (byId.get(exit.targetRoomId)?.exits ?? [])
+            .filter((candidate) => candidate.targetRoomId === room.id)
+            .map((candidate) => candidate.targetSpawnId),
+        );
+        const bypassed = room.spawns
+          .filter((spawn) => !back.has(spawn.id))
+          .some((spawn) =>
+            roomReachability(room, spawn.id, without, 'generous').exitReachable(exit),
+          );
+        if (!bypassed) terrainGates.push(`${room.id}.${exit.id}`);
+      }
+    }
+    expect(terrainGates.sort()).toEqual([
+      'reactor_conduit.to_coreway',
+      'reactor_coreway.to_threshold',
+      'vestibule_causeway.to_intake',
+      'vestibule_shaft.to_spire',
+    ]);
+  });
+
   it('中央井的竖井是货真价实的地形门，不是一张门禁卡', () => {
     // to_spire 标着 magneticGrip；如果几何上徒手也爬得上去，这个门就退化成纯门禁。
     const shaft = rooms.find((room) => room.id === 'vestibule_shaft');

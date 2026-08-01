@@ -239,14 +239,15 @@
       { "id": "from_intake", "x": 408, "y": 238 }
     ],
     "platforms": [
-      { "x": 0, "y": 254, "width": 480, "height": 16 },
+      { "x": 0, "y": 254, "width": 250, "height": 16 },
+      { "x": 354, "y": 254, "width": 126, "height": 16 },
       { "x": 96, "y": 210, "width": 64, "height": 12 },
-      { "x": 210, "y": 178, "width": 64, "height": 12 },
-      { "x": 326, "y": 210, "width": 64, "height": 12 }
+      { "x": 196, "y": 178, "width": 44, "height": 12 },
+      { "x": 366, "y": 210, "width": 64, "height": 12 }
     ],
     "hazards": [
-      { "x": 172, "y": 244, "width": 24, "height": 10 },
-      { "x": 286, "y": 244, "width": 24, "height": 10 }
+      { "x": 250, "y": 246, "width": 104, "height": 24 },
+      { "x": 172, "y": 244, "width": 24, "height": 10 }
     ],
     "exits": [
       {
@@ -271,12 +272,12 @@
       }
     ],
     "enemies": [
-      { "id": "turret-causeway", "type": "turret", "x": 242, "y": 166 },
+      { "id": "turret-causeway", "type": "turret", "x": 224, "y": 166 },
       {
         "id": "crawler-causeway",
         "type": "crawler",
         "variant": "shielded",
-        "x": 352,
+        "x": 400,
         "y": 236
       }
     ],
