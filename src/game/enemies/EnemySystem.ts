@@ -18,7 +18,7 @@ import { reflectProjectile } from '../combat/reflectProjectile';
 import type { Player } from '../player/Player';
 import { activateArcadeImage, releaseArcadeGroup, releaseArcadeImage } from '../render/arcadePool';
 import type { EnemySpawn } from '../world/types';
-import { sporeLeapVelocity } from './aiMath';
+import { shouldTurnAround, sporeLeapVelocity, turretCanFire } from './aiMath';
 import { EnemySprite } from './EnemySprite';
 import {
   dashCrossingSide,
@@ -35,6 +35,7 @@ export class EnemySystem {
   private readonly enemies: Phaser.GameObjects.Group;
   private readonly hostileProjectiles: Phaser.Physics.Arcade.Group;
   private readonly repairDrops: Phaser.Physics.Arcade.Group;
+  private platforms?: Phaser.Physics.Arcade.StaticGroup;
   private platformCollider?: Phaser.Physics.Arcade.Collider;
   private projectileCollider?: Phaser.Physics.Arcade.Collider;
   private contactCollider?: Phaser.Physics.Arcade.Collider;
@@ -63,6 +64,7 @@ export class EnemySystem {
 
   public load(spawns: EnemySpawn[], platforms: Phaser.Physics.Arcade.StaticGroup): void {
     this.clear();
+    this.platforms = platforms;
     this.previousPlayerX = this.player.x;
     for (const spawn of spawns) this.enemies.add(new EnemySprite(this.scene, spawn));
     this.platformCollider = this.scene.physics.add.collider(this.enemies, platforms);
@@ -170,7 +172,11 @@ export class EnemySystem {
     if (enemy.isShieldedCrawler && enemy.shieldState === 'exposed') return;
     if (now < enemy.stunnedUntil) return;
     if (enemy.enemyType === 'crawler') {
-      if (body.blocked.left || body.blocked.right) enemy.patrolDirection *= -1;
+      const blockedSide = enemy.patrolDirection < 0 ? body.blocked.left : body.blocked.right;
+      const grounded = body.blocked.down || body.touching.down;
+      if (shouldTurnAround(blockedSide, !grounded || this.hasGroundAhead(enemy))) {
+        enemy.patrolDirection *= -1;
+      }
       enemy.setVelocityX(enemy.patrolDirection * 34).setFlipX(enemy.patrolDirection < 0);
       return;
     }
@@ -199,9 +205,29 @@ export class EnemySystem {
     }
 
     if (enemy.enemyType === 'turret' && now >= enemy.nextActionAt) {
+      if (!turretCanFire(enemy.x, enemy.y, this.player.x, this.player.y)) return;
       enemy.nextActionAt = now + 1_450;
       this.fireAtPlayer(enemy);
     }
+  }
+
+  /** 沿巡逻方向探一格：脚下前方没有静态碰撞体就说明前面是悬崖。 */
+  private hasGroundAhead(enemy: EnemySprite): boolean {
+    if (!this.platforms) return true;
+    const body = enemy.body as Phaser.Physics.Arcade.Body;
+    const probeX = enemy.patrolDirection < 0 ? body.left - 4 : body.right + 4;
+    const probeY = body.bottom + 4;
+    return this.platforms.getChildren().some((child) => {
+      const platform = child as Phaser.Physics.Arcade.Sprite;
+      const platformBody = platform.body as Phaser.Physics.Arcade.StaticBody | null;
+      if (!platformBody) return false;
+      return (
+        probeX >= platformBody.left &&
+        probeX <= platformBody.right &&
+        probeY >= platformBody.top &&
+        probeY <= platformBody.bottom
+      );
+    });
   }
 
   private updateShieldCrawler(enemy: EnemySprite, now: number): void {
