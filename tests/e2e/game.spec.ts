@@ -9,6 +9,7 @@ interface TestSnapshot {
   bossDefeated: boolean;
   bossHealth: number | null;
   uiMode: string;
+  combat: { player: { x: number; movementState: string } | null };
 }
 
 interface BrowserTestBridge {
@@ -138,6 +139,12 @@ test('opens the playable tutorial and safely returns to the title', async ({ pag
   await expect.poll(async () => (await snapshot(page)).scene).toBe('tutorial');
   await page.keyboard.press('Escape');
   await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
+
+  // 场景实例会被复用，重进不能留下上一次的残留进度。
+  await page.keyboard.press('t');
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('tutorial');
+  await page.keyboard.press('Escape');
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
   expect(errors).toEqual([]);
 });
 
@@ -200,5 +207,14 @@ test('completes the two-ability route, ending and post-game exploration', async 
   await expect.poll(async () => (await snapshot(page)).scene).toBe('play');
   expect((await snapshot(page)).roomId).toBe('core_guardian');
   expect((await snapshot(page)).bossHealth).toBeNull();
+
+  // finishBoss() 把 transitioning 置为 true，而 Phaser 会复用同一个 Scene 实例：
+  // 不在 create() 里复位的话，通关后回到游戏的角色完全无法操作。
+  const restedX = (await snapshot(page)).combat.player?.x ?? 0;
+  await page.keyboard.down('ArrowRight');
+  await expect
+    .poll(async () => (await snapshot(page)).combat.player?.x ?? restedX, { timeout: 4_000 })
+    .toBeGreaterThan(restedX);
+  await page.keyboard.up('ArrowRight');
   expect(errors).toEqual([]);
 });

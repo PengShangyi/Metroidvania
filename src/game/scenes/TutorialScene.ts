@@ -57,6 +57,12 @@ export class TutorialScene extends Phaser.Scene {
   }
 
   public create(): void {
+    // 同一个 Scene 实例会被复用：不复位的话，通关一次后再进训练只会看到空白界面。
+    this.stageIndex = 0;
+    this.complete = false;
+    this.advancing = false;
+    this.shootComplete = false;
+    this.meleeComplete = false;
     this.cameras.main.setBackgroundColor(COLORS.void);
     this.drawBackground();
     this.session = createNewSession();

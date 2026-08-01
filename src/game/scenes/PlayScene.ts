@@ -57,6 +57,11 @@ export class PlayScene extends Phaser.Scene {
   }
 
   public create(): void {
+    // Phaser 复用同一个 Scene 实例，字段初始值不会随 scene.start 重置。
+    // finishBoss() 之后 transitioning 会一直是 true，结局界面回到游戏将无法操作。
+    this.transitioning = false;
+    this.respawning = false;
+    this.pendingRespawn = false;
     this.session = this.registry.get(REGISTRY_KEYS.session) as GameSessionState;
     if (this.hintSession !== this.session) {
       this.hintSession = this.session;
