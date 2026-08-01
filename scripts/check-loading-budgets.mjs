@@ -11,6 +11,12 @@ const firstScreenAssets = [
   'assets/backgrounds/title.webp',
   'assets/fonts/fusion-pixel-12px-proportional-zh_hans.otf.woff2',
   'assets/sprites/iya-atlas.png',
+  'assets/sprites/iya-portrait.png',
+  'assets/sprites/crawler.png',
+  'assets/sprites/crawler-shielded.png',
+  'assets/sprites/crawler-exposed.png',
+  'assets/sprites/sentry.png',
+  'assets/sprites/turret.png',
   'assets/ui/base-icons.png',
 ];
 

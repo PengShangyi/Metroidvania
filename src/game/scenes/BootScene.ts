@@ -23,6 +23,12 @@ export class BootScene extends Phaser.Scene {
       frameWidth: 16,
       frameHeight: 16,
     });
+    this.load.image('iya-portrait', 'assets/sprites/iya-portrait.png');
+    // 四只敌人的真贴图用的就是程序化占位图的 key：createProceduralTextures 里的
+    // createTexture 有 textures.exists 守卫，真图先到就自动让位，加载失败仍会回退。
+    for (const key of ['crawler', 'crawler-shielded', 'crawler-exposed', 'sentry', 'turret']) {
+      this.load.image(key, `assets/sprites/${key}.png`);
+    }
   }
 
   public create(): void {

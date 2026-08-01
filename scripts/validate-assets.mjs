@@ -12,6 +12,14 @@ const supportedExtensions = new Set(['.png', '.webp', '.jpg', '.jpeg']);
 const uiFontPath = join(root, 'fonts', 'fusion-pixel-12px-proportional-zh_hans.otf.woff2');
 const uiFontLicensePath = join(projectRoot, 'docs', 'licenses', 'fusion-pixel-font', 'OFL.txt');
 const uiFontSha256 = '9d8d2f0bae6214568c591c72f4f3e8cbc39b2eeda461861e521e45d966ccefac';
+const ENEMY_SPRITE_SIZES = {
+  'sprites/crawler.png': [24, 16],
+  'sprites/crawler-shielded.png': [24, 16],
+  'sprites/crawler-exposed.png': [24, 16],
+  'sprites/sentry.png': [20, 20],
+  'sprites/turret.png': [24, 24],
+  'sprites/spore.png': [22, 22],
+};
 
 async function walk(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -56,6 +64,11 @@ for (const file of imageFiles) {
     (metadata.width !== 72 || metadata.height !== 72)
   ) {
     throw new Error('守核者运行时轮廓必须为 72×72px');
+  }
+  // 敌人贴图直接顶替同名的程序化占位纹理，尺寸必须与碰撞盒的假设一致。
+  const enemySize = ENEMY_SPRITE_SIZES[assetPath];
+  if (enemySize && (metadata.width !== enemySize[0] || metadata.height !== enemySize[1])) {
+    throw new Error(`${assetPath} 必须为 ${enemySize[0]}×${enemySize[1]}px`);
   }
 }
 

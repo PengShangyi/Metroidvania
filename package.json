@@ -21,6 +21,7 @@
     "test:e2e": "playwright test",
     "art:process": "node scripts/process-art.mjs",
     "art:atlas": "node scripts/generate-sprite-atlas.mjs",
+    "art:enemies": "node scripts/generate-enemy-sprites.mjs",
     "art:bioforge": "node scripts/generate-bioforge-atlas.mjs",
     "art:reactor": "node scripts/generate-reactor-assets.mjs",
     "assets:validate": "node scripts/validate-assets.mjs",

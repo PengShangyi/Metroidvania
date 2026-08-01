@@ -142,12 +142,14 @@ export class TitleScene extends Phaser.Scene {
     if (this.textures.exists('title-bg')) {
       this.add.image(0, 0, 'title-bg').setOrigin(0).setDisplaySize(480, 270).setAlpha(0.72);
       this.add.rectangle(240, 52, 480, 104, COLORS.void, 0.48);
-    } else if (this.textures.exists('iya-portrait')) {
+    }
+    // 立绘原先只在「没有标题图」时才画，而标题图一直存在，所以这张图从未露过面。
+    if (this.textures.exists('iya-portrait')) {
       this.add
-        .image(410, 262, 'iya-portrait')
+        .image(414, 268, 'iya-portrait')
         .setOrigin(0.5, 1)
-        .setDisplaySize(121, 250)
-        .setAlpha(0.24);
+        .setDisplaySize(111, 229)
+        .setAlpha(0.5);
     }
     const graphics = this.add.graphics();
     graphics.fillStyle(COLORS.steel, this.textures.exists('title-bg') ? 0.08 : 0.22);

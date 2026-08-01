@@ -24,8 +24,17 @@
       "constraints": "four separated subjects, no shadows, no labels, no text, no logo, no watermark, do not use #ff00ff on subjects",
       "status": "selected",
       "source": "art/source/enemy-lineup.png",
-      "outputs": ["public/assets/sprites/enemy-lineup.png"],
-      "processing": "remove_chroma_key.py --auto-key border --soft-matte --despill; Sharp trim, nearest-neighbour resize and 128-colour palette"
+      "outputs": [
+        "public/assets/sprites/enemy-lineup.png",
+        "public/assets/sprites/crawler.png",
+        "public/assets/sprites/crawler-shielded.png",
+        "public/assets/sprites/crawler-exposed.png",
+        "public/assets/sprites/sentry.png",
+        "public/assets/sprites/turret.png",
+        "public/assets/sprites/spore.png",
+        "public/assets/sprites/spore-atlas.png"
+      ],
+      "processing": "remove_chroma_key.py --auto-key border --soft-matte --despill; Sharp trim, nearest-neighbour resize and 128-colour palette; generate-enemy-sprites.mjs 按 alpha 列投影自动切出四只，降采样到运行时尺寸，并以爬行体为底叠出护盾板与开核核心两个变体、拼出四帧孢子图集"
     },
     {
       "id": "core-guardian-anchor",
@@ -62,10 +71,9 @@
       "source": "art/source/bioforge-background.png",
       "outputs": [
         "public/assets/backgrounds/bioforge.webp",
-        "public/assets/sprites/spore-atlas.png",
         "public/assets/tiles/bioforge-tile.png"
       ],
-      "processing": "Sharp 480x270 nearest-neighbour cover crop; deterministic four-frame spore atlas and seamless 16px tile assembled from the selected environment and enemy anchors"
+      "processing": "Sharp 480x270 nearest-neighbour cover crop; generate-bioforge-atlas.mjs 以调色板程序化绘制无缝 16px 瓦片（不取样原画）"
     },
     {
       "id": "reactor-background",
@@ -77,7 +85,7 @@
       "status": "selected",
       "source": "art/source/reactor-background.png",
       "outputs": ["public/assets/backgrounds/reactor.webp", "public/assets/tiles/reactor-tile.png"],
-      "processing": "Sharp 480x270 nearest-neighbour cover crop; deterministic seamless 16px reactor tile in the selected palette"
+      "processing": "Sharp 480x270 nearest-neighbour cover crop; generate-reactor-assets.mjs 以调色板程序化绘制无缝 16px 瓦片（不取样原画）"
     },
     {
       "id": "title-key-art",
