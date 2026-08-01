@@ -24,6 +24,11 @@ export class RoomRepository {
     return room;
   }
 
+  /** 校验外部数据（例如存档里的房间 id）时用这个，不要用会抛异常的 get。 */
+  public find(id: string): RoomDefinition | undefined {
+    return this.rooms.get(id);
+  }
+
   public all(): RoomDefinition[] {
     return [...this.rooms.values()];
   }

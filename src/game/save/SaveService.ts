@@ -3,6 +3,7 @@ import {
   type AccessibilitySettings,
   type GameSessionState,
 } from '../state/GameSession';
+import { RoomRepository } from '../world/RoomRepository';
 
 export const SAVE_KEY = 'star-echo.save.v1';
 export const SETTINGS_KEY = 'star-echo.settings.v1';
@@ -60,6 +61,7 @@ export class SaveService {
         return { status: 'unsupported' };
       }
       if (!isSaveDataV1(parsed)) return { status: 'corrupt' };
+      if (!referencesRealRooms(parsed)) return { status: 'corrupt' };
       return { status: 'valid', session: this.hydrate(parsed) };
     } catch {
       return { status: 'corrupt' };
@@ -171,6 +173,21 @@ function isSaveDataV1(value: unknown): value is SaveDataV1 {
     isStringArray(value.visitedRooms) &&
     isStringArray(value.collectedPickups) &&
     isStringArray(value.readLore)
+  );
+}
+
+/**
+ * 类型对了不代表房间存在：PlayScene.preload 会拿 currentRoomId 去 rooms.get()，
+ * 未知 id 会抛出未捕获异常直接白屏。这里把它归类为损坏存档，
+ * 让 TitleScene 走既有的「已安全隔离」提示，而不是静默改写玩家的进度。
+ *
+ * 只校验房间 id：生成点在 RoomRuntime.load 里本来就有 `?? spawns[0]` 的兜底，
+ * 对不上只是落点略有偏差，不会崩。
+ */
+function referencesRealRooms(data: SaveDataV1): boolean {
+  const rooms = new RoomRepository();
+  return (
+    rooms.find(data.currentRoomId) !== undefined && rooms.find(data.checkpointRoomId) !== undefined
   );
 }
 

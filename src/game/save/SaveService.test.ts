@@ -136,4 +136,25 @@ describe('save service', () => {
     storage.shouldThrow = true;
     expect(new SaveService(storage).write(createNewSession())).toBe(false);
   });
+
+  it('把指向不存在房间的存档判为损坏', () => {
+    // 类型全对但房间不存在时，PlayScene.preload 的 rooms.get() 会抛异常直接白屏。
+    for (const patch of [
+      { currentRoomId: 'vestibule_atlantis' },
+      { checkpointRoomId: 'vestibule_atlantis' },
+    ]) {
+      const storage = new MemoryStorage();
+      storage.values.set(SAVE_KEY, JSON.stringify({ ...validSaveData(), ...patch }));
+      expect(new SaveService(storage).read().status).toBe('corrupt');
+    }
+  });
+
+  it('生成点对不上不算损坏：RoomRuntime 会退回房间首个生成点', () => {
+    const storage = new MemoryStorage();
+    storage.values.set(
+      SAVE_KEY,
+      JSON.stringify({ ...validSaveData(), checkpointSpawnId: 'from_nowhere' }),
+    );
+    expect(new SaveService(storage).read().status).toBe('valid');
+  });
 });
