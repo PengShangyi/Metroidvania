@@ -18,8 +18,13 @@ import { Player } from '../player/Player';
 import { releaseArcadeImage } from '../render/arcadePool';
 import { queueRegionAssets } from '../render/regionAssets';
 import { createNewSession, type GameSessionState } from '../state/GameSession';
-import { tutorialStageComplete } from '../tutorial/stageCompletion';
-import { TUTORIAL_STEPS, tutorialAbilities, tutorialEnemies } from '../tutorial/tutorialPlan';
+import { trainingEnemiesExhausted, tutorialStageComplete } from '../tutorial/stageCompletion';
+import {
+  TUTORIAL_STEPS,
+  tutorialAbilities,
+  tutorialEnemies,
+  type TutorialStepId,
+} from '../tutorial/tutorialPlan';
 import { tutorialControlHint } from '../ui/helpContent';
 import { bodyTextStyle } from '../ui/text';
 
@@ -47,6 +52,7 @@ export class TutorialScene extends Phaser.Scene {
   private readonly piercingTargets = new Set<string>();
   private advancing = false;
   private complete = false;
+  private restocking = false;
   private renderedDevice?: InputDevice;
 
   public constructor() {
@@ -62,6 +68,7 @@ export class TutorialScene extends Phaser.Scene {
     this.stageIndex = 0;
     this.complete = false;
     this.advancing = false;
+    this.restocking = false;
     this.shootComplete = false;
     this.meleeComplete = false;
     this.cameras.main.setBackgroundColor(COLORS.void);
@@ -134,6 +141,10 @@ export class TutorialScene extends Phaser.Scene {
     const step = TUTORIAL_STEPS[this.stageIndex];
     if (!step) return;
     if (step.id === 'weapons') this.updateWeaponLesson(attack);
+    if (trainingEnemiesExhausted(step.id, this.enemySystem.activeEnemyCount())) {
+      this.restockTrainingEnemies(step.id);
+      return;
+    }
 
     const complete = tutorialStageComplete(step.id, {
       playerX: this.player.x,
@@ -261,6 +272,26 @@ export class TutorialScene extends Phaser.Scene {
     this.advancing = true;
     this.session.health = this.session.maxHealth;
     this.time.delayedCall(0, () => this.enterStage());
+  }
+
+  /**
+   * 反射课和贯穿课的完成信号来自 COMBAT_EVENTS，靶子被打死就再也触发不了；
+   * 而敌人死光后玩家也不会再受伤，resetStage 那条死亡回退路径同样走不到。
+   * 所以这里必须自己把训练体补回来，否则这两课只能按 ESC 放弃。
+   */
+  private restockTrainingEnemies(step: TutorialStepId): void {
+    if (this.restocking || this.advancing || this.complete) return;
+    this.restocking = true;
+    this.piercingProjectileSerial = undefined;
+    this.piercingTargets.clear();
+    this.effectText.setText('训练体已耗尽 · 正在重构');
+    this.time.delayedCall(800, () => {
+      this.restocking = false;
+      if (this.complete || this.advancing) return;
+      if (TUTORIAL_STEPS[this.stageIndex]?.id !== step) return;
+      this.enemySystem.load(tutorialEnemies(step), this.platforms);
+      this.effectText.setText(TUTORIAL_STEPS[this.stageIndex]?.effect ?? '');
+    });
   }
 
   private finishTutorial(): void {

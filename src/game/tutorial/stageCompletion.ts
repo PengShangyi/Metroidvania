@@ -1,5 +1,5 @@
 import type { PlayerMovementState } from '../player/Player';
-import type { TutorialStepId } from './tutorialPlan';
+import { tutorialEnemies, type TutorialStepId } from './tutorialPlan';
 
 export interface TutorialStageSnapshot {
   playerX: number;
@@ -64,4 +64,17 @@ export function tutorialStageComplete(
   }
 
   return false;
+}
+
+/**
+ * 反射课和贯穿课要靠训练体持续供靶，但训练体只有 3 点生命、可以被打死，
+ * 而这两课的完成信号来自 COMBAT_EVENTS，靶子没了就再也触发不了。
+ * resetStage 只挂在玩家死亡上，敌人死光之后玩家反而不会再受伤——
+ * 结果是只能按 ESC 退回标题。这里判定「该重新投放训练体了」。
+ *
+ * 穿盾课不算：打死那只爬行体本身就会先触发 shieldCoreHit 过关。
+ */
+export function trainingEnemiesExhausted(step: TutorialStepId, aliveCount: number): boolean {
+  if (step !== 'reflect' && step !== 'piercing') return false;
+  return tutorialEnemies(step).length > 0 && aliveCount === 0;
 }

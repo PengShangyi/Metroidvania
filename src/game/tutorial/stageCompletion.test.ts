@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { tutorialStageComplete, type TutorialStageSnapshot } from './stageCompletion';
+import {
+  trainingEnemiesExhausted,
+  tutorialStageComplete,
+  type TutorialStageSnapshot,
+} from './stageCompletion';
 import type { TutorialStepId } from './tutorialPlan';
 
 function complete(step: TutorialStepId, overrides: Partial<TutorialStageSnapshot> = {}): boolean {
@@ -68,6 +72,28 @@ describe('tutorial stage completion', () => {
   it('leaves the combat lessons to their combat events', () => {
     for (const step of ['reflect', 'shield', 'piercing'] as const) {
       expect(complete(step, { wallJumpSerialAfter: 99, interactPressed: true })).toBe(false);
+    }
+  });
+});
+
+describe('训练体耗尽判定', () => {
+  it('反射课与贯穿课的靶子被打光时要求重新投放', () => {
+    expect(trainingEnemiesExhausted('reflect', 0)).toBe(true);
+    expect(trainingEnemiesExhausted('piercing', 0)).toBe(true);
+  });
+
+  it('还有靶子活着就不重投', () => {
+    expect(trainingEnemiesExhausted('reflect', 1)).toBe(false);
+    expect(trainingEnemiesExhausted('piercing', 2)).toBe(false);
+  });
+
+  it('穿盾课不参与：打死那只爬行体本身就会先过关', () => {
+    expect(trainingEnemiesExhausted('shield', 0)).toBe(false);
+  });
+
+  it('本来就不投放敌人的课不受影响', () => {
+    for (const step of ['move', 'jump', 'weapons', 'dash', 'wallJump', 'interact'] as const) {
+      expect(trainingEnemiesExhausted(step, 0)).toBe(false);
     }
   });
 });

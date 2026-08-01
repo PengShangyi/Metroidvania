@@ -141,6 +141,11 @@ export class EnemySystem {
     this.previousPlayerX = this.player.x;
   }
 
+  public activeEnemyCount(): number {
+    if (!this.enemies.children) return 0;
+    return this.enemies.getChildren().filter((child) => child.active).length;
+  }
+
   public clear(): void {
     this.platformCollider?.destroy();
     this.platformCollider = undefined;
