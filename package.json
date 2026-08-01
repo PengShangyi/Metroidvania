@@ -24,6 +24,7 @@
     "art:enemies": "node scripts/generate-enemy-sprites.mjs",
     "art:bioforge": "node scripts/generate-bioforge-atlas.mjs",
     "art:reactor": "node scripts/generate-reactor-assets.mjs",
+    "art:vestibule": "node scripts/generate-vestibule-tile.mjs",
     "assets:validate": "node scripts/validate-assets.mjs",
     "perf:budget": "node scripts/check-loading-budgets.mjs",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm perf:budget"

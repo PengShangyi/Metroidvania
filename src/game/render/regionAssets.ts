@@ -19,6 +19,11 @@ export const REGION_ASSETS = {
       key: 'vestibule-bg',
       url: 'assets/backgrounds/vestibule.webp',
     },
+    {
+      kind: 'image',
+      key: 'vestibule-tile',
+      url: 'assets/tiles/vestibule-tile.png',
+    },
   ],
   bioforge: [
     {

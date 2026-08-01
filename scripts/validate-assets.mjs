@@ -47,7 +47,7 @@ for (const file of imageFiles) {
   if (metadata.width > 4096 || metadata.height > 4096) {
     throw new Error(`资源尺寸超过 4096px：${assetPath}`);
   }
-  if (assetPath === 'tiles/bioforge-tile.png' || assetPath === 'tiles/reactor-tile.png') {
+  if (assetPath.startsWith('tiles/') && assetPath.endsWith('.png')) {
     if (metadata.width !== 16 || metadata.height !== 16) {
       throw new Error(`${assetPath} 必须为 16×16px`);
     }

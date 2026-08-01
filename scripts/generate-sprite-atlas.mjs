@@ -1,13 +1,21 @@
-import { mkdir } from 'node:fs/promises';
+import { access, mkdir } from 'node:fs/promises';
 import { fileURLToPath, URL } from 'node:url';
 
 import sharp from 'sharp';
+
+// 主角的 19 帧原先是十来条 rect() 硬拼出来的色块，每帧只有 4-6 种颜色，
+// idle 的帧间差异只有 1px、run 只有 1-2px——在 3fps / 10fps 下看起来「根本不动」。
+// 现在以去背原画降采样出的基准帧为底，程序化派生全部 19 帧。
+// 布局仍是 456×32 / 每帧 24×32，playerAnimations.ts 的帧表不需要改。
 
 const frameWidth = 24;
 const frameHeight = 32;
 const frameCount = 19;
 const atlasWidth = frameWidth * frameCount;
-const pixels = Buffer.alloc(atlasWidth * frameHeight * 4);
+
+/** 碰撞体是 14×28、offset (5,4)，所以人物要落在 x 5..19、y 4..32 这块区域附近。 */
+const bodyMaxWidth = 20;
+const bodyMaxHeight = 28;
 
 const palette = {
   navy: [17, 27, 53, 255],
@@ -18,7 +26,59 @@ const palette = {
   danger: [255, 86, 120, 255],
 };
 
-function pixel(frame, x, y, colour) {
+const prepared = fileURLToPath(new URL('../tmp/imagegen/', import.meta.url));
+const cutout = `${prepared}iya-cutout.png`;
+try {
+  await access(cutout);
+} catch {
+  throw new Error(
+    `缺少去背原画 tmp/imagegen/iya-cutout.png。透明素材须先用 ImageGen 技能的 remove_chroma_key.py 生成。`,
+  );
+}
+
+// 基准帧：原画等比缩进 20×28，底部对齐、水平居中。
+const scaled = await sharp(cutout)
+  .ensureAlpha()
+  .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })
+  .resize(bodyMaxWidth, bodyMaxHeight, {
+    fit: 'inside',
+    kernel: sharp.kernel.nearest,
+    withoutEnlargement: false,
+  })
+  // 原画是深海军蓝装甲，缩到 20px 后压在同样偏暗的背景上剪影会糊掉，
+  // 这里提亮并拉一点饱和度让轮廓站出来。
+  .modulate({ brightness: 1.32, saturation: 1.15 })
+  .raw()
+  .toBuffer({ resolveWithObject: true });
+
+const base = Buffer.alloc(frameWidth * frameHeight * 4, 0);
+{
+  const { width: sw, height: sh } = scaled.info;
+  const offsetX = Math.round((frameWidth - sw) / 2);
+  const offsetY = frameHeight - sh;
+  for (let y = 0; y < sh; y += 1) {
+    for (let x = 0; x < sw; x += 1) {
+      const from = (y * sw + x) * 4;
+      if (scaled.data[from + 3] < 24) continue;
+      const to = ((y + offsetY) * frameWidth + x + offsetX) * 4;
+      base[to] = scaled.data[from];
+      base[to + 1] = scaled.data[from + 1];
+      base[to + 2] = scaled.data[from + 2];
+      base[to + 3] = 255;
+    }
+  }
+}
+
+const pixels = Buffer.alloc(atlasWidth * frameHeight * 4, 0);
+
+function readBase(x, y) {
+  if (x < 0 || y < 0 || x >= frameWidth || y >= frameHeight) return null;
+  const offset = (y * frameWidth + x) * 4;
+  if (base[offset + 3] === 0) return null;
+  return [base[offset], base[offset + 1], base[offset + 2], base[offset + 3]];
+}
+
+function writePixel(frame, x, y, colour) {
   if (x < 0 || y < 0 || x >= frameWidth || y >= frameHeight) return;
   const offset = (y * atlasWidth + frame * frameWidth + x) * 4;
   pixels.set(colour, offset);
@@ -26,62 +86,93 @@ function pixel(frame, x, y, colour) {
 
 function rect(frame, x, y, width, height, colour) {
   for (let py = y; py < y + height; py += 1) {
-    for (let px = x; px < x + width; px += 1) pixel(frame, px, py, colour);
+    for (let px = x; px < x + width; px += 1) writePixel(frame, px, py, colour);
   }
 }
 
-function upright(frame, options = {}) {
-  const bob = options.bob ?? 0;
-  const lean = options.lean ?? 0;
-  const leftLeg = options.leftLeg ?? 0;
-  const rightLeg = options.rightLeg ?? 0;
-  const arm = options.arm ?? 0;
-
-  rect(frame, 7 + lean, 4 + bob, 10, 7, palette.pale);
-  rect(frame, 10 + lean, 6 + bob, 8, 2, palette.cyan);
-  rect(frame, 6 + lean, 11 + bob, 12, 14, palette.steel);
-  rect(frame, 8 + lean, 13 + bob, 8, 8, palette.navy);
-  rect(frame, 5 + lean, 13 + bob + arm, 3, 10, palette.steel);
-  rect(frame, 17 + lean, 13 + bob - arm, 4, 9, palette.steel);
-  rect(frame, 18 + lean, 14 + bob - arm, 5, 4, palette.amber);
-  rect(frame, 7 + lean + leftLeg, 24 + bob, 4, 7, palette.steel);
-  rect(frame, 13 + lean + rightLeg, 24 + bob, 4, 7, palette.steel);
-  rect(frame, 6 + lean + leftLeg, 30 + bob, 6, 2, palette.navy);
-  rect(frame, 12 + lean + rightLeg, 30 + bob, 6, 2, palette.navy);
+/** 稳定的伪随机：溶解遮罩每次生成都必须一样，否则图集不可复现。 */
+function hashUnit(x, y) {
+  const mixed = Math.imul(x + 1, 73856093) ^ Math.imul(y + 1, 19349663);
+  return ((mixed >>> 8) & 0xffff) / 0xffff;
 }
 
-upright(0);
-upright(1, { bob: 1 });
-upright(2, { leftLeg: -2, rightLeg: 1, arm: -2 });
-upright(3, { leftLeg: -1, rightLeg: 0, bob: 1, arm: 1 });
-upright(4, { leftLeg: 1, rightLeg: -2, arm: 2 });
-upright(5, { leftLeg: 0, rightLeg: -1, bob: 1, arm: -1 });
-upright(6, { bob: -1, leftLeg: 1, rightLeg: -1 });
-upright(7, { leftLeg: -1, rightLeg: 1 });
-upright(8, { arm: -3 });
-upright(9, { bob: 1, arm: -3 });
-rect(8, 20, 10, 4, 3, palette.cyan);
-rect(9, 20, 11, 4, 3, palette.pale);
-upright(10, { arm: 2 });
-upright(11, { lean: -1, arm: 1 });
-upright(12, { lean: 1, arm: -1 });
-rect(10, 19, 5, 2, 14, palette.cyan);
-rect(11, 20, 2, 2, 17, palette.pale);
-rect(12, 18, 2, 4, 15, palette.cyan);
-upright(13, { lean: 2, bob: 1, leftLeg: -2, rightLeg: -2 });
-rect(13, 1, 14, 8, 2, palette.cyan);
-rect(13, 3, 18, 5, 1, palette.pale);
-upright(14, { lean: -2, leftLeg: 1, rightLeg: 1 });
-rect(14, 5, 11, 2, 9, palette.danger);
-upright(15, { bob: 2 });
-rect(15, 4, 7, 16, 20, palette.cyan);
-rect(16, 2, 23, 20, 6, palette.steel);
-rect(16, 16, 20, 7, 5, palette.pale);
-rect(16, 18, 22, 5, 2, palette.cyan);
-rect(17, 3, 25, 18, 4, palette.steel);
-rect(17, 7, 22, 10, 3, palette.pale);
-rect(18, 5, 27, 14, 2, palette.cyan);
-rect(18, 9, 24, 6, 2, palette.pale);
+/**
+ * 把基准帧画进某一帧。
+ * legShift 只挪 legTop 以下的部分，用来做出可见的跨步；
+ * dissolve 按稳定遮罩抠掉像素，死亡动画靠它真正「散开」。
+ */
+function drawBase(frame, options = {}) {
+  const bob = options.bob ?? 0;
+  const legShift = options.legShift ?? 0;
+  const legTop = options.legTop ?? 22;
+  const tint = options.tint;
+  const tintMix = options.tintMix ?? 0;
+  const alpha = options.alpha ?? 255;
+  const dissolve = options.dissolve ?? 0;
+
+  for (let y = 0; y < frameHeight; y += 1) {
+    for (let x = 0; x < frameWidth; x += 1) {
+      const shift = y >= legTop ? legShift : 0;
+      const source = readBase(x - shift, y - bob);
+      if (!source) continue;
+      if (dissolve > 0 && hashUnit(x, y) < dissolve) continue;
+      let [r, g, b] = source;
+      if (tint && tintMix > 0) {
+        r = Math.round(r + (tint[0] - r) * tintMix);
+        g = Math.round(g + (tint[1] - g) * tintMix);
+        b = Math.round(b + (tint[2] - b) * tintMix);
+      }
+      writePixel(frame, x, y, [r, g, b, alpha]);
+    }
+  }
+}
+
+// idle 0-1：呼吸起伏放到 2px，3fps 下才看得出在动
+drawBase(0);
+drawBase(1, { bob: -2 });
+
+// run 2-5：四帧跨步，下半身左右各偏 2px 并配合躯干起伏
+drawBase(2, { legShift: 2, bob: 0 });
+drawBase(3, { legShift: 0, bob: -2 });
+drawBase(4, { legShift: -2, bob: 0 });
+drawBase(5, { legShift: 0, bob: -2 });
+
+// jump 6 / fall 7：收腿与展腿
+drawBase(6, { bob: -2, legShift: 1, legTop: 24 });
+drawBase(7, { bob: 1, legShift: -1, legTop: 24 });
+
+// shoot 8-9：只点一小簇枪口闪光；弹体本身由 CombatSystem 生成，不用在帧里画
+drawBase(8);
+drawBase(9, { bob: -1 });
+rect(8, 20, 16, 3, 2, palette.cyan);
+rect(9, 20, 15, 3, 2, palette.pale);
+writePixel(9, 23, 16, palette.cyan);
+
+// slash 10-12：只做出挥砍的身体姿态。刀光是 'slash' 贴图另画的，
+// 帧里再叠一道粗条只会糊成一片。
+drawBase(10, { bob: -1, legShift: -1, legTop: 20 });
+drawBase(11, { legShift: 1, legTop: 18 });
+drawBase(12, { bob: 1, legShift: 2, legTop: 20 });
+
+// dash 13：主体压成青色，后方拖一层低透明残影
+drawBase(13, { legShift: 2, legTop: 20, tint: palette.cyan, tintMix: 0.4 });
+for (let y = 4; y < frameHeight; y += 1) {
+  for (let x = 0; x < frameWidth; x += 1) {
+    if (!readBase(x + 5, y)) continue;
+    const offset = (y * atlasWidth + 13 * frameWidth + x) * 4;
+    if (pixels[offset + 3] !== 0) continue;
+    writePixel(13, x, y, [palette.cyan[0], palette.cyan[1], palette.cyan[2], 80]);
+  }
+}
+
+// hurt 14：整体压向警示色
+drawBase(14, { bob: -1, tint: palette.danger, tintMix: 0.55 });
+
+// death 15-18：按稳定遮罩逐级溶解，取代原先「变个色块」的假动画
+drawBase(15, { bob: -1, tint: palette.pale, tintMix: 0.3 });
+drawBase(16, { bob: 1, tint: palette.cyan, tintMix: 0.35, dissolve: 0.3 });
+drawBase(17, { bob: 3, tint: palette.cyan, tintMix: 0.5, dissolve: 0.58, alpha: 210 });
+drawBase(18, { bob: 5, tint: palette.pale, tintMix: 0.6, dissolve: 0.8, alpha: 150 });
 
 const spriteDirectory = fileURLToPath(new URL('../public/assets/sprites/', import.meta.url));
 const uiDirectory = fileURLToPath(new URL('../public/assets/ui/', import.meta.url));
@@ -93,7 +184,7 @@ await Promise.all([
 await sharp(pixels, {
   raw: { width: atlasWidth, height: frameHeight, channels: 4 },
 })
-  .png({ palette: true, colours: 16, compressionLevel: 9 })
+  .png({ palette: true, colours: 64, compressionLevel: 9 })
   .toFile(`${spriteDirectory}iya-atlas.png`);
 
 const iconWidth = 16;
@@ -133,4 +224,4 @@ await sharp(iconPixels, {
   .png({ palette: true, colours: 16, compressionLevel: 9 })
   .toFile(`${uiDirectory}base-icons.png`);
 
-console.log('Generated 19-frame Iya atlas and five base UI icons.');
+console.log(`主角图集已从去背原画派生：${frameCount} 帧 / ${atlasWidth}×${frameHeight}`);

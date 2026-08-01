@@ -69,7 +69,7 @@ export class RoomRuntime {
           ? 'bioforge-tile'
           : this.room.biome === 'reactor'
             ? 'reactor-tile'
-            : undefined;
+            : 'vestibule-tile';
       if (tileKey && this.scene.textures.exists(tileKey)) {
         platform.setVisible(false);
         this.roomObjects.push(
@@ -215,18 +215,20 @@ export class RoomRuntime {
         .image(0, 0, backgroundKey)
         .setOrigin(0)
         .setDisplaySize(room.width, room.height)
-        .setAlpha(room.biome === 'bioforge' ? 0.5 : 0.56)
+        // 背景图 + 雾层 + 描边网格三层叠下来，精致的手绘背景被压得几乎看不见。
+        // 提高背景本身的不透明度，同时把上面两层压薄。
+        .setAlpha(room.biome === 'bioforge' ? 0.68 : 0.74)
         .setDepth(-12);
       this.roomObjects.push(background);
     }
 
     const graphics = this.scene.add.graphics().setDepth(-10);
     graphics
-      .fillStyle(palette.haze, room.biome === 'reactor' ? 0.55 : 0.3)
+      .fillStyle(palette.haze, room.biome === 'reactor' ? 0.34 : 0.16)
       .fillRect(0, 0, room.width, room.height);
-    graphics.lineStyle(2, palette.light, 0.12);
+    graphics.lineStyle(2, palette.light, 0.06);
     for (let x = 24; x < room.width; x += 64) graphics.strokeRect(x, 18, 30, 208);
-    graphics.fillStyle(palette.light, 0.07);
+    graphics.fillStyle(palette.light, 0.05);
     graphics.fillCircle(240, 126, room.biome === 'reactor' ? 100 : 56);
     this.roomObjects.push(graphics);
   }
