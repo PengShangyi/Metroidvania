@@ -35,6 +35,8 @@ export class CombatSystem {
   private bladeReadyAt = 0;
   private invulnerableUntil = 0;
   private meleeBounds?: Phaser.Geom.Rectangle;
+  private meleeActiveUntil = 0;
+  private meleeFacing: -1 | 1 = 1;
   private meleeSerial = 0;
   private meleeReflectiveUntil = 0;
   private projectileSerial = 0;
@@ -84,6 +86,7 @@ export class CombatSystem {
       return true;
     });
     this.syncPiercingOutline(now);
+    this.syncMeleeBounds(now);
 
     return {
       projectiles: this.projectiles,
@@ -144,6 +147,7 @@ export class CombatSystem {
   public clearTransient(): void {
     if (this.projectiles.children) releaseArcadeGroup(this.projectiles);
     this.meleeBounds = undefined;
+    this.meleeActiveUntil = 0;
     this.meleeReflectiveUntil = 0;
     this.piercingCharge = resetPiercingCharge(this.player.wallJumpSerial);
     this.piercingOutline.setVisible(false);
@@ -222,10 +226,26 @@ export class CombatSystem {
       .setAlpha(0.2 + Math.sin(now / 75) * 0.07);
   }
 
+  /**
+   * 判定框原先是挥砍瞬间拍下的静态快照，105ms 内不跟随玩家——边跑边砍会
+   * 把刀留在原地。朝向仍锁定在起手那一刻，只有位置跟着人走。
+   */
+  private syncMeleeBounds(now: number): void {
+    if (now >= this.meleeActiveUntil) {
+      this.meleeBounds = undefined;
+      return;
+    }
+    const x = this.player.x + this.meleeFacing * 21;
+    const y = this.player.y - 18;
+    this.meleeBounds = new Phaser.Geom.Rectangle(x - 14, y - 12, 28, 24);
+  }
+
   private swingBlade(now: number): void {
     const direction = this.player.facingDirection;
     const x = this.player.x + direction * 21;
     const y = this.player.y - 18;
+    this.meleeFacing = direction;
+    this.meleeActiveUntil = now + 105;
     this.meleeBounds = new Phaser.Geom.Rectangle(x - 14, y - 12, 28, 24);
     this.meleeSerial += 1;
     this.meleeReflectiveUntil = now + REFLECTION.windowMs;
@@ -241,9 +261,6 @@ export class CombatSystem {
       scale: 1.18,
       duration: 110,
       onComplete: () => slash.destroy(),
-    });
-    this.scene.time.delayedCall(105, () => {
-      this.meleeBounds = undefined;
     });
     this.bladeReadyAt = now + COMBAT.bladeCooldownMs;
   }

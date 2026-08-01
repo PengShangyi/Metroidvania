@@ -363,9 +363,10 @@ export class EnemySystem {
         return true;
       }
       const velocityX = (projectile.body as Phaser.Physics.Arcade.Body).velocity.x;
-      const damage = metadata.damage;
-      releaseArcadeImage(projectile);
-      this.combat.damagePlayer(damage, velocityX < 0 ? -110 : 110);
+      // 先结算再回收：无敌帧里弹体不该被凭空吃掉，它应当继续飞过去。
+      if (this.combat.damagePlayer(metadata.damage, velocityX < 0 ? -110 : 110)) {
+        releaseArcadeImage(projectile);
+      }
       return true;
     });
   }

@@ -139,7 +139,7 @@ export class PlayScene extends Phaser.Scene {
     this.roomRuntime.load(roomId, spawnId, this.player);
     this.combat.bindWorld(this.roomRuntime.collisionPlatforms);
     this.enemySystem.load(this.roomRuntime.definition.enemies, this.roomRuntime.collisionPlatforms);
-    this.bossSystem.load(roomId);
+    this.bossSystem.load(roomId, this.roomRuntime.collisionPlatforms);
     this.audio.setBiome(this.roomRuntime.definition.biome);
     this.cameras.main.setBounds(0, 0, 480, 270);
     this.physics.world.setBounds(0, 0, 480, 270);

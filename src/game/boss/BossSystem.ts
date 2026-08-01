@@ -22,6 +22,7 @@ export class BossSystem {
   private readonly effects = new Set<Phaser.GameObjects.GameObject>();
   private boss?: Phaser.Physics.Arcade.Sprite;
   private contactCollider?: Phaser.Physics.Arcade.Collider;
+  private platformCollider?: Phaser.Physics.Arcade.Collider;
   private health: number = BOSS.maxHealth;
   private attackSerial = 0;
   private nextAttackAt = 0;
@@ -45,7 +46,7 @@ export class BossSystem {
     this.projectiles = scene.physics.add.group({ allowGravity: false, maxSize: 32 });
   }
 
-  public load(roomId: string): void {
+  public load(roomId: string, platforms?: Phaser.Physics.Arcade.StaticGroup): void {
     this.clear();
     if (roomId !== 'core_guardian' || this.session.bossDefeated) return;
 
@@ -60,6 +61,13 @@ export class BossSystem {
       if (!this.boss) return;
       this.combat.damagePlayer(1, this.player.x < this.boss.x ? -150 : 150);
     });
+    // Boss 弹幕此前不与地形碰撞。当前的核心房是一块纯平地板所以看不出来，
+    // 但只要有人给它加一块掩体，弹体就会直接穿墙而过。
+    if (platforms) {
+      this.platformCollider = this.scene.physics.add.collider(this.projectiles, platforms, (shot) =>
+        releaseArcadeImage(shot as Phaser.Physics.Arcade.Image),
+      );
+    }
     this.nextAttackAt = this.scene.time.now + 900;
     this.publishState();
   }
@@ -123,6 +131,8 @@ export class BossSystem {
     this.generation += 1;
     this.contactCollider?.destroy();
     this.contactCollider = undefined;
+    this.platformCollider?.destroy();
+    this.platformCollider = undefined;
     this.boss?.destroy();
     this.boss = undefined;
     if (this.projectiles.children) releaseArcadeGroup(this.projectiles);
@@ -323,9 +333,10 @@ export class BossSystem {
         return true;
       }
       const velocityX = (projectile.body as Phaser.Physics.Arcade.Body).velocity.x;
-      const damage = metadata.damage;
-      releaseArcadeImage(projectile);
-      this.combat.damagePlayer(damage, velocityX < 0 ? -120 : 120);
+      // 先结算再回收：无敌帧里弹体不该被凭空吃掉，它应当继续飞过去。
+      if (this.combat.damagePlayer(metadata.damage, velocityX < 0 ? -120 : 120)) {
+        releaseArcadeImage(projectile);
+      }
       return true;
     });
   }
