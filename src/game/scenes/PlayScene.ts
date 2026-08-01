@@ -178,6 +178,10 @@ export class PlayScene extends Phaser.Scene {
       const targetBiome = this.rooms.get(exit.targetRoomId).biome;
       this.ensureRegionAssets(targetBiome, () => {
         this.loadRoom(exit.targetRoomId, exit.targetSpawnId);
+        // 存档此前只在拾取、同步终端和击败 Boss 时写入，两次写入之间探索过的房间
+        // 会从 visitedRooms 里丢掉，地图进度凭空退回。复活点仍由 resumeSession
+        // 拉回 checkpointRoomId，所以这里写 currentRoomId 不会改变续关落点。
+        this.saveService.write(this.session);
         (this.player.body as Phaser.Physics.Arcade.Body).enable = true;
         this.cameras.main.fadeIn(140, 7, 11, 24);
         this.time.delayedCall(140, () => {
