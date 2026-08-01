@@ -11,7 +11,7 @@
     ],
     "platforms": [
       { "x": 0, "y": 254, "width": 480, "height": 16 },
-      { "x": 146, "y": 206, "width": 112, "height": 12 },
+      { "x": 146, "y": 210, "width": 112, "height": 12 },
       { "x": 306, "y": 174, "width": 80, "height": 12 }
     ],
     "hazards": [],
@@ -204,7 +204,7 @@
     "platforms": [
       { "x": 0, "y": 254, "width": 176, "height": 16 },
       { "x": 272, "y": 254, "width": 208, "height": 16 },
-      { "x": 154, "y": 206, "width": 72, "height": 12 },
+      { "x": 154, "y": 210, "width": 72, "height": 12 },
       { "x": 238, "y": 174, "width": 72, "height": 12 }
     ],
     "hazards": [{ "x": 176, "y": 250, "width": 96, "height": 20 }],
@@ -240,9 +240,9 @@
     ],
     "platforms": [
       { "x": 0, "y": 254, "width": 480, "height": 16 },
-      { "x": 96, "y": 206, "width": 64, "height": 12 },
+      { "x": 96, "y": 210, "width": 64, "height": 12 },
       { "x": 210, "y": 178, "width": 64, "height": 12 },
-      { "x": 326, "y": 206, "width": 64, "height": 12 }
+      { "x": 326, "y": 210, "width": 64, "height": 12 }
     ],
     "hazards": [
       { "x": 172, "y": 244, "width": 24, "height": 10 },
@@ -295,7 +295,7 @@
     "platforms": [
       { "x": 0, "y": 254, "width": 176, "height": 16 },
       { "x": 224, "y": 254, "width": 256, "height": 16 },
-      { "x": 112, "y": 206, "width": 96, "height": 12 },
+      { "x": 112, "y": 210, "width": 96, "height": 12 },
       { "x": 264, "y": 174, "width": 80, "height": 12 }
     ],
     "hazards": [{ "x": 176, "y": 246, "width": 48, "height": 24 }],
@@ -453,7 +453,7 @@
     ],
     "platforms": [
       { "x": 0, "y": 254, "width": 480, "height": 16 },
-      { "x": 82, "y": 208, "width": 80, "height": 12 },
+      { "x": 82, "y": 210, "width": 80, "height": 12 },
       { "x": 224, "y": 170, "width": 76, "height": 12 },
       { "x": 340, "y": 210, "width": 72, "height": 12 }
     ],
@@ -512,7 +512,7 @@
     "platforms": [
       { "x": 0, "y": 254, "width": 176, "height": 16 },
       { "x": 232, "y": 254, "width": 248, "height": 16 },
-      { "x": 124, "y": 206, "width": 72, "height": 12 },
+      { "x": 124, "y": 210, "width": 72, "height": 12 },
       { "x": 220, "y": 170, "width": 72, "height": 12 },
       { "x": 320, "y": 134, "width": 96, "height": 12 }
     ],
@@ -570,7 +570,7 @@
       { "x": 156, "y": 112, "width": 16, "height": 142 },
       { "x": 252, "y": 58, "width": 16, "height": 148 },
       { "x": 184, "y": 88, "width": 84, "height": 12 },
-      { "x": 328, "y": 110, "width": 82, "height": 12 }
+      { "x": 328, "y": 110, "width": 116, "height": 12 }
     ],
     "hazards": [
       { "x": 144, "y": 246, "width": 30, "height": 24 },
@@ -626,9 +626,9 @@
     ],
     "platforms": [
       { "x": 0, "y": 254, "width": 480, "height": 16 },
-      { "x": 100, "y": 206, "width": 82, "height": 12 },
+      { "x": 100, "y": 210, "width": 82, "height": 12 },
       { "x": 228, "y": 170, "width": 84, "height": 12 },
-      { "x": 350, "y": 206, "width": 72, "height": 12 }
+      { "x": 350, "y": 210, "width": 72, "height": 12 }
     ],
     "hazards": [],
     "exits": [
@@ -679,7 +679,7 @@
       { "x": 0, "y": 254, "width": 128, "height": 16 },
       { "x": 212, "y": 254, "width": 88, "height": 16 },
       { "x": 384, "y": 254, "width": 96, "height": 16 },
-      { "x": 102, "y": 206, "width": 58, "height": 12 },
+      { "x": 102, "y": 210, "width": 58, "height": 12 },
       { "x": 278, "y": 192, "width": 50, "height": 12 }
     ],
     "hazards": [
@@ -731,7 +731,7 @@
       { "x": 188, "y": 64, "width": 16, "height": 146 },
       { "x": 276, "y": 110, "width": 16, "height": 144 },
       { "x": 204, "y": 92, "width": 88, "height": 12 },
-      { "x": 330, "y": 110, "width": 80, "height": 12 }
+      { "x": 330, "y": 110, "width": 114, "height": 12 }
     ],
     "hazards": [{ "x": 144, "y": 246, "width": 176, "height": 24 }],
     "exits": [
