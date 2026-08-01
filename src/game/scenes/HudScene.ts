@@ -4,9 +4,15 @@ import { COLORS, REGISTRY_KEYS } from '../constants';
 import { getInputDevice, setInputDevice, type InputDevice } from '../input/device';
 import { createBrowserSaveService, type SaveService } from '../save/SaveService';
 import type { GameSessionState } from '../state/GameSession';
-import { completionPercent } from '../ui/completion';
+import { COMPLETION_TOTAL, completionPercent } from '../ui/completion';
 import { bindFullscreenKey } from '../ui/fullscreen';
 import { ROOM_MAP_LAYOUT } from '../ui/mapLayout';
+import {
+  buildAdjacency,
+  connectionVisible,
+  roomVisibility,
+  visibleMarkers,
+} from '../ui/mapVisibility';
 import { renderHelpPanel } from '../ui/renderHelpPanel';
 import { bodyTextStyle } from '../ui/text';
 import rawRooms from '../world/rooms.json';
@@ -124,7 +130,7 @@ export class HudScene extends Phaser.Scene {
       this.renderedHealth = health;
       this.healthText.setText(health);
     }
-    const exploration = `探索 ${this.session.visitedRooms.size}/17  ·  ${completionPercent(this.session)}%`;
+    const exploration = `探索 ${this.session.visitedRooms.size}/${COMPLETION_TOTAL.rooms}  ·  ${completionPercent(this.session)}%`;
     if (exploration !== this.renderedExploration) {
       this.renderedExploration = exploration;
       this.explorationText.setText(exploration);
@@ -291,35 +297,55 @@ export class HudScene extends Phaser.Scene {
     container.add(this.heading('探索地图'));
     const graphics = this.add.graphics();
     const rooms = rawRooms as RoomDefinition[];
+    const visited = this.session.visitedRooms;
+    const adjacency = buildAdjacency(rooms);
+
     const connections = new Set<string>();
     for (const room of rooms) {
       for (const exit of room.exits) {
         const key = [room.id, exit.targetRoomId].sort().join('|');
         if (connections.has(key)) continue;
         connections.add(key);
+        if (!connectionVisible(room.id, exit.targetRoomId, visited)) continue;
         const start = ROOM_MAP_LAYOUT[room.id];
         const end = ROOM_MAP_LAYOUT[exit.targetRoomId];
         if (!start || !end) continue;
-        const explored =
-          this.session.visitedRooms.has(room.id) &&
-          this.session.visitedRooms.has(exit.targetRoomId);
+        const explored = visited.has(room.id) && visited.has(exit.targetRoomId);
         graphics.lineStyle(2, explored ? COLORS.cyan : COLORS.steel, explored ? 0.65 : 0.3);
         graphics.lineBetween(start.x, start.y, end.x, end.y);
       }
     }
+
     for (const room of rooms) {
       const point = ROOM_MAP_LAYOUT[room.id];
       if (!point) continue;
+      const visibility = roomVisibility(room.id, visited, adjacency);
+      if (visibility === 'hidden') continue;
+      if (visibility === 'adjacent') {
+        // 只画轮廓：玩家知道那边有个房间，但还不知道里面是什么。
+        graphics.lineStyle(1, COLORS.steel, 0.55).strokeRect(point.x - 6, point.y - 4, 12, 8);
+        continue;
+      }
       const current = room.id === this.session.currentRoomId;
-      const visited = this.session.visitedRooms.has(room.id);
-      graphics.fillStyle(
-        current ? COLORS.amber : visited ? COLORS.cyan : COLORS.steel,
-        visited ? 1 : 0.42,
-      );
+      graphics.fillStyle(current ? COLORS.amber : COLORS.cyan, 1);
       graphics.fillRect(point.x - 6, point.y - 4, 12, 8);
       if (current)
         graphics.lineStyle(1, COLORS.pale, 1).strokeRect(point.x - 8, point.y - 6, 16, 12);
     }
+
+    // 标注全部用 graphics 画：地图上不加文本，避免踩低分辨率排版断言。
+    for (const marker of visibleMarkers(rooms, this.session)) {
+      const point = ROOM_MAP_LAYOUT[marker.roomId];
+      if (!point) continue;
+      if (marker.kind === 'terminal') {
+        graphics.fillStyle(COLORS.pale, 0.95).fillRect(point.x - 1, point.y - 9, 2, 4);
+      } else if (marker.kind === 'pickup') {
+        graphics.fillStyle(COLORS.amber, 0.95).fillCircle(point.x + 8, point.y - 6, 2);
+      } else {
+        graphics.lineStyle(1, 0xed63d6, 0.9).strokeRect(point.x - 9, point.y + 5, 4, 3);
+      }
+    }
+
     container.add(graphics);
     container.add(this.add.text(48, 62, '坠星前庭', bodyTextStyle('#8ce7ff')).setOrigin(0.5));
     container.add(this.add.text(270, 62, '生化锻造区', bodyTextStyle('#82d173')).setOrigin(0.5));
@@ -329,9 +355,19 @@ export class HudScene extends Phaser.Scene {
       this.add
         .text(
           240,
-          216,
-          `当前位置：${currentRoom?.name ?? '未知'}  ·  探索 ${this.session.visitedRooms.size}/17  ·  TAB 返回`,
+          204,
+          `当前位置：${currentRoom?.name ?? '未知'}  ·  探索 ${visited.size}/${COMPLETION_TOTAL.rooms}`,
           bodyTextStyle('#d8f7ff'),
+        )
+        .setOrigin(0.5),
+    );
+    container.add(
+      this.add
+        .text(
+          240,
+          218,
+          '白点终端 · 琥珀点未取道具 · 紫框能力门 · TAB 返回',
+          bodyTextStyle('#8da1c8'),
         )
         .setOrigin(0.5),
     );

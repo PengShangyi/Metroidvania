@@ -14,7 +14,8 @@ export const ROOM_MAP_LAYOUT: Record<string, MapPoint> = {
   bioforge_pump: { x: 250, y: 170 },
   bioforge_lattice: { x: 288, y: 170 },
   bioforge_nursery: { x: 324, y: 142 },
-  bioforge_cradle: { x: 286, y: 94 },
+  // 摇篮要避开 y=94 这条线：花塔到前室的连线原本会横穿它的节点。
+  bioforge_cradle: { x: 286, y: 70 },
   bioforge_spire: { x: 234, y: 94 },
   reactor_antechamber: { x: 338, y: 94 },
   reactor_conduit: { x: 374, y: 94 },

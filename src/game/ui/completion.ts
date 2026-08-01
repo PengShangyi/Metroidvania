@@ -3,6 +3,7 @@ import type { GameSessionState } from '../state/GameSession';
 export const COMPLETION_TOTAL = {
   rooms: 17,
   pickups: 7,
+  lore: 3,
   boss: 1,
 } as const;
 

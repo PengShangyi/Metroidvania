@@ -4,7 +4,7 @@ import { COLORS, REGISTRY_KEYS } from '../constants';
 import { setInputDevice, type InputDevice } from '../input/device';
 import type { GameSessionState } from '../state/GameSession';
 import { bodyTextStyle, titleTextStyle } from '../ui/text';
-import { completionPercent } from '../ui/completion';
+import { COMPLETION_TOTAL, completionPercent } from '../ui/completion';
 
 export class EndingScene extends Phaser.Scene {
   private previousGamepadHelp = false;
@@ -29,8 +29,8 @@ export class EndingScene extends Phaser.Scene {
           '沉睡的星骸第一次拥有真正的寂静。',
           '',
           `任务用时  ${this.formatTime(session.elapsedMs)}`,
-          `探索房间  ${session.visitedRooms.size}/17`,
-          `残留记录  ${session.readLore.size}/3`,
+          `探索房间  ${session.visitedRooms.size}/${COMPLETION_TOTAL.rooms}`,
+          `残留记录  ${session.readLore.size}/${COMPLETION_TOTAL.lore}`,
           `综合完成度  ${completionPercent(session)}%`,
         ],
         { ...bodyTextStyle('#8ce7ff'), align: 'center', lineSpacing: 4 },
