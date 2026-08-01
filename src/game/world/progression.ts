@@ -21,6 +21,8 @@ export function simulateProgression(
       const room = byId.get(roomId);
       if (!room) continue;
       for (const pickup of room.pickups) {
+        // 拾取物自身的能力门与出口一样是硬性条件，RoomRuntime 也是这么判的。
+        if (!meetsRequirement(pickup.requirement, abilities, false)) continue;
         if (pickup.type === 'phaseDash' && !abilities.phaseDash) {
           abilities.phaseDash = true;
           changed = true;

@@ -6,11 +6,15 @@ import type { ActionSnapshot } from '../input/actions';
 import type { Player } from '../player/Player';
 import type { GameSessionState } from '../state/GameSession';
 import { bodyTextStyle } from '../ui/text';
+import { exitRequirementMessage, pickupRequirementMessage } from './gateMessages';
 import { meetsRequirement } from './progression';
 import type { RoomRepository } from './RoomRepository';
 import type { ExitDefinition, PickupDefinition, RoomDefinition } from './types';
 
 type ExitHandler = (exit: ExitDefinition) => void;
+
+/** 能力门未满足的拾取物保持可见但压暗，提示「看得到、拿不到」。 */
+const LOCKED_PICKUP_ALPHA = 0.4;
 
 export class RoomRuntime {
   private readonly scene: Phaser.Scene;
@@ -120,10 +124,10 @@ export class RoomRuntime {
       );
       if (input.pressed.interact) {
         if (unlocked) onExit(overlappingExit);
-        else this.showMessage(this.requirementMessage(overlappingExit.requirement), 1200);
+        else this.showMessage(exitRequirementMessage(overlappingExit.requirement), 1200);
       } else if (this.registryMessageEmpty()) {
         this.showMessage(
-          unlocked ? 'E：进入通道' : this.requirementMessage(overlappingExit.requirement),
+          unlocked ? 'E：进入通道' : exitRequirementMessage(overlappingExit.requirement),
           400,
         );
       }
@@ -262,6 +266,7 @@ export class RoomRuntime {
             : 'terminal';
     const image = this.scene.add.image(pickup.x, pickup.y, texture).setDepth(3);
     if (pickup.type === 'lore') image.setScale(0.65).setOrigin(0.5, 1);
+    image.setAlpha(this.pickupUnlocked(pickup) ? 1 : LOCKED_PICKUP_ALPHA);
     this.scene.tweens.add({
       targets: image,
       y: pickup.y - 3,
@@ -277,18 +282,24 @@ export class RoomRuntime {
   private handlePickups(player: Player, input: ActionSnapshot): void {
     for (const pickup of this.room.pickups) {
       if (this.session.collectedPickups.has(pickup.id)) continue;
-      if (
-        !meetsRequirement(pickup.requirement, this.session.abilities, this.session.bossDefeated)
-      ) {
+      if (Phaser.Math.Distance.Between(player.x, player.y - 12, pickup.x, pickup.y) > 25) continue;
+      if (!this.pickupUnlocked(pickup)) {
+        // 被能力门挡住时也要解释，否则玩家只会看到一个走进去毫无反应的物件。
+        if (this.registryMessageEmpty()) {
+          this.showMessage(pickupRequirementMessage(pickup.requirement), 600);
+        }
         continue;
       }
-      if (Phaser.Math.Distance.Between(player.x, player.y - 12, pickup.x, pickup.y) > 25) continue;
       if (pickup.type === 'lore' && !input.pressed.interact) {
         if (this.registryMessageEmpty()) this.showMessage('E：读取残留记录', 400);
         continue;
       }
       this.collectPickup(pickup);
     }
+  }
+
+  private pickupUnlocked(pickup: PickupDefinition): boolean {
+    return meetsRequirement(pickup.requirement, this.session.abilities, this.session.bossDefeated);
   }
 
   private collectPickup(pickup: PickupDefinition): void {
@@ -316,6 +327,7 @@ export class RoomRuntime {
       this.pickupObjects.delete(pickup.id);
     }
     this.refreshExitVisuals();
+    this.refreshPickupVisuals();
     this.scene.events.emit(AUDIO_EVENT, pickup.type === 'lore' ? 'terminal' : 'pickup');
     const saved = this.saveProgress();
     this.showMessage(
@@ -338,18 +350,18 @@ export class RoomRuntime {
     }
   }
 
+  private refreshPickupVisuals(): void {
+    for (const pickup of this.room.pickups) {
+      const image = this.pickupObjects.get(pickup.id);
+      if (!image) continue;
+      image.setAlpha(this.pickupUnlocked(pickup) ? 1 : LOCKED_PICKUP_ALPHA);
+    }
+  }
+
   private platformColor(room: RoomDefinition): number {
     if (room.biome === 'bioforge') return 0x294a4d;
     if (room.biome === 'reactor') return 0x1e405c;
     return COLORS.steel;
-  }
-
-  private requirementMessage(requirement: ExitDefinition['requirement']): string {
-    if (requirement === 'phaseDash') return '通道需要：相位冲刺';
-    if (requirement === 'magneticGrip') return '通道需要：磁附跃迁';
-    if (requirement === 'dualAbility') return '最终锁需要：两项跃迁能力';
-    if (requirement === 'bossDefeated') return '核心仍处于封锁状态';
-    return '';
   }
 
   private showMessage(message: string, duration: number): void {

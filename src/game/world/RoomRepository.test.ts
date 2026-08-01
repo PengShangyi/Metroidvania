@@ -37,6 +37,42 @@ describe('room repository', () => {
     expect(repository.get('core_guardian').exits[0]?.requirement).toBe('bossDefeated');
   });
 
+  it('never hands out an ability pickup that is locked behind its own gate', () => {
+    // 回归：可达性模拟原先无视 pickup.requirement，会放行一个自锁的世界。
+    const rooms = new RoomRepository().all();
+    const selfLocked = rooms.map((room) => ({
+      ...room,
+      pickups: room.pickups.map((pickup) =>
+        pickup.id === 'ability-phase-dash'
+          ? { ...pickup, requirement: 'phaseDash' as const }
+          : pickup,
+      ),
+    }));
+
+    const result = simulateProgression(selfLocked);
+
+    expect(result.abilities.phaseDash).toBe(false);
+    expect(result.abilities.magneticGrip).toBe(false);
+    expect(result.reachable.has('core_guardian')).toBe(false);
+  });
+
+  it('still unlocks pickups whose gate is opened by an earlier ability', () => {
+    const rooms = new RoomRepository().all();
+    const chained = rooms.map((room) => ({
+      ...room,
+      pickups: room.pickups.map((pickup) =>
+        pickup.id === 'ability-magnetic-grip'
+          ? { ...pickup, requirement: 'phaseDash' as const }
+          : pickup,
+      ),
+    }));
+
+    const result = simulateProgression(chained);
+
+    expect(result.abilities).toEqual({ phaseDash: true, magneticGrip: true });
+    expect(result.reachable.size).toBe(17);
+  });
+
   it('rejects shield variants on non-crawler enemies', () => {
     const repository = new RoomRepository();
     const rooms = repository.all();
