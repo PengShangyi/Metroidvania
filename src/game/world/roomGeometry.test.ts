@@ -57,6 +57,14 @@ describe('关卡几何可达性', () => {
     expect(reach.pickupReachable(grip!)).toBe(true);
   });
 
+  it('Boss 房前一站就有终端，失败重试不用重跑四个房间', () => {
+    const threshold = rooms.find((room) => room.id === 'reactor_threshold');
+    expect(threshold?.checkpoint).toBeDefined();
+    // 顺带确认生化区后半不再是一段没有存档点的长路。
+    const cradle = rooms.find((room) => room.id === 'bioforge_cradle');
+    expect(cradle?.checkpoint).toBeDefined();
+  });
+
   it('每个存档终端在徒手状态下都够得到', () => {
     const missed = rooms
       .filter((room) => room.checkpoint)

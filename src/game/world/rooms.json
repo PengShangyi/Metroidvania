@@ -551,7 +551,8 @@
         "y": 116,
         "requirement": "none"
       }
-    ]
+    ],
+    "checkpoint": { "id": "terminal-cradle", "spawnId": "from_nursery", "x": 64, "y": 222 }
   },
   {
     "id": "bioforge_spire",
@@ -824,7 +825,8 @@
       { "id": "sentry-threshold", "type": "sentry", "x": 244, "y": 132 },
       { "id": "turret-threshold", "type": "turret", "x": 354, "y": 198 }
     ],
-    "pickups": []
+    "pickups": [],
+    "checkpoint": { "id": "terminal-threshold", "spawnId": "from_coreway", "x": 86, "y": 222 }
   },
   {
     "id": "core_guardian",

@@ -13,25 +13,25 @@
 
 ## 世界与能力图
 
-| 区域       | 房间 ID               | 房间名   | 主要内容             |
-| ---------- | --------------------- | -------- | -------------------- |
-| 坠星前庭   | `vestibule_dock`      | 坠星船坞 | 出生点、终端 01      |
-| 坠星前庭   | `vestibule_gallery`   | 断光长廊 | 移动教学、爬行体     |
-| 坠星前庭   | `vestibule_shaft`     | 中央井   | 三向枢纽、后期捷径   |
-| 坠星前庭   | `vestibule_depot`     | 测绘仓   | 叙事终端、隐藏生命格 |
-| 坠星前庭   | `vestibule_vault`     | 回声库   | 相位冲刺模块         |
-| 坠星前庭   | `vestibule_causeway`  | 封锁堤道 | 盾兵教学、生化区入口 |
-| 生化锻造区 | `bioforge_intake`     | 孢流入口 | 终端 02、盾兵复习    |
-| 生化锻造区 | `bioforge_pump`       | 脉冲泵室 | 酸液与炮台组合       |
-| 生化锻造区 | `bioforge_lattice`    | 淹没晶格 | 冲刺隐藏生命格       |
-| 生化锻造区 | `bioforge_nursery`    | 静默育床 | 叙事终端、孢子跃兽   |
-| 生化锻造区 | `bioforge_cradle`     | 磁巢     | 磁附跃迁模块         |
-| 生化锻造区 | `bioforge_spire`      | 垂直花塔 | 墙跳贯穿、中央井捷径 |
-| 零点反应堆 | `reactor_antechamber` | 零点前室 | 终端 03、最终准备    |
-| 零点反应堆 | `reactor_conduit`     | 相移导管 | 冲刺与墙跳组合挑战   |
-| 零点反应堆 | `reactor_coreway`     | 核心回廊 | 最后一份叙事记录     |
-| 零点反应堆 | `reactor_threshold`   | 静滞门槛 | 盾兵考核、Boss 门    |
-| 零点反应堆 | `core_guardian`       | 零点核心 | 守核者 Λ、结局入口   |
+| 区域       | 房间 ID               | 房间名   | 主要内容                   |
+| ---------- | --------------------- | -------- | -------------------------- |
+| 坠星前庭   | `vestibule_dock`      | 坠星船坞 | 出生点、终端 01            |
+| 坠星前庭   | `vestibule_gallery`   | 断光长廊 | 移动教学、爬行体           |
+| 坠星前庭   | `vestibule_shaft`     | 中央井   | 三向枢纽、后期捷径         |
+| 坠星前庭   | `vestibule_depot`     | 测绘仓   | 叙事终端、隐藏生命格       |
+| 坠星前庭   | `vestibule_vault`     | 回声库   | 相位冲刺模块               |
+| 坠星前庭   | `vestibule_causeway`  | 封锁堤道 | 盾兵教学、生化区入口       |
+| 生化锻造区 | `bioforge_intake`     | 孢流入口 | 终端 02、盾兵复习          |
+| 生化锻造区 | `bioforge_pump`       | 脉冲泵室 | 酸液与炮台组合             |
+| 生化锻造区 | `bioforge_lattice`    | 淹没晶格 | 冲刺隐藏生命格             |
+| 生化锻造区 | `bioforge_nursery`    | 静默育床 | 叙事终端、孢子跃兽         |
+| 生化锻造区 | `bioforge_cradle`     | 磁巢     | 终端 04、磁附跃迁模块      |
+| 生化锻造区 | `bioforge_spire`      | 垂直花塔 | 墙跳贯穿、中央井捷径       |
+| 零点反应堆 | `reactor_antechamber` | 零点前室 | 终端 03、最终准备          |
+| 零点反应堆 | `reactor_conduit`     | 相移导管 | 冲刺与墙跳组合挑战         |
+| 零点反应堆 | `reactor_coreway`     | 核心回廊 | 最后一份叙事记录           |
+| 零点反应堆 | `reactor_threshold`   | 静滞门槛 | 终端 05、盾兵考核、Boss 门 |
+| 零点反应堆 | `core_guardian`       | 零点核心 | 守核者 Λ、结局入口         |
 
 主线顺序：船坞 → 长廊 → 中央井 → 回声库 → 相位冲刺 → 封锁堤道 → 生化区 → 磁巢 → 磁附跃迁 → 花塔捷径 → 零点反应堆 → 守核者。
 
