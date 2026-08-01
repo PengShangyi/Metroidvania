@@ -7,6 +7,7 @@ import type { Player } from '../player/Player';
 import type { GameSessionState } from '../state/GameSession';
 import { bodyTextStyle } from '../ui/text';
 import { exitRequirementMessage, pickupRequirementMessage } from './gateMessages';
+import { intersectsAnyHazard } from './hazardRules';
 import { meetsRequirement } from './progression';
 import type { RoomRepository } from './RoomRepository';
 import type { ExitDefinition, PickupDefinition, RoomDefinition } from './types';
@@ -169,12 +170,11 @@ export class RoomRuntime {
   }
 
   public isTouchingHazard(player: Player): boolean {
-    const playerBounds = player.getBounds();
-    return this.room.hazards.some((hazard) =>
-      Phaser.Geom.Intersects.RectangleToRectangle(
-        playerBounds,
-        new Phaser.Geom.Rectangle(hazard.x, hazard.y, hazard.width, hazard.height),
-      ),
+    // 按碰撞体判定：精灵是 24×32，碰撞体只有 14×28，显示矩形会多出隐形受伤范围。
+    const body = player.body as Phaser.Physics.Arcade.Body;
+    return intersectsAnyHazard(
+      { x: body.x, y: body.y, width: body.width, height: body.height },
+      this.room.hazards,
     );
   }
 
