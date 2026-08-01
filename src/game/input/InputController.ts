@@ -127,6 +127,6 @@ export class InputController {
 
   private useDevice(device: InputDevice): void {
     this.lastDevice = device;
-    setInputDevice(this.scene.registry, this.scene.game.events, device);
+    setInputDevice(this.scene.registry, device);
   }
 }

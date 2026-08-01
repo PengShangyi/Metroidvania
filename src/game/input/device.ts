@@ -4,8 +4,6 @@ import { REGISTRY_KEYS } from '../constants';
 
 export type InputDevice = 'keyboardMouse' | 'gamepad';
 
-export const INPUT_DEVICE_CHANGED = 'star-echo-input-device-changed';
-
 export function resolveInputDevice(
   previous: InputDevice,
   keyboardMouseActive: boolean,
@@ -21,13 +19,9 @@ export function getInputDevice(registry: Phaser.Data.DataManager): InputDevice {
   return value === 'gamepad' ? 'gamepad' : 'keyboardMouse';
 }
 
-export function setInputDevice(
-  registry: Phaser.Data.DataManager,
-  events: Phaser.Events.EventEmitter,
-  device: InputDevice,
-): boolean {
+/** 返回值表示设备是否真的换了；各场景据此决定要不要重绘按键提示。 */
+export function setInputDevice(registry: Phaser.Data.DataManager, device: InputDevice): boolean {
   if (getInputDevice(registry) === device) return false;
   registry.set(REGISTRY_KEYS.inputDevice, device);
-  events.emit(INPUT_DEVICE_CHANGED, device);
   return true;
 }

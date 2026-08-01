@@ -15,13 +15,6 @@ export function createProceduralTextures(scene: Phaser.Scene): void {
     g.fillStyle(COLORS.steel).fillRect(6, 27, 4, 5).fillRect(14, 27, 4, 5);
   });
 
-  createTexture(scene, 'tile', 16, 16, (g) => {
-    g.fillStyle(COLORS.steel).fillRect(0, 0, 16, 16);
-    g.fillStyle(0x334b76).fillRect(1, 1, 14, 3);
-    g.fillStyle(0x111b35).fillRect(2, 8, 12, 6);
-    g.fillStyle(COLORS.cyan, 0.4).fillRect(2, 5, 1, 1).fillRect(12, 5, 1, 1);
-  });
-
   createTexture(scene, 'hazard', 16, 16, (g) => {
     g.fillStyle(COLORS.danger);
     for (let x = 0; x < 16; x += 4) g.fillTriangle(x, 16, x + 2, 4, x + 4, 16);

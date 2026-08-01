@@ -303,7 +303,7 @@ function combatSnapshot(game: Phaser.Game): CombatTestSnapshot {
 }
 
 function showHelp(game: Phaser.Game, device: InputDevice): void {
-  setInputDevice(game.registry, game.events, device);
+  setInputDevice(game.registry, device);
   const returnScene = ['title', 'ending'].find((key) => game.scene.isActive(key)) ?? 'title';
   game.scene.getScene(returnScene).scene.start('help', { returnScene });
 }

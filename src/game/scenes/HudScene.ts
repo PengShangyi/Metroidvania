@@ -425,7 +425,7 @@ export class HudScene extends Phaser.Scene {
   }
 
   private useInputDevice(device: InputDevice): void {
-    const changed = setInputDevice(this.registry, this.game.events, device);
+    const changed = setInputDevice(this.registry, device);
     if (changed && this.mode === 'help') {
       this.renderedHelpDevice = undefined;
       this.renderOverlay();

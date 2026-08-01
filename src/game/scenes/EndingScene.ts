@@ -53,13 +53,13 @@ export class EndingScene extends Phaser.Scene {
       ((pad?.buttons.some((button) => button.pressed) ?? false) ||
         Math.abs(pad?.axes[0]?.getValue() ?? 0) > 0.24 ||
         Math.abs(pad?.axes[1]?.getValue() ?? 0) > 0.24);
-    if (active) setInputDevice(this.registry, this.game.events, 'gamepad');
+    if (active) setInputDevice(this.registry, 'gamepad');
     if (helpPressed && !this.previousGamepadHelp) this.openHelp('gamepad');
     this.previousGamepadHelp = helpPressed;
   }
 
   private openHelp(device: InputDevice): void {
-    setInputDevice(this.registry, this.game.events, device);
+    setInputDevice(this.registry, device);
     this.scene.start('help', { returnScene: 'ending' });
   }
 

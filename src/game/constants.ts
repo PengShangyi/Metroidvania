@@ -1,6 +1,5 @@
 export const GAME_WIDTH = 480;
 export const GAME_HEIGHT = 270;
-export const TILE_SIZE = 16;
 
 export const COLORS = {
   void: 0x070b18,

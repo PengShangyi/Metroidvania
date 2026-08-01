@@ -40,7 +40,7 @@ CI (`.github/workflows/quality.yml`) runs `pnpm check`, then `pnpm test:e2e` in 
 
 ### Logical resolution
 
-The canvas is a fixed **480×270** at `TILE_SIZE` 16, scaled with `Phaser.Scale.FIT` and `pixelArt`/`roundPixels`. Every room in `rooms.json` is exactly 480×270 — `PlayScene.loadRoom` hardcodes camera and physics bounds to that, and rooms are single-screen by design. All UI coordinates in scenes are raw 480×270 pixel positions.
+The canvas is a fixed **480×270** on a 16px tile grid, scaled with `Phaser.Scale.FIT` and `pixelArt`/`roundPixels`. Every room in `rooms.json` is exactly 480×270 — `PlayScene.loadRoom` hardcodes camera and physics bounds to that, and rooms are single-screen by design. All UI coordinates in scenes are raw 480×270 pixel positions.
 
 ### Pure logic vs. Phaser — the central rule
 

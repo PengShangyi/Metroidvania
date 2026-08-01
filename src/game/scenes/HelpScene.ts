@@ -19,12 +19,12 @@ export class HelpScene extends Phaser.Scene {
   private previousHelpPressed = false;
   private closing = false;
   private readonly keyHandler = (event: KeyboardEvent): void => {
-    const changed = setInputDevice(this.registry, this.game.events, 'keyboardMouse');
+    const changed = setInputDevice(this.registry, 'keyboardMouse');
     if (event.code === 'KeyH' || event.code === 'Escape') this.closeHelp();
     else if (changed) this.render();
   };
   private readonly pointerHandler = (): void => {
-    const changed = setInputDevice(this.registry, this.game.events, 'keyboardMouse');
+    const changed = setInputDevice(this.registry, 'keyboardMouse');
     if (changed) this.time.delayedCall(0, () => this.render());
   };
 
@@ -57,7 +57,7 @@ export class HelpScene extends Phaser.Scene {
         Math.abs(pad?.axes[0]?.getValue() ?? 0) > 0.24 ||
         Math.abs(pad?.axes[1]?.getValue() ?? 0) > 0.24);
     if (gamepadActive) {
-      const changed = setInputDevice(this.registry, this.game.events, 'gamepad');
+      const changed = setInputDevice(this.registry, 'gamepad');
       if (changed) this.render();
     }
     if (helpPressed && !this.previousHelpPressed) this.closeHelp();
