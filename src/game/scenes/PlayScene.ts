@@ -16,6 +16,7 @@ import {
 import { createBrowserSaveService, type SaveService } from '../save/SaveService';
 import type { GameSessionState } from '../state/GameSession';
 import { respawnDecision } from '../state/respawnQueue';
+import { sessionEntryPoint } from '../state/resumePoint';
 import { RoomRepository } from '../world/RoomRepository';
 import { RoomRuntime } from '../world/RoomRuntime';
 import {
@@ -86,7 +87,8 @@ export class PlayScene extends Phaser.Scene {
     this.bossSystem = new BossSystem(this, this.player, this.combat, this.session, () =>
       this.finishBoss(),
     );
-    this.loadRoom(this.session.currentRoomId, this.session.checkpointSpawnId);
+    const entry = sessionEntryPoint(this.session);
+    this.loadRoom(entry.roomId, entry.spawnId);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.controls.destroy();

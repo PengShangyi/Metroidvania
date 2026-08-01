@@ -9,6 +9,7 @@ import {
   type SaveService,
 } from '../save/SaveService';
 import { createNewSession } from '../state/GameSession';
+import { resumeSession } from '../state/resumePoint';
 import { bindFullscreenKey } from '../ui/fullscreen';
 import { bodyTextStyle, titleTextStyle } from '../ui/text';
 
@@ -98,7 +99,7 @@ export class TitleScene extends Phaser.Scene {
 
   private continueGame(): void {
     if (this.readResult.status !== 'valid') return;
-    this.registry.set(REGISTRY_KEYS.session, this.readResult.session);
+    this.registry.set(REGISTRY_KEYS.session, resumeSession(this.readResult.session));
     this.scene.start('play');
   }
 
