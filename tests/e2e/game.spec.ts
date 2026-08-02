@@ -1,5 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { clickUi } from './uiPoint';
+
 interface TestSnapshot {
   scene: string;
   roomId: string;
@@ -27,6 +29,7 @@ interface BrowserTestBridge {
   ): Promise<void>;
   completeBoss(): void;
   showHelp(device: 'keyboardMouse' | 'gamepad'): void;
+  tutorialPlayerX(): number | null;
 }
 
 type TestWindow = Window & { __STAR_ECHO_TEST__: BrowserTestBridge };
@@ -60,7 +63,7 @@ test('starts a new game and opens map, pause, settings and controls', async ({ p
   const errors = await openGame(page);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
 
-  await page.mouse.click(480, 272);
+  await clickUi(page, 240, 136);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('play');
   await expect.poll(async () => (await snapshot(page)).roomId).toBe('vestibule_dock');
   await page.keyboard.press('h');
@@ -78,10 +81,10 @@ test('starts a new game and opens map, pause, settings and controls', async ({ p
   await expect.poll(async () => (await snapshot(page)).uiMode).toBe('pause');
   await waitForGameFrame(page);
 
-  await page.mouse.click(480, 288);
+  await clickUi(page, 240, 144);
   await expect.poll(async () => (await snapshot(page)).uiMode).toBe('settings');
   await waitForGameFrame(page);
-  await page.mouse.click(480, 260);
+  await clickUi(page, 240, 130);
   const settings = await page.evaluate(() => localStorage.getItem('star-echo.settings.v1'));
   expect(settings).toContain('screenShake');
   await page.keyboard.press('Escape');
@@ -116,7 +119,7 @@ test('restores a valid save and safely replaces a corrupt save', async ({ page }
   await page.reload();
   await page.waitForFunction(() => Boolean((window as unknown as TestWindow).__STAR_ECHO_TEST__));
   await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
-  await page.mouse.click(480, 208);
+  await clickUi(page, 240, 104);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('play');
   await expect.poll(async () => (await snapshot(page)).roomId).toBe('bioforge_intake');
   expect((await snapshot(page)).abilities.phaseDash).toBe(true);
@@ -125,7 +128,7 @@ test('restores a valid save and safely replaces a corrupt save', async ({ page }
   await page.reload();
   await page.waitForFunction(() => Boolean((window as unknown as TestWindow).__STAR_ECHO_TEST__));
   await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
-  await page.mouse.click(480, 272);
+  await clickUi(page, 240, 136);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('play');
   await expect.poll(async () => (await snapshot(page)).roomId).toBe('vestibule_dock');
   expect(errors).toEqual([]);
@@ -137,6 +140,22 @@ test('opens the playable tutorial and safely returns to the title', async ({ pag
 
   await page.keyboard.press('t');
   await expect.poll(async () => (await snapshot(page)).scene).toBe('tutorial');
+
+  // 训练关此前不设物理边界，靠 config 的默认值兜底。画布升到 960×540 之后
+  // 默认值也跟着变，玩家会一路走出房间——而且不会有任何一处报错。
+  await page.locator('canvas').click({ position: { x: 60, y: 60 } });
+  await page.keyboard.down('ArrowRight');
+  // 第二课的起点在 x=92，MOVEMENT.speed 是 110px/s，5 秒足够顶到右墙；
+  // 没有物理边界的话同样 5 秒会跑到 600 开外。
+  await page.waitForTimeout(5_000);
+  await page.keyboard.up('ArrowRight');
+  const tutorialX = await page.evaluate(() =>
+    (window as unknown as TestWindow).__STAR_ECHO_TEST__.tutorialPlayerX(),
+  );
+  expect(tutorialX).not.toBeNull();
+  expect(tutorialX ?? 0).toBeGreaterThan(440);
+  expect(tutorialX ?? 0).toBeLessThanOrEqual(480);
+
   await page.keyboard.press('Escape');
   await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
 
@@ -224,7 +243,7 @@ test('walks through a corridor without pressing interact and does not bounce bac
 }) => {
   const errors = await openGame(page);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
-  await page.mouse.click(480, 272);
+  await clickUi(page, 240, 136);
   await expect.poll(async () => (await snapshot(page)).roomId).toBe('vestibule_dock');
   // 合成点击不会把键盘焦点交给画布，长按方向键读不到 Key.isDown。
   await page.locator('canvas').click({ position: { x: 60, y: 60 } });

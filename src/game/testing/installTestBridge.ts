@@ -52,6 +52,14 @@ interface TypographyTestSnapshot {
   overlappingTextPairs: string[];
   synthesizedStyles: string[];
   scaledTexts: string[];
+  /** 所属相机 zoom ≠ 1 的文本：世界层现在跑在 zoom 2 上，文本一旦留在那边就会被放大。 */
+  zoomedTexts: string[];
+}
+
+interface ActiveText {
+  text: Phaser.GameObjects.Text;
+  camera: Phaser.Cameras.Scene2D.Camera;
+  screen: Phaser.Geom.Rectangle;
 }
 
 export type CombatTestScenario = 'shield' | 'turretReflection' | 'bossReflection' | 'piercing';
@@ -96,6 +104,7 @@ export interface StarEchoTestBridge {
   prepareCombatScenario(scenario: CombatTestScenario): Promise<void>;
   alignPiercingTargets(): void;
   damagePlayer(amount: number): void;
+  tutorialPlayerX(): number | null;
 }
 
 type TestWindow = Window & { __STAR_ECHO_TEST__?: StarEchoTestBridge };
@@ -112,6 +121,8 @@ type PlaySceneInternals = Phaser.Scene & {
   ensureRegionAssets(biome: BiomeId, onReady: () => void): void;
   finishBoss(): void;
 };
+
+type TutorialSceneInternals = Phaser.Scene & { player: Player };
 
 interface EnemySystemInternals {
   enemies: Phaser.GameObjects.Group;
@@ -157,6 +168,7 @@ export function installTestBridge(game: Phaser.Game): void {
     prepareCombatScenario: (scenario) => prepareCombatScenario(game, scenario),
     alignPiercingTargets: () => alignPiercingTargets(game),
     damagePlayer: (amount) => playInternals(game).combat.damagePlayer(amount),
+    tutorialPlayerX: () => tutorialPlayerX(game),
   };
 
   game.events.once('destroy', () => {
@@ -185,73 +197,96 @@ function snapshot(game: Phaser.Game): TestSnapshot {
 }
 
 function typographySnapshot(game: Phaser.Game): TypographyTestSnapshot {
-  const texts = activeTextObjects(game).filter(
-    (text) => text.active && text.visible && text.alpha > 0 && text.text.length > 0,
-  );
-  const fontSizes = texts
-    .map((text) => Number.parseFloat(String(text.style.fontSize)))
+  const entries = activeTextObjects(game);
+  const fontSizes = entries
+    .map((entry) => Number.parseFloat(String(entry.text.style.fontSize)))
     .filter(Number.isFinite);
-  const label = (text: Phaser.GameObjects.Text): string =>
-    text.text.replaceAll('\n', ' / ').slice(0, 48);
-  const clippedTexts = texts
-    .filter((text) => {
-      const bounds = text.getBounds();
-      return (
-        bounds.left < -0.5 || bounds.top < -0.5 || bounds.right > 480.5 || bounds.bottom > 270.5
-      );
-    })
+  const label = (entry: ActiveText): string => entry.text.text.replaceAll('\n', ' / ').slice(0, 48);
+  const clippedTexts = entries
+    .filter(
+      ({ screen }) =>
+        screen.left < -0.5 ||
+        screen.top < -0.5 ||
+        screen.right > game.scale.width + 0.5 ||
+        screen.bottom > game.scale.height + 0.5,
+    )
     .map(label);
   const overlappingTextPairs: string[] = [];
-  for (let firstIndex = 0; firstIndex < texts.length; firstIndex += 1) {
-    const first = texts[firstIndex];
-    const firstBounds = first.getBounds();
-    for (let secondIndex = firstIndex + 1; secondIndex < texts.length; secondIndex += 1) {
-      const second = texts[secondIndex];
-      const secondBounds = second.getBounds();
+  for (let firstIndex = 0; firstIndex < entries.length; firstIndex += 1) {
+    const first = entries[firstIndex]!;
+    for (let secondIndex = firstIndex + 1; secondIndex < entries.length; secondIndex += 1) {
+      const second = entries[secondIndex]!;
       const horizontalOverlap =
-        Math.min(firstBounds.right, secondBounds.right) -
-        Math.max(firstBounds.left, secondBounds.left);
+        Math.min(first.screen.right, second.screen.right) -
+        Math.max(first.screen.left, second.screen.left);
       if (horizontalOverlap <= 0) continue;
       const verticalOverlap =
-        Math.min(firstBounds.bottom, secondBounds.bottom) -
-        Math.max(firstBounds.top, secondBounds.top);
+        Math.min(first.screen.bottom, second.screen.bottom) -
+        Math.max(first.screen.top, second.screen.top);
       if (horizontalOverlap > 0.5 && verticalOverlap > 0.5) {
         overlappingTextPairs.push(`${label(first)} ↔ ${label(second)}`);
       }
     }
   }
-  const synthesizedStyles = texts.filter((text) => text.style.fontStyle !== 'normal').map(label);
-  const scaledTexts = texts
-    .filter((text) => Math.abs(text.scaleX - 1) > 0.001 || Math.abs(text.scaleY - 1) > 0.001)
+  const synthesizedStyles = entries
+    .filter((entry) => entry.text.style.fontStyle !== 'normal')
+    .map(label);
+  const scaledTexts = entries
+    .filter(({ text }) => Math.abs(text.scaleX - 1) > 0.001 || Math.abs(text.scaleY - 1) > 0.001)
+    .map(label);
+  const zoomedTexts = entries
+    .filter(({ camera }) => camera.zoomX !== 1 || camera.zoomY !== 1)
     .map(label);
 
   return {
     fontReady: document.fonts.check(UI_FONT_DESCRIPTOR, UI_FONT_PROBE),
-    textCount: texts.length,
+    textCount: entries.length,
     minimumFontSize: fontSizes.length > 0 ? Math.min(...fontSizes) : null,
-    fontFamilies: [...new Set(texts.map((text) => text.style.fontFamily))].sort(),
+    fontFamilies: [...new Set(entries.map((entry) => entry.text.style.fontFamily))].sort(),
     clippedTexts,
     overlappingTextPairs,
     synthesizedStyles,
     scaledTexts,
+    zoomedTexts,
   };
 }
 
-function activeTextObjects(game: Phaser.Game): Phaser.GameObjects.Text[] {
-  const texts: Phaser.GameObjects.Text[] = [];
-  const visit = (object: Phaser.GameObjects.GameObject): void => {
-    if (object instanceof Phaser.GameObjects.Text) {
-      texts.push(object);
-      return;
-    }
-    if (object instanceof Phaser.GameObjects.Container) {
-      for (const child of object.list) visit(child);
-    }
-  };
+/**
+ * 裁剪与重叠一律在屏幕空间判定：世界层相机 zoom 2、UI 层 zoom 1，
+ * 直接比 getBounds() 会把两套坐标系混在一起。
+ */
+function screenBounds(
+  text: Phaser.GameObjects.Text,
+  camera: Phaser.Cameras.Scene2D.Camera,
+): Phaser.Geom.Rectangle {
+  const bounds = text.getBounds();
+  const view = camera.worldView;
+  return new Phaser.Geom.Rectangle(
+    (bounds.x - view.x) * camera.zoomX + camera.x,
+    (bounds.y - view.y) * camera.zoomY + camera.y,
+    bounds.width * camera.zoomX,
+    bounds.height * camera.zoomY,
+  );
+}
+
+function activeTextObjects(game: Phaser.Game): ActiveText[] {
+  const entries: ActiveText[] = [];
   for (const scene of game.scene.getScenes(true)) {
+    const camera = scene.cameras.main;
+    const visit = (object: Phaser.GameObjects.GameObject): void => {
+      if (object instanceof Phaser.GameObjects.Text) {
+        if (object.active && object.visible && object.alpha > 0 && object.text.length > 0) {
+          entries.push({ text: object, camera, screen: screenBounds(object, camera) });
+        }
+        return;
+      }
+      if (object instanceof Phaser.GameObjects.Container) {
+        for (const child of object.list) visit(child);
+      }
+    };
     for (const object of scene.children.list) visit(object);
   }
-  return texts;
+  return entries;
 }
 
 function combatSnapshot(game: Phaser.Game): CombatTestSnapshot {
@@ -300,6 +335,13 @@ function combatSnapshot(game: Phaser.Game): CombatTestSnapshot {
     enemies,
     events: cloneCombatEvents(),
   };
+}
+
+/** 训练关不走 combatSnapshot（那条只覆盖 play），但它的世界边界需要单独有人盯着。 */
+function tutorialPlayerX(game: Phaser.Game): number | null {
+  if (!game.scene.isActive('tutorial')) return null;
+  const tutorial = game.scene.getScene('tutorial') as unknown as TutorialSceneInternals;
+  return Math.round(tutorial.player.x);
 }
 
 function showHelp(game: Phaser.Game, device: InputDevice): void {

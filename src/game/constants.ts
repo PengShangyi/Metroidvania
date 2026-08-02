@@ -1,5 +1,6 @@
-export const GAME_WIDTH = 480;
-export const GAME_HEIGHT = 270;
+/** 画布 / UI 层尺寸。UI 场景的相机 zoom 为 1，所有 UI 坐标都是这套像素。 */
+export const GAME_WIDTH = 960;
+export const GAME_HEIGHT = 540;
 
 /**
  * 世界层仍在 480×270 逻辑坐标里运行：rooms.json 的全部坐标、MOVEMENT/DASH/WALL_JUMP

@@ -12,6 +12,7 @@ interface TypographySnapshot {
   overlappingTextPairs: string[];
   synthesizedStyles: string[];
   scaledTexts: string[];
+  zoomedTexts: string[];
 }
 
 interface LowResBridge {
@@ -21,17 +22,17 @@ interface LowResBridge {
 
 type LowResWindow = Window & { __STAR_ECHO_TEST__: LowResBridge };
 
-test.use({ viewport: { width: 480, height: 270 } });
-
 test('keeps the tutorial and adaptive help usable at native resolution', async ({
   page,
 }, testInfo) => {
   await page.goto('/');
   await page.waitForFunction(() => Boolean((window as unknown as LowResWindow).__STAR_ECHO_TEST__));
   await expect(page.locator('canvas')).toBeVisible();
-  const canvas = await page.locator('canvas').boundingBox();
-  expect(canvas?.width).toBe(480);
-  expect(canvas?.height).toBe(270);
+  // 断言背板而不是 boundingBox：后者返回 CSS 尺寸，会跟着 Scale.FIT 变，测不出真实分辨率。
+  const backing = await page
+    .locator('canvas')
+    .evaluate((element: HTMLCanvasElement) => [element.width, element.height]);
+  expect(backing).toEqual([960, 540]);
   await expect
     .poll(() =>
       page.evaluate(() => (window as unknown as LowResWindow).__STAR_ECHO_TEST__.snapshot().scene),
@@ -101,11 +102,13 @@ async function expectReadableTypography(page: Page): Promise<void> {
   expect(typography.overlappingTextPairs).toEqual([]);
   expect(typography.synthesizedStyles).toEqual([]);
   expect(typography.scaledTexts).toEqual([]);
+  // 世界层相机是 zoom 2：文本只要留在那边就会被放大，必须全部住在 UI 场景里。
+  expect(typography.zoomedTexts).toEqual([]);
 }
 
 async function captureTypography(page: Page, testInfo: TestInfo, screen: string): Promise<void> {
   if (testInfo.project.name !== 'chromium') return;
   const directory = join(process.cwd(), 'test-results', 'typography');
   await mkdir(directory, { recursive: true });
-  await page.screenshot({ path: join(directory, `${screen}-480x270.png`) });
+  await page.screenshot({ path: join(directory, `${screen}-960x540.png`) });
 }

@@ -4,7 +4,7 @@ import type { ProceduralAudio } from '../audio/ProceduralAudio';
 import { AUDIO_EVENT, type AudioCue } from '../audio/soundDesign';
 import { BossSystem } from '../boss/BossSystem';
 import { CombatSystem } from '../combat/CombatSystem';
-import { COLORS, REGISTRY_KEYS } from '../constants';
+import { COLORS, REGISTRY_KEYS, WORLD_HEIGHT, WORLD_WIDTH, WORLD_ZOOM } from '../constants';
 import { EnemySystem } from '../enemies/EnemySystem';
 import { InputController } from '../input/InputController';
 import { Player } from '../player/Player';
@@ -68,6 +68,7 @@ export class PlayScene extends Phaser.Scene {
       this.contextHints = new ContextualCombatHintTracker();
     }
     this.cameras.main.setBackgroundColor(COLORS.void);
+    this.cameras.main.setZoom(WORLD_ZOOM);
     this.scene.launch('hud');
 
     this.controls = new InputController(this);
@@ -141,9 +142,10 @@ export class PlayScene extends Phaser.Scene {
     this.enemySystem.load(this.roomRuntime.definition.enemies, this.roomRuntime.collisionPlatforms);
     this.bossSystem.load(roomId, this.roomRuntime.collisionPlatforms);
     this.audio.setBiome(this.roomRuntime.definition.biome);
-    this.cameras.main.setBounds(0, 0, 480, 270);
-    this.physics.world.setBounds(0, 0, 480, 270);
-    this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
+    // 房间等于一屏：480×270 的边界在 zoom 2 下把滚动范围收缩成一个点，
+    // 相机永远停在原处，所以这里不需要（也不能靠）startFollow。
+    this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+    this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
     this.scheduleContextHint(roomId);
   }
 

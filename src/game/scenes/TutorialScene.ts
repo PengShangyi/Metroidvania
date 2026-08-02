@@ -10,7 +10,7 @@ import {
   type ShieldCoreHitEvent,
   type ShieldOpenedEvent,
 } from '../combat/events';
-import { COLORS, REGISTRY_KEYS } from '../constants';
+import { COLORS, REGISTRY_KEYS, WORLD_HEIGHT, WORLD_WIDTH, WORLD_ZOOM } from '../constants';
 import { EnemySystem } from '../enemies/EnemySystem';
 import { getInputDevice, type InputDevice } from '../input/device';
 import { InputController } from '../input/InputController';
@@ -80,6 +80,11 @@ export class TutorialScene extends Phaser.Scene {
     this.shootComplete = false;
     this.meleeComplete = false;
     this.cameras.main.setBackgroundColor(COLORS.void);
+    this.cameras.main.setZoom(WORLD_ZOOM);
+    this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+    // 训练关此前不设物理边界，靠 config 的默认值兜底。画布升到 960×540 后默认值也跟着变，
+    // setCollideWorldBounds 的玩家会一路走出房间——而且类型检查、单测、e2e 全都不会报。
+    this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT);
     this.drawBackground();
     this.session = createNewSession();
     const activeSession = this.registry.get(REGISTRY_KEYS.session) as GameSessionState | undefined;
