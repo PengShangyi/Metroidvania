@@ -119,6 +119,13 @@ export class TutorialScene extends Phaser.Scene {
       this.input.keyboard?.off('keydown-H', this.openHelp, this);
       this.input.keyboard?.off('keydown-ESC', this.returnToTitle, this);
       this.events.off(Phaser.Scenes.Events.RESUME, this.resumeHudHandler);
+      // 这五个此前漏在这里：scene.start 只 shutdown 不 destroy，Phaser 不会替我们清场景
+      // 事件，二进训练关时每个音效叠两层振荡器，战斗回调也会重复推进课程判定。
+      this.events.off(AUDIO_EVENT, this.playAudio, this);
+      this.events.off(COMBAT_EVENTS.projectileReflected, this.onProjectileReflected, this);
+      this.events.off(COMBAT_EVENTS.shieldOpened, this.onShieldOpened, this);
+      this.events.off(COMBAT_EVENTS.shieldCoreHit, this.onShieldCoreHit, this);
+      this.events.off(COMBAT_EVENTS.piercingHit, this.onPiercingHit, this);
       this.controls.destroy();
       this.combat.destroy();
       this.enemySystem.destroy();

@@ -44,6 +44,15 @@ export class PlayScene extends Phaser.Scene {
   private contextHintToken = 0;
   private hintSession?: GameSessionState;
   private contextHints = new ContextualHintTracker();
+  // scene.start 走的是 shutdown 而不是 destroy，Phaser 只在后者里 removeAllListeners，
+  // 所以 create() 注册的东西会一局一局往上叠。写成实例字段才有稳定的引用可以 off——
+  // 内联箭头函数每次 create 都是新对象，叠到第二层时每个音效会同时响两遍。
+  private readonly audioHandler = (cue: AudioCue): void => this.audio.play(cue);
+  private readonly scenePauseHandler = (): void => {
+    this.audio.setPaused(true);
+    this.combat?.clearHitStop();
+  };
+  private readonly sceneResumeHandler = (): void => this.audio.setPaused(false);
 
   public constructor() {
     super('play');
@@ -76,12 +85,9 @@ export class PlayScene extends Phaser.Scene {
     this.audio = this.registry.get(REGISTRY_KEYS.audio) as ProceduralAudio;
     this.audio.setVolume(this.session.settings.masterVolume);
     this.audio.setPaused(false);
-    this.events.on(AUDIO_EVENT, (cue: AudioCue) => this.audio.play(cue));
-    this.events.on(Phaser.Scenes.Events.PAUSE, () => {
-      this.audio.setPaused(true);
-      this.combat?.clearHitStop();
-    });
-    this.events.on(Phaser.Scenes.Events.RESUME, () => this.audio.setPaused(false));
+    this.events.on(AUDIO_EVENT, this.audioHandler);
+    this.events.on(Phaser.Scenes.Events.PAUSE, this.scenePauseHandler);
+    this.events.on(Phaser.Scenes.Events.RESUME, this.sceneResumeHandler);
     this.rooms = new RoomRepository();
     createRegionAnimations(this, this.rooms.get(this.session.currentRoomId).biome);
     this.player = new Player(this, 0, 0);
@@ -97,6 +103,9 @@ export class PlayScene extends Phaser.Scene {
     this.loadRoom(entry.roomId, entry.spawnId);
 
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.events.off(AUDIO_EVENT, this.audioHandler);
+      this.events.off(Phaser.Scenes.Events.PAUSE, this.scenePauseHandler);
+      this.events.off(Phaser.Scenes.Events.RESUME, this.sceneResumeHandler);
       this.controls.destroy();
       this.roomRuntime.destroy();
       this.combat.destroy();
