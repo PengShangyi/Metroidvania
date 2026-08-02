@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, REGISTRY_KEYS } from '../constants';
+import { edgePressed, seedEdge } from '../input/buttonEdge';
 import { getInputDevice, setInputDevice, type InputDevice } from '../input/device';
 import { bindFullscreenKey } from '../ui/fullscreen';
 import { BUTTON, OVERLAY, UI } from '../ui/layout';
@@ -43,7 +44,9 @@ export class HelpScene extends Phaser.Scene {
     this.returnScene = data.returnScene ?? 'title';
     this.resumeScene = data.resumeScene ?? false;
     this.closing = false;
-    this.previousHelpPressed = this.input.gamepad?.getPad(0)?.buttons[4]?.pressed ?? false;
+    this.previousHelpPressed = seedEdge(
+      this.input.gamepad?.getPad(0)?.buttons[4]?.pressed ?? false,
+    );
     bindFullscreenKey(this);
     this.input.keyboard?.on('keydown', this.keyHandler);
     this.input.on(Phaser.Input.Events.POINTER_DOWN, this.pointerHandler);
@@ -68,7 +71,7 @@ export class HelpScene extends Phaser.Scene {
       const changed = setInputDevice(this.registry, 'gamepad');
       if (changed) this.render();
     }
-    if (helpPressed && !this.previousHelpPressed) this.closeHelp();
+    if (edgePressed(helpPressed, this.previousHelpPressed)) this.closeHelp();
     this.previousHelpPressed = helpPressed;
   }
 

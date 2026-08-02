@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 import { COLORS, REGISTRY_KEYS } from '../constants';
+import { edgePressed, seedEdge } from '../input/buttonEdge';
 import { setInputDevice, type InputDevice } from '../input/device';
 import type { GameSessionState } from '../state/GameSession';
 import { ENDING, UI } from '../ui/layout';
@@ -62,7 +63,9 @@ export class EndingScene extends Phaser.Scene {
     this.input.keyboard?.once('keydown-ENTER', () => this.scene.start('play'));
     this.input.keyboard?.once('keydown-ESC', () => this.scene.start('title'));
     this.input.keyboard?.once('keydown-H', () => this.openHelp('keyboardMouse'));
-    this.previousGamepadHelp = this.input.gamepad?.getPad(0)?.buttons[4]?.pressed ?? false;
+    this.previousGamepadHelp = seedEdge(
+      this.input.gamepad?.getPad(0)?.buttons[4]?.pressed ?? false,
+    );
   }
 
   public update(): void {
@@ -74,7 +77,7 @@ export class EndingScene extends Phaser.Scene {
         Math.abs(pad?.axes[0]?.getValue() ?? 0) > 0.24 ||
         Math.abs(pad?.axes[1]?.getValue() ?? 0) > 0.24);
     if (active) setInputDevice(this.registry, 'gamepad');
-    if (helpPressed && !this.previousGamepadHelp) this.openHelp('gamepad');
+    if (edgePressed(helpPressed, this.previousGamepadHelp)) this.openHelp('gamepad');
     this.previousGamepadHelp = helpPressed;
   }
 

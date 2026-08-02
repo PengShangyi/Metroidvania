@@ -5,6 +5,7 @@ import { getInputDevice, setInputDevice, type InputDevice } from '../input/devic
 import { createBrowserSaveService, type SaveService } from '../save/SaveService';
 import type { GameSessionState } from '../state/GameSession';
 import { COMPLETION_TOTAL, completionPercent } from '../ui/completion';
+import { edgePressed, seedEdge } from '../input/buttonEdge';
 import { bindFullscreenKey } from '../ui/fullscreen';
 import { overlayKeyAction, type OverlayKey, type OverlayMode } from '../ui/hudMode';
 import { ROOM_MAP_LAYOUT } from '../ui/mapLayout';
@@ -83,9 +84,12 @@ export class HudScene extends Phaser.Scene {
     this.renderedRoomLabel = '';
     this.renderedDash = undefined;
     this.renderedGrip = undefined;
-    this.previousGamepadMap = false;
-    this.previousGamepadPause = false;
-    this.previousGamepadHelp = false;
+    // 边沿基准取当前实际按住状态：HudScene 目前没有「手柄按键触发本场景重建」的路径，
+    // 但 TitleScene 正因为清成 false 而让 LB 关帮助后立刻反弹，这里跟着统一写法。
+    const pad = this.input.gamepad?.getPad(0);
+    this.previousGamepadMap = seedEdge(pad?.buttons[8]?.pressed ?? false);
+    this.previousGamepadPause = seedEdge(pad?.buttons[9]?.pressed ?? false);
+    this.previousGamepadHelp = seedEdge(pad?.buttons[4]?.pressed ?? false);
 
     this.session = this.registry.get(REGISTRY_KEYS.session) as GameSessionState;
     this.saveService = createBrowserSaveService();
@@ -246,10 +250,10 @@ export class HudScene extends Phaser.Scene {
         Math.abs(pad?.axes[0]?.getValue() ?? 0) > 0.24 ||
         Math.abs(pad?.axes[1]?.getValue() ?? 0) > 0.24);
     if (gamepadActive) this.useInputDevice('gamepad');
-    if (helpPressed && !this.previousGamepadHelp) this.applyOverlayKey('help');
-    else if (mapPressed && !this.previousGamepadMap) this.applyOverlayKey('map');
+    if (edgePressed(helpPressed, this.previousGamepadHelp)) this.applyOverlayKey('help');
+    else if (edgePressed(mapPressed, this.previousGamepadMap)) this.applyOverlayKey('map');
     // help 只交给 LB 关闭：MENU 在 help 下不响应，避免一次按压同时穿过两层面板。
-    if (pausePressed && !this.previousGamepadPause && this.mode !== 'help') {
+    if (edgePressed(pausePressed, this.previousGamepadPause) && this.mode !== 'help') {
       this.applyOverlayKey('pause');
     }
     this.previousGamepadMap = mapPressed;

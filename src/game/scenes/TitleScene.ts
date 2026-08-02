@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 
 import type { ProceduralAudio } from '../audio/ProceduralAudio';
 import { COLORS, REGISTRY_KEYS } from '../constants';
+import { edgePressed, seedEdge } from '../input/buttonEdge';
 import { setInputDevice, type InputDevice } from '../input/device';
 import {
   createBrowserSaveService,
@@ -29,7 +30,11 @@ export class TitleScene extends Phaser.Scene {
     // Clock 上、随 shutdown 一起清掉：在确认窗口内按 T 进训练关，标志就永久停在 true，
     // 回到标题后点一次「新建任务」直接 erase() 覆盖存档，二次确认再也不出现。
     this.confirmNewGame = false;
-    this.previousGamepadHelp = false;
+    // 这一个反过来不能清零：用手柄 LB 关帮助时 HelpScene 走 scene.start 交还标题页，
+    // LB 多半还按着，基准是 false 的话首帧就凭空多出一次按下，帮助立刻被重新打开。
+    this.previousGamepadHelp = seedEdge(
+      this.input.gamepad?.getPad(0)?.buttons[4]?.pressed ?? false,
+    );
     this.cameras.main.setBackgroundColor(COLORS.void);
     (this.registry.get(REGISTRY_KEYS.audio) as ProceduralAudio | undefined)?.stopAmbience();
     this.drawBackdrop();
@@ -90,7 +95,7 @@ export class TitleScene extends Phaser.Scene {
         Math.abs(pad?.axes[0]?.getValue() ?? 0) > 0.24 ||
         Math.abs(pad?.axes[1]?.getValue() ?? 0) > 0.24);
     if (active) setInputDevice(this.registry, 'gamepad');
-    if (helpPressed && !this.previousGamepadHelp) this.openHelp('gamepad');
+    if (edgePressed(helpPressed, this.previousGamepadHelp)) this.openHelp('gamepad');
     this.previousGamepadHelp = helpPressed;
   }
 
