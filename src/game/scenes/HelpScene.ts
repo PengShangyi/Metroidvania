@@ -34,6 +34,12 @@ export class HelpScene extends Phaser.Scene {
   }
 
   public create(data: HelpSceneData): void {
+    // Phaser 复用 Scene 实例，而 SHUTDOWN 只 destroy 了 root、没有置空它：destroy 过的
+    // Container 仍是 truthy，render() 的「设备没变就不用重画」守卫于是命中，同一设备第二次
+    // 打开帮助只会得到一片空白，uiMode 也停在上一个值。训练关里两个场景已经 pause 了，
+    // 玩家看到的就是画面卡住。
+    this.root = undefined;
+    this.renderedDevice = undefined;
     this.returnScene = data.returnScene ?? 'title';
     this.resumeScene = data.resumeScene ?? false;
     this.closing = false;
@@ -46,6 +52,7 @@ export class HelpScene extends Phaser.Scene {
       this.input.keyboard?.off('keydown', this.keyHandler);
       this.input.off(Phaser.Input.Events.POINTER_DOWN, this.pointerHandler);
       this.root?.destroy(true);
+      this.root = undefined;
     });
   }
 

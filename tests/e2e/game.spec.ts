@@ -253,6 +253,36 @@ test('opens help anywhere and follows the most recent input device', async ({ pa
   expect(errors).toEqual([]);
 });
 
+test('reopens help without switching input device', async ({ page }) => {
+  // HelpScene 同样复用实例：SHUTDOWN 只 destroy 了 root 而没有置空，destroy 过的 Container
+  // 仍然 truthy，于是 render() 的「设备没变就不用重画」守卫命中，同一设备第二次打开只剩
+  // 一片空白、uiMode 也停在上一个值。既有用例两次打开之间都换了设备，正好绕开这个守卫。
+  const errors = await openGame(page);
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
+
+  // 标题页走 scene.start 替换场景。
+  for (let round = 0; round < 2; round += 1) {
+    await page.keyboard.press('h');
+    await expect.poll(async () => (await snapshot(page)).uiMode).toBe('help-keyboardMouse');
+    await expectLabel(page, '磁附跃迁');
+    await page.keyboard.press('h');
+    await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
+  }
+
+  // 训练关走 launch + resumeScene，且开help时它和 tutorial-hud 都已暂停：
+  // 面板画不出来的话玩家看到的就是画面卡死。
+  await page.keyboard.press('t');
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('tutorial');
+  for (let round = 0; round < 2; round += 1) {
+    await page.keyboard.press('h');
+    await expect.poll(async () => (await snapshot(page)).uiMode).toBe('help-keyboardMouse');
+    await expectLabel(page, '磁附跃迁');
+    await page.keyboard.press('h');
+    await expect.poll(async () => (await snapshot(page)).uiMode).toBe('game');
+  }
+  expect(errors).toEqual([]);
+});
+
 test('completes the two-ability route, ending and post-game exploration', async ({ page }) => {
   const errors = await openGame(page);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
