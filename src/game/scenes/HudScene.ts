@@ -26,6 +26,7 @@ export class HudScene extends Phaser.Scene {
   private explorationText!: Phaser.GameObjects.Text;
   private messageText!: Phaser.GameObjects.Text;
   private bossText!: Phaser.GameObjects.Text;
+  private roomLabelText!: Phaser.GameObjects.Text;
   private dashIcon!: Phaser.GameObjects.Image;
   private gripIcon!: Phaser.GameObjects.Image;
   private overlay?: Phaser.GameObjects.Container;
@@ -41,6 +42,7 @@ export class HudScene extends Phaser.Scene {
   private renderedExploration = '';
   private renderedMessage = '';
   private renderedBoss = '';
+  private renderedRoomLabel = '';
   private renderedDash?: boolean;
   private renderedGrip?: boolean;
   private readonly blurHandler = (): void => {
@@ -106,6 +108,7 @@ export class HudScene extends Phaser.Scene {
       })
       .setOrigin(0.5, 0)
       .setScrollFactor(0);
+    this.roomLabelText = this.add.text(12, 244, '', bodyTextStyle('#7184a8')).setScrollFactor(0);
 
     this.input.keyboard?.on('keydown-TAB', this.mapKeyHandler);
     this.input.keyboard?.on('keydown-ESC', this.pauseKeyHandler);
@@ -149,6 +152,13 @@ export class HudScene extends Phaser.Scene {
       this.messageText.setText(message);
     }
     this.messageText.setVisible(this.mode === 'game' && this.messageText.text.length > 0);
+    const roomLabel = (this.registry.get(REGISTRY_KEYS.roomLabel) as string) ?? '';
+    if (roomLabel !== this.renderedRoomLabel) {
+      this.renderedRoomLabel = roomLabel;
+      this.roomLabelText.setText(roomLabel);
+    }
+    // 覆盖层展开时必须藏起来，否则它会留在面板底下触发排版重叠断言。
+    this.roomLabelText.setVisible(this.mode === 'game' && roomLabel.length > 0);
     this.updateBossBar();
     this.updateGamepadMenuInput();
   }

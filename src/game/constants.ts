@@ -29,6 +29,7 @@ export const COLORS = {
 export const REGISTRY_KEYS = {
   session: 'star-echo.session',
   runtimeMessage: 'star-echo.runtime-message',
+  roomLabel: 'star-echo.room-label',
   bossHealth: 'star-echo.boss-health',
   bossPhase: 'star-echo.boss-phase',
   uiMode: 'star-echo.ui-mode',

@@ -5,7 +5,6 @@ import { COLORS, REGISTRY_KEYS } from '../constants';
 import type { ActionSnapshot } from '../input/actions';
 import type { Player } from '../player/Player';
 import type { GameSessionState } from '../state/GameSession';
-import { bodyTextStyle } from '../ui/text';
 import { exitRequirementMessage, pickupRequirementMessage } from './gateMessages';
 import { intersectsAnyHazard } from './hazardRules';
 import { meetsRequirement } from './progression';
@@ -109,10 +108,8 @@ export class RoomRuntime {
       );
     }
 
-    const title = this.scene.add
-      .text(12, 244, `${this.room.name} // ${this.room.id}`, bodyTextStyle('#7184a8'))
-      .setDepth(8);
-    this.roomObjects.push(title);
+    // 房名常驻显示，不能走 showMessage：那条通道带 token 计时清除，几百毫秒后就没了。
+    this.scene.registry.set(REGISTRY_KEYS.roomLabel, `${this.room.name} // ${this.room.id}`);
     this.showMessage(this.room.name, 900);
   }
 
@@ -171,6 +168,7 @@ export class RoomRuntime {
   public destroy(): void {
     this.clearRoom();
     this.clearMessage();
+    this.scene.registry.set(REGISTRY_KEYS.roomLabel, '');
   }
 
   public get collisionPlatforms(): Phaser.Physics.Arcade.StaticGroup {
@@ -227,9 +225,9 @@ export class RoomRuntime {
       .fillStyle(palette.haze, room.biome === 'reactor' ? 0.34 : 0.16)
       .fillRect(0, 0, room.width, room.height);
     graphics.lineStyle(2, palette.light, 0.06);
-    for (let x = 24; x < room.width; x += 64) graphics.strokeRect(x, 18, 30, 208);
+    for (let x = 24; x < room.width; x += 64) graphics.strokeRect(x, 18, 30, room.height - 62);
     graphics.fillStyle(palette.light, 0.05);
-    graphics.fillCircle(240, 126, room.biome === 'reactor' ? 100 : 56);
+    graphics.fillCircle(room.width / 2, room.height / 2, room.biome === 'reactor' ? 100 : 56);
     this.roomObjects.push(graphics);
   }
 
