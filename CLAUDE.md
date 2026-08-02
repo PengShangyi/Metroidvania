@@ -15,7 +15,7 @@ Toolchain is pinned and enforced by `engines` + `packageManager`: Node ≥ 24.14
 ```bash
 pnpm dev                    # Vite dev server, usually http://localhost:5173/
 pnpm check                  # the CI gate: format:check → lint → typecheck → test → build → perf:budget
-pnpm typecheck              # tsc -b across the two project references (app + node configs)
+pnpm typecheck              # tsc -b across the three project references (app + node + e2e configs)
 pnpm test                   # vitest run
 pnpm test src/game/player/dashMath.test.ts        # single file
 pnpm test -t 'coyote'                             # single test by name
