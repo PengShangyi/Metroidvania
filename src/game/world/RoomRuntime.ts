@@ -378,7 +378,11 @@ export class RoomRuntime {
     return COLORS.steel;
   }
 
-  private showMessage(message: string, duration: number): void {
+  /**
+   * 提示条的唯一正规通道：带 token 计时清除。别直接写 registry——进房横幅那条 900ms 的
+   * 清除只比对 token、不比对内容，会把后写进去的消息顺手擦掉。
+   */
+  public showMessage(message: string, duration: number): void {
     this.messageToken += 1;
     const token = this.messageToken;
     this.scene.registry.set(REGISTRY_KEYS.runtimeMessage, message);

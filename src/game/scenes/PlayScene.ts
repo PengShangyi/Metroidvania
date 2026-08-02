@@ -262,10 +262,13 @@ export class PlayScene extends Phaser.Scene {
     this.load.once(Phaser.Loader.Events.COMPLETE, () => {
       this.load.off(Phaser.Loader.Events.FILE_LOAD_ERROR, onLoadError);
       createRegionAnimations(this, biome);
-      if (failed) {
-        this.registry.set(REGISTRY_KEYS.runtimeMessage, '区域美术未能载入 · 已切换安全渲染');
-      }
       onReady();
+      // 必须在 onReady 之后、并且走 RoomRuntime 的通道：onReady 就是 loadRoom，它末尾那句
+      // 进房横幅会在同一个同步栈里把 registry 覆盖成房名，之后那条仍然有效的 900ms token
+      // 清除又只比对 token、不比对内容。先写的话这条提示活不过一帧。
+      if (failed) {
+        this.roomRuntime.showMessage('区域美术未能载入 · 已切换安全渲染', 2_400);
+      }
     });
     this.load.start();
   }
