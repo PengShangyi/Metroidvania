@@ -29,6 +29,10 @@ export default defineConfig({
   webServer: {
     command: 'pnpm build:test && pnpm preview --host 127.0.0.1',
     url: 'http://127.0.0.1:4173',
+    // 默认只等 60 秒，而这条命令要先跑完 tsc -b 加 vite build（含 Phaser 那个 1.4MB 的
+    // chunk）才开始监听端口。CI 冷缓存下超时表现为「服务器没起来」而不是「构建慢」，
+    // 再叠上 retries: 2 就是三次同样费解的失败。
+    timeout: 180_000,
     reuseExistingServer: !process.env.CI,
   },
 });
