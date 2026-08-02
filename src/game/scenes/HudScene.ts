@@ -15,7 +15,7 @@ import {
 } from '../ui/mapVisibility';
 import { BUTTON, HUD, MAP, OVERLAY, PAUSE, SETTINGS, UI, mapPoint } from '../ui/layout';
 import { renderHelpPanel } from '../ui/renderHelpPanel';
-import { headingTextStyle, hudTextStyle, proseTextStyle } from '../ui/text';
+import { headingTextStyle, hudTextStyle, proseTextStyle, wrapProse } from '../ui/text';
 import rawRooms from '../world/rooms.json';
 import type { RoomDefinition } from '../world/types';
 import type { PlayScene } from './PlayScene';
@@ -30,6 +30,8 @@ export class HudScene extends Phaser.Scene {
   private roomLabelText!: Phaser.GameObjects.Text;
   private dashIcon!: Phaser.GameObjects.Image;
   private gripIcon!: Phaser.GameObjects.Image;
+  /** 覆盖层展开时要整层藏掉的常驻 HUD，否则它们会从面板底下透出来并撞版。 */
+  private gameLayer: Phaser.GameObjects.Components.Visible[] = [];
   private overlay?: Phaser.GameObjects.Container;
   private mode: OverlayMode = 'game';
   private session!: GameSessionState;
@@ -80,7 +82,7 @@ export class HudScene extends Phaser.Scene {
     bindFullscreenKey(this);
 
     // 图标源图是 16×16 的像素画，整数 2× 放大，和世界层的做法一致。
-    this.add
+    const healthIcon = this.add
       .image(HUD.healthIcon.x, HUD.healthIcon.y, 'base-icons', 0)
       .setOrigin(0)
       .setScale(2)
@@ -100,21 +102,23 @@ export class HudScene extends Phaser.Scene {
       .text(HUD.exploration.x, HUD.exploration.y, '', hudTextStyle('#8da1c8'))
       .setOrigin(1, 0)
       .setScrollFactor(0);
-    this.add
+    const keyHint = this.add
       .text(HUD.keyHint.x, HUD.keyHint.y, 'TAB 地图 · H 帮助 · ESC 暂停', hudTextStyle('#8da1c8'))
       .setOrigin(1, 0)
       .setScrollFactor(0);
     // 底部对齐：多行提示向上生长，不会压到左下角的房名。
-    this.messageText = this.add
-      .text(HUD.toast.x, HUD.toast.bottom, '', {
-        ...proseTextStyle('#d8f7ff'),
-        backgroundColor: '#07101dcc',
-        padding: { x: 16, y: 10 },
-        align: 'center',
-      })
-      .setOrigin(0.5, 1)
-      .setWordWrapWidth(HUD.toast.wrap)
-      .setScrollFactor(0);
+    this.messageText = wrapProse(
+      this.add
+        .text(HUD.toast.x, HUD.toast.bottom, '', {
+          ...proseTextStyle('#d8f7ff'),
+          backgroundColor: '#07101dcc',
+          padding: { x: 16, y: 10 },
+          align: 'center',
+        })
+        .setOrigin(0.5, 1)
+        .setScrollFactor(0),
+      HUD.toast.wrap,
+    );
     // Boss 血条必须留在像素字体上：15 格菱形要靠可预测的步进宽度对齐。
     this.bossText = this.add
       .text(HUD.bossBar.x, HUD.bossBar.y, '', {
@@ -128,6 +132,14 @@ export class HudScene extends Phaser.Scene {
       .text(HUD.roomLabel.x, HUD.roomLabel.y, '', hudTextStyle('#7184a8'))
       .setOrigin(0, 1)
       .setScrollFactor(0);
+    this.gameLayer = [
+      healthIcon,
+      this.healthText,
+      this.dashIcon,
+      this.gripIcon,
+      this.explorationText,
+      keyHint,
+    ];
 
     this.input.keyboard?.on('keydown-TAB', this.mapKeyHandler);
     this.input.keyboard?.on('keydown-ESC', this.pauseKeyHandler);
@@ -147,6 +159,8 @@ export class HudScene extends Phaser.Scene {
   }
 
   public update(): void {
+    const inGame = this.mode === 'game';
+    for (const object of this.gameLayer) object.setVisible(inGame);
     const health = `${this.session.health}/${this.session.maxHealth}`;
     if (health !== this.renderedHealth) {
       this.renderedHealth = health;
@@ -170,14 +184,14 @@ export class HudScene extends Phaser.Scene {
       this.renderedMessage = message;
       this.messageText.setText(message);
     }
-    this.messageText.setVisible(this.mode === 'game' && this.messageText.text.length > 0);
+    this.messageText.setVisible(inGame && this.messageText.text.length > 0);
     const roomLabel = (this.registry.get(REGISTRY_KEYS.roomLabel) as string) ?? '';
     if (roomLabel !== this.renderedRoomLabel) {
       this.renderedRoomLabel = roomLabel;
       this.roomLabelText.setText(roomLabel);
     }
     // 覆盖层展开时必须藏起来，否则它会留在面板底下触发排版重叠断言。
-    this.roomLabelText.setVisible(this.mode === 'game' && roomLabel.length > 0);
+    this.roomLabelText.setVisible(inGame && roomLabel.length > 0);
     this.updateBossBar();
     this.updateGamepadMenuInput();
   }

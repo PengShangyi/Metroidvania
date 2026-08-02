@@ -3,7 +3,7 @@ import Phaser from 'phaser';
 import { COLORS, REGISTRY_KEYS } from '../constants';
 import { initialTutorialHudState, type TutorialHudState } from '../tutorial/tutorialHudState';
 import { BUTTON, TUTORIAL_HUD, UI } from '../ui/layout';
-import { headingTextStyle, hudTextStyle, proseTextStyle } from '../ui/text';
+import { headingTextStyle, hudTextStyle, proseTextStyle, wrapProse } from '../ui/text';
 import type { TutorialScene } from './TutorialScene';
 
 /**
@@ -15,6 +15,7 @@ export class TutorialHudScene extends Phaser.Scene {
   private titleText!: Phaser.GameObjects.Text;
   private objectiveText!: Phaser.GameObjects.Text;
   private effectText!: Phaser.GameObjects.Text;
+  private band!: Phaser.GameObjects.Rectangle;
   private panel?: Phaser.GameObjects.Container;
   // 按渲染出来的字符串做 diff（照搬 HudScene）：拿状态对象当初值的话，
   // 首个真实状态和「初始状态」在第一课上完全相等，进度行永远不会被写进去。
@@ -38,7 +39,7 @@ export class TutorialHudScene extends Phaser.Scene {
     this.renderedEffect = '';
     this.renderedComplete = false;
 
-    this.add
+    this.band = this.add
       .rectangle(
         UI.centerX,
         TUTORIAL_HUD.band.y,
@@ -57,20 +58,24 @@ export class TutorialHudScene extends Phaser.Scene {
     this.titleText = this.add
       .text(TUTORIAL_HUD.title.x, TUTORIAL_HUD.title.y, '', hudTextStyle('#d8f7ff'))
       .setOrigin(0.5, 0);
-    this.objectiveText = this.add
-      .text(TUTORIAL_HUD.objective.x, TUTORIAL_HUD.objective.y, '', {
-        ...proseTextStyle('#d8f7ff'),
-        align: 'center',
-      })
-      .setOrigin(0.5, 0)
-      .setWordWrapWidth(TUTORIAL_HUD.objective.wrap);
-    this.effectText = this.add
-      .text(TUTORIAL_HUD.effect.x, TUTORIAL_HUD.effect.y, '', {
-        ...proseTextStyle('#8ce7ff', 'caption'),
-        align: 'center',
-      })
-      .setOrigin(0.5, 0)
-      .setWordWrapWidth(TUTORIAL_HUD.effect.wrap);
+    this.objectiveText = wrapProse(
+      this.add
+        .text(TUTORIAL_HUD.objective.x, TUTORIAL_HUD.objective.y, '', {
+          ...proseTextStyle('#d8f7ff'),
+          align: 'center',
+        })
+        .setOrigin(0.5, 0),
+      TUTORIAL_HUD.objective.wrap,
+    );
+    this.effectText = wrapProse(
+      this.add
+        .text(TUTORIAL_HUD.effect.x, TUTORIAL_HUD.effect.y, '', {
+          ...proseTextStyle('#8ce7ff', 'caption'),
+          align: 'center',
+        })
+        .setOrigin(0.5, 0),
+      TUTORIAL_HUD.effect.wrap,
+    );
     this.add
       .text(
         TUTORIAL_HUD.keyHint.x,
@@ -109,6 +114,11 @@ export class TutorialHudScene extends Phaser.Scene {
     }
     if (state.complete && !this.renderedComplete) {
       this.renderedComplete = true;
+      // 完成面板是模态的：头部信息带留在下面既是视觉噪音，也会撞上面板标题。
+      for (const text of [this.progressText, this.titleText, this.objectiveText, this.effectText]) {
+        text.setVisible(false);
+      }
+      this.band.setVisible(false);
       this.showCompletionPanel();
     }
   }
@@ -134,15 +144,17 @@ export class TutorialHudScene extends Phaser.Scene {
         .setOrigin(0.5),
     );
     panel.add(
-      this.add
-        .text(
-          UI.centerX,
-          TUTORIAL_HUD.panelBody.y,
-          '你已掌握反射、穿盾开核与墙跳贯穿。正式任务会从坠星船坞开始。',
-          { ...proseTextStyle('#8ce7ff'), align: 'center' },
-        )
-        .setOrigin(0.5, 0)
-        .setWordWrapWidth(TUTORIAL_HUD.panelBody.wrap),
+      wrapProse(
+        this.add
+          .text(
+            UI.centerX,
+            TUTORIAL_HUD.panelBody.y,
+            '你已掌握反射、穿盾开核与墙跳贯穿。正式任务会从坠星船坞开始。',
+            { ...proseTextStyle('#8ce7ff'), align: 'center' },
+          )
+          .setOrigin(0.5, 0),
+        TUTORIAL_HUD.panelBody.wrap,
+      ),
     );
     panel.add(
       this.add

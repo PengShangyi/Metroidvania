@@ -17,7 +17,9 @@ import { setInputDevice, type InputDevice } from '../input/device';
 import type { Player } from '../player/Player';
 import { activateArcadeImage } from '../render/arcadePool';
 import { createNewSession, type GameSessionState } from '../state/GameSession';
-import { UI_FONT_DESCRIPTOR, UI_FONT_PROBE } from '../ui/fontLoader';
+import { TUTORIAL_STEPS } from '../tutorial/tutorialPlan';
+import { PROSE_FONT_DESCRIPTOR, UI_FONT_DESCRIPTOR, UI_FONT_PROBE } from '../ui/fontLoader';
+import { PIXEL_FONT_FAMILY, PIXEL_FONT_GRID } from '../ui/text';
 import { RoomRepository } from '../world/RoomRepository';
 import type { RoomRuntime } from '../world/RoomRuntime';
 import type { BiomeId, EnemySpawn } from '../world/types';
@@ -46,7 +48,13 @@ interface TestSnapshot {
 interface TypographyTestSnapshot {
   fontReady: boolean;
   textCount: number;
-  minimumFontSize: number | null;
+  /** 屏幕上所有可见文本，用来断言「某句话确实渲染出来了」。 */
+  labels: string[];
+  /**
+   * 按字体族分开的最小字号：像素字低于 24 就不可读，矢量字 16 仍然清楚，
+   * 一个全局下限没法同时表达这两件事。
+   */
+  minimumFontSizeByFamily: Record<string, number>;
   fontFamilies: string[];
   clippedTexts: string[];
   overlappingTextPairs: string[];
@@ -54,6 +62,8 @@ interface TypographyTestSnapshot {
   scaledTexts: string[];
   /** 所属相机 zoom ≠ 1 的文本：世界层现在跑在 zoom 2 上，文本一旦留在那边就会被放大。 */
   zoomedTexts: string[];
+  /** 用像素字体但字号不是 12 的整数倍：会出现半像素笔画。 */
+  offGridPixelFontSizes: string[];
 }
 
 interface ActiveText {
@@ -105,7 +115,12 @@ export interface StarEchoTestBridge {
   alignPiercingTargets(): void;
   damagePlayer(amount: number): void;
   tutorialPlayerX(): number | null;
+  openHudOverlay(mode: HudOverlayMode): void;
+  completeTutorial(): void;
+  showRuntimeMessage(message: string): void;
 }
+
+export type HudOverlayMode = 'map' | 'pause' | 'settings' | 'help';
 
 type TestWindow = Window & { __STAR_ECHO_TEST__?: StarEchoTestBridge };
 type PlaySceneInternals = Phaser.Scene & {
@@ -122,7 +137,16 @@ type PlaySceneInternals = Phaser.Scene & {
   finishBoss(): void;
 };
 
-type TutorialSceneInternals = Phaser.Scene & { player: Player };
+type TutorialSceneInternals = Phaser.Scene & {
+  player: Player;
+  stageIndex: number;
+  finishTutorial(): void;
+};
+
+type HudSceneInternals = Phaser.Scene & {
+  openOverlay(mode: HudOverlayMode): void;
+  openHelp(): void;
+};
 
 interface EnemySystemInternals {
   enemies: Phaser.GameObjects.Group;
@@ -169,6 +193,9 @@ export function installTestBridge(game: Phaser.Game): void {
     alignPiercingTargets: () => alignPiercingTargets(game),
     damagePlayer: (amount) => playInternals(game).combat.damagePlayer(amount),
     tutorialPlayerX: () => tutorialPlayerX(game),
+    openHudOverlay: (mode) => openHudOverlay(game, mode),
+    completeTutorial: () => completeTutorial(game),
+    showRuntimeMessage: (message) => game.registry.set(REGISTRY_KEYS.runtimeMessage, message),
   };
 
   game.events.once('destroy', () => {
@@ -198,10 +225,16 @@ function snapshot(game: Phaser.Game): TestSnapshot {
 
 function typographySnapshot(game: Phaser.Game): TypographyTestSnapshot {
   const entries = activeTextObjects(game);
-  const fontSizes = entries
-    .map((entry) => Number.parseFloat(String(entry.text.style.fontSize)))
-    .filter(Number.isFinite);
   const label = (entry: ActiveText): string => entry.text.text.replaceAll('\n', ' / ').slice(0, 48);
+  const fontSize = (entry: ActiveText): number =>
+    Number.parseFloat(String(entry.text.style.fontSize));
+  const minimumFontSizeByFamily: Record<string, number> = {};
+  for (const entry of entries) {
+    const family = entry.text.style.fontFamily;
+    const size = fontSize(entry);
+    if (!Number.isFinite(size)) continue;
+    minimumFontSizeByFamily[family] = Math.min(minimumFontSizeByFamily[family] ?? size, size);
+  }
   const clippedTexts = entries
     .filter(
       ({ screen }) =>
@@ -237,17 +270,28 @@ function typographySnapshot(game: Phaser.Game): TypographyTestSnapshot {
   const zoomedTexts = entries
     .filter(({ camera }) => camera.zoomX !== 1 || camera.zoomY !== 1)
     .map(label);
+  const offGridPixelFontSizes = entries
+    .filter(
+      (entry) =>
+        entry.text.style.fontFamily === PIXEL_FONT_FAMILY &&
+        fontSize(entry) % PIXEL_FONT_GRID !== 0,
+    )
+    .map((entry) => `${label(entry)} @ ${String(entry.text.style.fontSize)}`);
 
   return {
-    fontReady: document.fonts.check(UI_FONT_DESCRIPTOR, UI_FONT_PROBE),
+    fontReady:
+      document.fonts.check(UI_FONT_DESCRIPTOR, UI_FONT_PROBE) &&
+      document.fonts.check(PROSE_FONT_DESCRIPTOR, UI_FONT_PROBE),
     textCount: entries.length,
-    minimumFontSize: fontSizes.length > 0 ? Math.min(...fontSizes) : null,
+    labels: entries.map(label),
+    minimumFontSizeByFamily,
     fontFamilies: [...new Set(entries.map((entry) => entry.text.style.fontFamily))].sort(),
     clippedTexts,
     overlappingTextPairs,
     synthesizedStyles,
     scaledTexts,
     zoomedTexts,
+    offGridPixelFontSizes,
   };
 }
 
@@ -281,6 +325,8 @@ function activeTextObjects(game: Phaser.Game): ActiveText[] {
         return;
       }
       if (object instanceof Phaser.GameObjects.Container) {
+        // 容器藏起来时里面的文本并不会跟着改自己的 visible，但它确实没画在屏幕上。
+        if (!object.visible || object.alpha <= 0) return;
         for (const child of object.list) visit(child);
       }
     };
@@ -342,6 +388,19 @@ function tutorialPlayerX(game: Phaser.Game): number | null {
   if (!game.scene.isActive('tutorial')) return null;
   const tutorial = game.scene.getScene('tutorial') as unknown as TutorialSceneInternals;
   return Math.round(tutorial.player.x);
+}
+
+/** 覆盖层此前只能靠鼠标点开，而按钮坐标一重排就全指错位置。 */
+function openHudOverlay(game: Phaser.Game, mode: HudOverlayMode): void {
+  const hud = game.scene.getScene('hud') as unknown as HudSceneInternals;
+  if (mode === 'help') hud.openHelp();
+  else hud.openOverlay(mode);
+}
+
+function completeTutorial(game: Phaser.Game): void {
+  const tutorial = game.scene.getScene('tutorial') as unknown as TutorialSceneInternals;
+  tutorial.stageIndex = TUTORIAL_STEPS.length - 1;
+  tutorial.finishTutorial();
 }
 
 function showHelp(game: Phaser.Game, device: InputDevice): void {

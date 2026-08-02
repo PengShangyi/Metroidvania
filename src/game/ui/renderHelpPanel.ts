@@ -4,7 +4,7 @@ import type { InputDevice } from '../input/device';
 import { HELP_CONTENT, inputDeviceLabel } from './helpContent';
 import { helpPanelLayout } from './helpPanelLayout';
 import { CHIP, HELP, OVERLAY, UI } from './layout';
-import { headingTextStyle, hudTextStyle, proseTextStyle } from './text';
+import { headingTextStyle, hudTextStyle, proseTextStyle, wrapProse } from './text';
 
 export function renderHelpPanel(
   scene: Phaser.Scene,
@@ -56,14 +56,15 @@ export function renderHelpPanel(
       continue;
     }
     container.add(
-      scene.add
-        .text(
+      wrapProse(
+        scene.add.text(
           box.x,
           box.y,
           `${row.action} · ${row.description}`,
           proseTextStyle('#d8f7ff', 'caption'),
-        )
-        .setWordWrapWidth(HELP.descriptionWrap),
+        ),
+        HELP.descriptionWrap,
+      ),
     );
   }
 

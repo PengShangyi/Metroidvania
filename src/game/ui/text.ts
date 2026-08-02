@@ -62,6 +62,15 @@ export function proseTextStyle(
   };
 }
 
+/**
+ * 中文没有空格，Phaser 默认的按空格断行对整段中文完全不起作用：一句话会被当成
+ * 一个超长单词直接冲出画布两侧。advancedWordWrap 会把放不下的词按字符切开，
+ * 所以凡是可能变长的正文都必须走这里，而不是裸调 setWordWrapWidth。
+ */
+export function wrapProse(text: Phaser.GameObjects.Text, width: number): Phaser.GameObjects.Text {
+  return text.setWordWrapWidth(width, true);
+}
+
 function pixelStyle(
   color: string,
   fontSize: number,

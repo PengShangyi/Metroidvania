@@ -4,7 +4,7 @@ import { COLORS, REGISTRY_KEYS } from '../constants';
 import { setInputDevice, type InputDevice } from '../input/device';
 import type { GameSessionState } from '../state/GameSession';
 import { ENDING, UI } from '../ui/layout';
-import { hudTextStyle, proseTextStyle, titleTextStyle } from '../ui/text';
+import { hudTextStyle, proseTextStyle, titleTextStyle, wrapProse } from '../ui/text';
 import { COMPLETION_TOTAL, completionPercent } from '../ui/completion';
 
 export class EndingScene extends Phaser.Scene {
@@ -27,15 +27,17 @@ export class EndingScene extends Phaser.Scene {
     }
     this.add.text(UI.centerX, ENDING.heading.y, '信号归于寂静', titleTextStyle()).setOrigin(0.5);
     // 叙事段落和数值原本挤在同一个 align:'center' 的 Text 里，数值列因此对不齐。
-    this.add
-      .text(
-        UI.centerX,
-        ENDING.prose.y,
-        '伊娅切断了零点核心的回声循环。沉睡的星骸第一次拥有真正的寂静。',
-        { ...proseTextStyle('#8ce7ff'), align: 'center' },
-      )
-      .setOrigin(0.5, 0)
-      .setWordWrapWidth(ENDING.prose.wrap);
+    wrapProse(
+      this.add
+        .text(
+          UI.centerX,
+          ENDING.prose.y,
+          '伊娅切断了零点核心的回声循环。沉睡的星骸第一次拥有真正的寂静。',
+          { ...proseTextStyle('#8ce7ff'), align: 'center' },
+        )
+        .setOrigin(0.5, 0),
+      ENDING.prose.wrap,
+    );
     this.add
       .text(
         UI.centerX,
