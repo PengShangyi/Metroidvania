@@ -25,6 +25,11 @@ export class TitleScene extends Phaser.Scene {
   }
 
   public create(): void {
+    // confirmNewGame 只有 3 秒的 delayedCall 一条复位路径，而那个定时器挂在本场景的
+    // Clock 上、随 shutdown 一起清掉：在确认窗口内按 T 进训练关，标志就永久停在 true，
+    // 回到标题后点一次「新建任务」直接 erase() 覆盖存档，二次确认再也不出现。
+    this.confirmNewGame = false;
+    this.previousGamepadHelp = false;
     this.cameras.main.setBackgroundColor(COLORS.void);
     (this.registry.get(REGISTRY_KEYS.audio) as ProceduralAudio | undefined)?.stopAmbience();
     this.drawBackdrop();
