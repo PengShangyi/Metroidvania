@@ -77,13 +77,24 @@ async function runRightUntilStopped(page: Page): Promise<number> {
  * 拦住两种失效：整层被 setVisible(false) 藏掉，以及 diff 缓存残留导致 setText 从未调用。
  */
 async function expectHudVisible(page: Page): Promise<void> {
-  for (const fragment of ['探索', '/']) {
-    await expect
-      .poll(async () =>
-        (await snapshot(page)).typography.labels.some((label) => label.includes(fragment)),
-      )
-      .toBe(true);
-  }
+  await expectLabel(page, '探索');
+  // 血量要单独认一次。探索行本身就是「探索 n/17 · x%」，同时含「探索」和「/」，
+  // 拿 '/' 当第二个片段的话血量行整个不渲染也照样绿——它才是唯一一条纯数字加斜杠的
+  // 常驻文本。
+  await expect
+    .poll(async () =>
+      (await snapshot(page)).typography.labels.some((label) => /^\d+\/\d+$/.test(label.trim())),
+    )
+    .toBe(true);
+}
+
+/** labels 只收录 visible 且非空串的文本，所以这一条能区分「画出来了」和「场景在但空白」。 */
+async function expectLabel(page: Page, fragment: string): Promise<void> {
+  await expect
+    .poll(async () =>
+      (await snapshot(page)).typography.labels.some((label) => label.includes(fragment)),
+    )
+    .toBe(true);
 }
 
 async function waitForGameFrame(page: Page): Promise<void> {
