@@ -71,5 +71,8 @@ jobs:
         with:
           name: typography-960x540
           path: test-results/typography
-          if-no-files-found: error
+          # if: always() 意味着这一步在 e2e 早期失败（装引擎、起 webServer）时也会跑，
+          # 那时截图还一张都没产出；再配 error 就会在真正的原因旁边多叠一条误导性失败。
+          # 而且截图只在 chromium project 里写，firefox/webkit 单独失败时目录同样是空的。
+          if-no-files-found: ignore
           retention-days: 7

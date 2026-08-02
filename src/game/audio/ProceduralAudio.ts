@@ -58,7 +58,7 @@ export class ProceduralAudio {
       oscillator.start(now);
       oscillator.stop(now + preset.duration + 0.02);
     } catch {
-      // Audio is optional; a refused or exhausted browser audio graph remains silent.
+      // 音频是可选的：浏览器拒绝或音频图耗尽时保持静音即可，不要影响到玩法。
     }
   }
 
