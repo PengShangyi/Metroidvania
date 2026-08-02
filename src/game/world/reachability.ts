@@ -9,10 +9,15 @@ import type {
   RoomDefinition,
 } from './types';
 
-const FRAME_SECONDS = 1 / 60;
+export const FRAME_SECONDS = 1 / 60;
 /** 碰撞体是 14×28（Player 构造函数里的 setSize），站立点在体底中心。 */
-const BODY_HALF_WIDTH = 7;
-const BODY_HEIGHT = 28;
+export const BODY_HALF_WIDTH = 7;
+export const BODY_HEIGHT = 28;
+/**
+ * hazardRules.overlaps 把边缘相接算作接触，而区间减法保留的是闭端点：不外扩这 1px，
+ * 模型认为能站的最边上那一点，运行时 body 边缘恰好等于 hazard 边缘，玩家站上去就扣血。
+ */
+const HAZARD_CONTACT_SLACK = 1;
 /** RoomRuntime 用 (player.x, player.y - 12) 判定出口与拾取物。 */
 const PROBE_OFFSET_Y = 12;
 const PICKUP_RADIUS = 25;
@@ -172,8 +177,8 @@ function hazardBlockers(surface: Surface, hazards: RoomDefinition['hazards']): I
         overlaps(hazard.x, hazard.x + hazard.width, surface.left, surface.right),
     )
     .map((hazard) => ({
-      left: hazard.x - BODY_HALF_WIDTH,
-      right: hazard.x + hazard.width + BODY_HALF_WIDTH,
+      left: hazard.x - BODY_HALF_WIDTH - HAZARD_CONTACT_SLACK,
+      right: hazard.x + hazard.width + BODY_HALF_WIDTH + HAZARD_CONTACT_SLACK,
     }));
 }
 

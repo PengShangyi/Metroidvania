@@ -239,14 +239,14 @@
       { "id": "from_intake", "x": 408, "y": 238 }
     ],
     "platforms": [
-      { "x": 0, "y": 254, "width": 250, "height": 16 },
+      { "x": 0, "y": 254, "width": 266, "height": 16 },
       { "x": 354, "y": 254, "width": 126, "height": 16 },
       { "x": 96, "y": 210, "width": 64, "height": 12 },
       { "x": 196, "y": 178, "width": 44, "height": 12 },
       { "x": 366, "y": 210, "width": 64, "height": 12 }
     ],
     "hazards": [
-      { "x": 250, "y": 246, "width": 104, "height": 24 },
+      { "x": 266, "y": 246, "width": 88, "height": 24 },
       { "x": 172, "y": 244, "width": 24, "height": 10 }
     ],
     "exits": [

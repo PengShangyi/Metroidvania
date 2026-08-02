@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AbilityState } from '../state/GameSession';
+import { hazardCrossings } from './hazardCrossing';
+import { meetsRequirement } from './progression';
 import { buildSurfaces, deriveEnvelope, roomReachability } from './reachability';
 import { RoomRepository } from './RoomRepository';
 import type { RoomDefinition } from './types';
@@ -9,6 +11,39 @@ const rooms = new RoomRepository().all();
 const NO_ABILITY: AbilityState = { phaseDash: false, magneticGrip: false };
 const DASH_ONLY: AbilityState = { phaseDash: true, magneticGrip: false };
 const BOTH: AbilityState = { phaseDash: true, magneticGrip: true };
+
+/** 只用固定能力集合、不捡途中任何模块，能从出生点走到哪些房间。 */
+function roomsReachableWith(abilities: AbilityState): Set<string> {
+  const byId = new Map(rooms.map((room) => [room.id, room] as const));
+  const seen = new Set(['vestibule_dock']);
+  const queue = ['vestibule_dock'];
+  while (queue.length > 0) {
+    const room = byId.get(queue.shift() as string);
+    for (const exit of room?.exits ?? []) {
+      if (!meetsRequirement(exit.requirement, abilities, false)) continue;
+      if (seen.has(exit.targetRoomId)) continue;
+      seen.add(exit.targetRoomId);
+      queue.push(exit.targetRoomId);
+    }
+  }
+  return seen;
+}
+
+const BARE_ROOMS = roomsReachableWith(NO_ABILITY);
+const DASH_ROOMS = roomsReachableWith(DASH_ONLY);
+
+/** 踏进这个房间时保证已经拿到的能力。取下界，免得断言靠「说不定他已经绕回来过」蒙混。 */
+function guaranteedAbilities(roomId: string): AbilityState {
+  if (BARE_ROOMS.has(roomId)) return NO_ABILITY;
+  if (DASH_ROOMS.has(roomId)) return DASH_ONLY;
+  return BOTH;
+}
+
+const CROSSINGS = rooms.flatMap((room) =>
+  hazardCrossings(room, guaranteedAbilities(room.id)).map((crossing) => ({ room, crossing })),
+);
+/** 起跳窗口窄于这个宽度就不叫「难」，叫要求像素级站位。 */
+const MIN_CROSSING_WINDOW = 12;
 
 function unreachable(room: RoomDefinition, abilities: AbilityState): string[] {
   const problems: string[] = [];
@@ -100,12 +135,55 @@ describe('关卡几何可达性', () => {
     expect(fragile).toEqual([]);
   });
 
+  it('地面能直接横跨的危险区，起跳窗口不能窄到要卡像素', () => {
+    // 包络只比「水平间隙 <= 最远距离」，算不出玩家得站得多准。封锁堤道的酸池就是这么
+    // 漏过去的：模型判绿灯，逐帧实测起跳窗口只有 1px，还得同时卡准冲刺的那一帧。
+    // 判据是「有地面路线但窄」而不是「过不去」——回声库、淹没晶格、核心回廊压根没有
+    // 地面路线，它们本来就设计成从上层平台绕过去，由上面的可达性断言负责。
+    const tooTight = CROSSINGS.filter(
+      ({ crossing }) => crossing.ground && crossing.ground.window < MIN_CROSSING_WINDOW,
+    ).map(
+      ({ room, crossing }) =>
+        `${room.id} 危险区 #${crossing.hazardIndex} 起跳窗口仅 ${crossing.ground?.window.toFixed(2)}px`,
+    );
+    expect(tooTight).toEqual([]);
+  });
+
+  it('每道危险区的通过方式不会悄悄改变', () => {
+    // 把平台坐标一改，某道地刺就可能从「跳得过去」变成「只能绕」，而玩家在现场
+    // 只会看到自己反复掉进去。这条把当前的通过方式钉住。
+    const shape = CROSSINGS.map(
+      ({ room, crossing }) =>
+        `${room.id}#${crossing.hazardIndex} ${crossing.ground ? '地面可跨' : '只能绕行'}`,
+    );
+    expect(shape).toEqual([
+      'vestibule_gallery#0 地面可跨',
+      'vestibule_vault#0 只能绕行',
+      'vestibule_causeway#0 地面可跨',
+      'vestibule_causeway#1 地面可跨',
+      'bioforge_intake#0 地面可跨',
+      'bioforge_pump#0 地面可跨',
+      'bioforge_pump#1 地面可跨',
+      'bioforge_lattice#0 只能绕行',
+      'bioforge_nursery#0 地面可跨',
+      'bioforge_nursery#1 地面可跨',
+      'bioforge_cradle#0 地面可跨',
+      'bioforge_spire#0 地面可跨',
+      'bioforge_spire#1 地面可跨',
+      'reactor_conduit#0 地面可跨',
+      'reactor_conduit#1 地面可跨',
+      'reactor_coreway#0 只能绕行',
+      'reactor_threshold#0 地面可跨',
+      'reactor_threshold#1 地面可跨',
+    ]);
+  });
+
   it('通往生化区的堤道要真的冲过去，不是刷卡', () => {
     const causeway = rooms.find((room) => room.id === 'vestibule_causeway');
     expect(causeway).toBeDefined();
     const gate = causeway!.exits.find((exit) => exit.id === 'to_intake');
     expect(gate?.requirement).toBe('phaseDash');
-    // 断口 104px，走跳最远 71.5px：徒手连宽松包络都过不去。
+    // 断口 88px，走跳最远 71.5px：徒手连宽松包络都过不去。
     expect(
       roomReachability(causeway!, 'from_shaft', NO_ABILITY, 'generous').exitReachable(gate!),
     ).toBe(false);
