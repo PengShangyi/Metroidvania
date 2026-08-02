@@ -101,7 +101,8 @@ describe('UI 布局锚点', () => {
     expectStacked([
       headingRow(),
       centeredRow(HELP.subtitle.y, LINE_BOX.caption),
-      centeredRow(HELP.groupTitle.y, LINE_BOX.hud),
+      // 分组标题左对齐、按左上角摆，和居中的标题/副标题不是一回事。
+      topAnchoredRow(HELP.groupTitle.y, LINE_BOX.hud),
       ...rows,
       centeredRow(HELP.footer.y, LINE_BOX.caption),
     ]);
