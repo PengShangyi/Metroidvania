@@ -5,7 +5,11 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 2 : 0,
-  reporter: process.env.CI ? 'github' : 'list',
+  // CI 上再多出一份 HTML 报告：'github' 只把注解写进日志，而仓库日志要 admin 权限才
+  // 下得到，只在 Linux 上复现的失败会因此无从查起。报告作为工件上传，谁都能拿。
+  reporter: process.env.CI
+    ? [['github'], ['html', { open: 'never', outputFolder: 'playwright-report' }]]
+    : 'list',
   use: {
     baseURL: 'http://127.0.0.1:4173',
     screenshot: 'only-on-failure',

@@ -76,3 +76,16 @@ jobs:
           # 而且截图只在 chromium project 里写，firefox/webkit 单独失败时目录同样是空的。
           if-no-files-found: ignore
           retention-days: 7
+
+      # 失败诊断。仓库日志要 admin 权限才下得到，没有这份工件的话，一条只在 Linux 上
+      # 复现的 e2e 失败在本机是查不动的——失败截图、错误上下文和首次重试的 trace 都在这里。
+      - name: Upload Playwright failure report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-failure-report
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore
+          retention-days: 7
