@@ -9,6 +9,7 @@ import {
   type ShieldCoreHitEvent,
   type ShieldOpenedEvent,
 } from '../combat/events';
+import { AUDIO_EVENT } from '../audio/soundDesign';
 import { configureProjectileMetadata } from '../combat/projectileMetadata';
 import { REGISTRY_KEYS } from '../constants';
 import type { EnemySprite } from '../enemies/EnemySprite';
@@ -42,8 +43,19 @@ export interface TestSnapshot {
   bossDefeated: boolean;
   bossHealth: number | null;
   uiMode: string;
+  listeners: SceneListenerCounts;
   typography: TypographyTestSnapshot;
   combat: CombatTestSnapshot;
+}
+
+/**
+ * scene.start 走的是 shutdown 而不是 destroy，Phaser 只在后者里 removeAllListeners，
+ * 所以 create() 注册的场景事件不成对 off 就会一局一局往上叠——每叠一层，同一个音效就
+ * 多一层振荡器同时播放。除了数监听器，没有别的办法从外部断言这件事。
+ */
+export interface SceneListenerCounts {
+  playAudio: number;
+  tutorialAudio: number;
 }
 
 export interface TypographyTestSnapshot {
@@ -220,6 +232,7 @@ function snapshot(game: Phaser.Game): TestSnapshot {
     bossDefeated: session.bossDefeated,
     bossHealth: (game.registry.get(REGISTRY_KEYS.bossHealth) as number | undefined) ?? null,
     uiMode: (game.registry.get(REGISTRY_KEYS.uiMode) as string | undefined) ?? 'game',
+    listeners: listenerCounts(game),
     typography: typographySnapshot(game),
     combat: combatSnapshot(game),
   };
@@ -404,10 +417,7 @@ function openHudOverlay(game: Phaser.Game, mode: HudOverlayMode): void {
  * token 计时清除，直接写会被它顺手擦掉——机器一慢就变成随机失败。
  */
 function showRuntimeMessage(game: Phaser.Game, message: string): void {
-  const runtime = playInternals(game).roomRuntime as unknown as {
-    showMessage(message: string, duration: number): void;
-  };
-  runtime.showMessage(message, 60_000);
+  playInternals(game).roomRuntime.showMessage(message, 60_000);
 }
 
 function completeTutorial(game: Phaser.Game): void {
@@ -633,6 +643,12 @@ function enemyInternals(play: PlaySceneInternals): EnemySystemInternals {
 
 function bossInternals(play: PlaySceneInternals): BossSystemInternals {
   return play.bossSystem as unknown as BossSystemInternals;
+}
+
+function listenerCounts(game: Phaser.Game): SceneListenerCounts {
+  const count = (key: string): number =>
+    game.scene.getScene(key)?.events.listenerCount(AUDIO_EVENT) ?? 0;
+  return { playAudio: count('play'), tutorialAudio: count('tutorial') };
 }
 
 function playInternals(game: Phaser.Game): PlaySceneInternals {

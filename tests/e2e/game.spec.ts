@@ -135,6 +135,76 @@ test('keeps the HUD visible after returning to the title and starting again', as
   expect(errors).toEqual([]);
 });
 
+test('keeps an existing save when the new-game confirmation is interrupted', async ({ page }) => {
+  // confirmNewGame 只有 3 秒 delayedCall 一条复位路径，而那个定时器随场景 shutdown 一起
+  // 清掉：确认窗口内离开标题，标志就永久停在 true，回来点一次「新建任务」直接 erase()。
+  // 存档被静默抹掉是本仓库危害最大的一类缺陷，此前没有任何自动化拦得住。
+  const errors = await openGame(page);
+  const seed = JSON.stringify({
+    version: 1,
+    currentRoomId: 'bioforge_intake',
+    checkpointRoomId: 'bioforge_intake',
+    checkpointSpawnId: 'from_causeway',
+    health: 5,
+    maxHealth: 6,
+    abilities: { phaseDash: true, magneticGrip: false },
+    visitedRooms: ['vestibule_dock', 'bioforge_intake'],
+    collectedPickups: ['ability-phase-dash'],
+    readLore: [],
+    bossDefeated: false,
+    elapsedMs: 12_000,
+  });
+  await page.evaluate((value) => localStorage.setItem('star-echo.save.v1', value), seed);
+  await page.reload();
+  await page.waitForFunction(() => Boolean((window as unknown as TestWindow).__STAR_ECHO_TEST__));
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
+
+  // 第一次点击只应进入确认态。
+  await clickUi(page, 480, 252);
+  await expectLabel(page, '再次选择以覆盖记录');
+  expect((await snapshot(page)).scene).toBe('title');
+
+  // 在确认窗口内离开标题再回来。
+  await page.keyboard.press('t');
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('tutorial');
+  await page.keyboard.press('Escape');
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
+
+  // 必须重新要求确认，而不是直接开新档。
+  await clickUi(page, 480, 252);
+  await expectLabel(page, '再次选择以覆盖记录');
+  expect((await snapshot(page)).scene).toBe('title');
+  expect(await page.evaluate(() => localStorage.getItem('star-echo.save.v1'))).toBe(seed);
+  expect(errors).toEqual([]);
+});
+
+test('does not stack scene event listeners across replays', async ({ page }) => {
+  // scene.start 只 shutdown 不 destroy，Phaser 不清场景事件：create() 里注册的
+  // AUDIO_EVENT 不成对 off 的话，每重玩一局同一个音效就多叠一层振荡器。除了数监听器，
+  // 没有别的办法从外部看见这件事。
+  const errors = await openGame(page);
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
+
+  for (let round = 0; round < 2; round += 1) {
+    await page.evaluate(() => (window as unknown as TestWindow).__STAR_ECHO_TEST__.startNewGame());
+    await expect.poll(async () => (await snapshot(page)).scene).toBe('play');
+    await expect.poll(async () => (await snapshot(page)).listeners.playAudio).toBe(1);
+    await page.keyboard.press('Escape');
+    await expect.poll(async () => (await snapshot(page)).uiMode).toBe('pause');
+    await waitForGameFrame(page);
+    await clickUiUntil(page, 480, 470, 'title', async () => (await snapshot(page)).scene);
+  }
+
+  for (let round = 0; round < 2; round += 1) {
+    await page.keyboard.press('t');
+    await expect.poll(async () => (await snapshot(page)).scene).toBe('tutorial');
+    await expect.poll(async () => (await snapshot(page)).listeners.tutorialAudio).toBe(1);
+    await page.keyboard.press('Escape');
+    await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
+  }
+  expect(errors).toEqual([]);
+});
+
 test('restores a valid save and safely replaces a corrupt save', async ({ page }) => {
   const errors = await openGame(page);
   await page.evaluate(() => {
