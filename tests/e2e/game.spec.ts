@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { clickUi } from './uiPoint';
+import { clickUi, clickUiUntil } from './uiPoint';
 
 interface TestSnapshot {
   scene: string;
@@ -102,10 +102,12 @@ test('starts a new game and opens map, pause, settings and controls', async ({ p
   await expect.poll(async () => (await snapshot(page)).uiMode).toBe('pause');
   await waitForGameFrame(page);
 
-  await clickUi(page, 480, 310);
-  await expect.poll(async () => (await snapshot(page)).uiMode).toBe('settings');
+  await clickUiUntil(page, 480, 310, 'settings', async () => (await snapshot(page)).uiMode);
   await waitForGameFrame(page);
   await clickUi(page, 480, 238);
+  await expect
+    .poll(async () => page.evaluate(() => localStorage.getItem('star-echo.settings.v1')))
+    .not.toBeNull();
   const settings = await page.evaluate(() => localStorage.getItem('star-echo.settings.v1'));
   expect(settings).toContain('screenShake');
   await page.keyboard.press('Escape');

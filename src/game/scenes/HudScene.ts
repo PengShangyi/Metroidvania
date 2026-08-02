@@ -159,8 +159,6 @@ export class HudScene extends Phaser.Scene {
   }
 
   public update(): void {
-    const inGame = this.mode === 'game';
-    for (const object of this.gameLayer) object.setVisible(inGame);
     const health = `${this.session.health}/${this.session.maxHealth}`;
     if (health !== this.renderedHealth) {
       this.renderedHealth = health;
@@ -184,16 +182,28 @@ export class HudScene extends Phaser.Scene {
       this.renderedMessage = message;
       this.messageText.setText(message);
     }
-    this.messageText.setVisible(inGame && this.messageText.text.length > 0);
     const roomLabel = (this.registry.get(REGISTRY_KEYS.roomLabel) as string) ?? '';
     if (roomLabel !== this.renderedRoomLabel) {
       this.renderedRoomLabel = roomLabel;
       this.roomLabelText.setText(roomLabel);
     }
-    // 覆盖层展开时必须藏起来，否则它会留在面板底下触发排版重叠断言。
-    this.roomLabelText.setVisible(inGame && roomLabel.length > 0);
     this.updateBossBar();
+    this.syncHudVisibility();
     this.updateGamepadMenuInput();
+  }
+
+  /**
+   * 覆盖层展开时整层 HUD 都要藏起来，否则会从面板底下透出来并撞版。
+   *
+   * 必须在切换模式的当下就调用，不能只依赖 update()：openOverlay 是在 update 之外
+   * 同步改 mode 的，中间那一帧 HUD 仍然可见——Chromium 上碰巧看不出来，Firefox 上会。
+   */
+  private syncHudVisibility(): void {
+    const inGame = this.mode === 'game';
+    for (const object of this.gameLayer) object.setVisible(inGame);
+    this.messageText.setVisible(inGame && this.messageText.text.length > 0);
+    this.roomLabelText.setVisible(inGame && this.roomLabelText.text.length > 0);
+    if (!inGame) this.bossText.setVisible(false);
   }
 
   private updateBossBar(): void {
@@ -244,6 +254,7 @@ export class HudScene extends Phaser.Scene {
     if (this.mode === 'game') this.scene.pause('play');
     this.mode = mode;
     this.registry.set(REGISTRY_KEYS.uiMode, mode);
+    this.syncHudVisibility();
     this.renderOverlay();
   }
 
@@ -252,6 +263,7 @@ export class HudScene extends Phaser.Scene {
     this.overlay = undefined;
     this.mode = 'game';
     this.registry.set(REGISTRY_KEYS.uiMode, 'game');
+    this.syncHudVisibility();
     const play = this.scene.get('play') as PlayScene;
     play.clearInput();
     this.scene.resume('play');
@@ -518,6 +530,7 @@ export class HudScene extends Phaser.Scene {
     if (this.mode === 'game') this.scene.pause('play');
     this.mode = 'help';
     this.renderedHelpDevice = undefined;
+    this.syncHudVisibility();
     this.renderOverlay();
   }
 
@@ -530,6 +543,7 @@ export class HudScene extends Phaser.Scene {
     }
     this.mode = returnMode;
     this.registry.set(REGISTRY_KEYS.uiMode, returnMode);
+    this.syncHudVisibility();
     this.renderOverlay();
   }
 

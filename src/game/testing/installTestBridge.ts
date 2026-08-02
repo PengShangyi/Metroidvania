@@ -195,7 +195,7 @@ export function installTestBridge(game: Phaser.Game): void {
     tutorialPlayerX: () => tutorialPlayerX(game),
     openHudOverlay: (mode) => openHudOverlay(game, mode),
     completeTutorial: () => completeTutorial(game),
-    showRuntimeMessage: (message) => game.registry.set(REGISTRY_KEYS.runtimeMessage, message),
+    showRuntimeMessage: (message) => showRuntimeMessage(game, message),
   };
 
   game.events.once('destroy', () => {
@@ -395,6 +395,17 @@ function openHudOverlay(game: Phaser.Game, mode: HudOverlayMode): void {
   const hud = game.scene.getScene('hud') as unknown as HudSceneInternals;
   if (mode === 'help') hud.openHelp();
   else hud.openOverlay(mode);
+}
+
+/**
+ * 走 RoomRuntime 自己的通道而不是直接写 registry：进房横幅带一个 900ms 的
+ * token 计时清除，直接写会被它顺手擦掉——机器一慢就变成随机失败。
+ */
+function showRuntimeMessage(game: Phaser.Game, message: string): void {
+  const runtime = playInternals(game).roomRuntime as unknown as {
+    showMessage(message: string, duration: number): void;
+  };
+  runtime.showMessage(message, 60_000);
 }
 
 function completeTutorial(game: Phaser.Game): void {

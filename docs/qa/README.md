@@ -1,25 +1,31 @@
 # 视觉验收基线
 
-本目录保存关键流程的 Chromium 实机截图。`low-res-*.png` 使用与游戏逻辑画布一致的
-`480×270` 浏览器视口直接截取，没有先放大再缩小，用于检查最低目标分辨率下的中文笔画、
-按钮标签、双栏帮助说明和换行间距。
+本目录保存关键流程的 Chromium 实机截图，全部为 `960×540` 原生分辨率直接截取，
+没有先放大再缩小 —— 960×540 就是画布尺寸，世界层的 480×270 内容由相机 zoom 2 整数放大。
 
-低分辨率基线包括：
+流程基线：
 
-- `low-res-title.png`：标题页与四个主菜单入口；
-- `low-res-tutorial.png`：训练关卡的目标、按键提示与效果说明；
-- `low-res-help-keyboard.png`：键盘/鼠标帮助页；
-- `low-res-help-gamepad.png`：手柄帮助页；
-- `low-res-shield-open.png`：冲刺结束后，盾兵核心和玩家位于正确相对侧；
-- `low-res-reflect.png`：挥砍弧、反射弹和局部火花；
-- `low-res-piercing-armed.png`：琥珀武装轮廓及同一直线上的两个正式目标。
+- `title.png`：标题页与四个主菜单入口；
+- `vestibule.png` / `bioforge.png` / `reactor.png`：三个区域的首个房间与游戏内 HUD；
+- `boss.png`：守核者房间与 Boss 血条；
+- `ending.png`：结局页的叙事段落与数值列；
+- `combat-shield-open.png`：冲刺结束后，盾兵核心和玩家位于正确相对侧；
+- `combat-reflect.png`：挥砍弧、反射弹和局部火花；
+- `combat-piercing-armed.png`：琥珀武装轮廓及同一直线上的两个正式目标。
 
-`combat-shield-open.png`、`combat-reflect.png` 和 `combat-piercing-armed.png` 保存相同三种
-状态的 960×540 基线。`title.png` 是当前版本标题，`v0.1-title.png` 保留上一个标签的标题
-快照，避免历史验收记录随新版截图漂移。
+`v0.1-title.png` 保留上一个标签的标题快照，避免历史验收记录随新版截图漂移。
 
-自动旅程还会在 Chromium、Firefox 和 WebKit 的 `480×270` 视口验证画布尺寸、训练入口、
-帮助页开关及最近输入设备切换。每一屏还会检查 Fusion Pixel 12px 已加载、最小字号、合成
-字重、对象缩放和画布边界；Chromium 将标题、训练及两套 Help 的原生截图上传为
-`typography-480x270` Actions 工件。截图如因有意 UI 调整而更新，应再次以 100% 缩放逐张
-检查，确保所有汉字可辨认且没有裁切、重叠或溢出。
+原先另有一组 `low-res-*.png`，用 `480×270` 视口截取以检查「最低目标分辨率」下的中文笔画。
+画布升到 960×540 之后已经不存在 480×270 这个渲染模式，只剩下一个会被等比缩小的窗口尺寸，
+那组基线因此删除；小窗口能否正常启动由 `min-viewport.spec.ts` 负责。
+
+## 自动覆盖
+
+`typography-qa.spec.ts` 在 Chromium、Firefox 和 WebKit 上走 13 屏（标题、训练、训练完成、
+键盘与手柄两套帮助、游戏内 HUD、提示条的实际与超长两种文案、Boss 血条、地图/暂停/设置/帮助
+四个覆盖层、结局），每屏检查：两套字体均已加载、按字体族分开的最小字号（像素字 ≥24、
+矢量字 ≥16）、像素字字号是 12 的整数倍，以及裁切、重叠、合成字重、对象缩放、
+文本误留在 zoom 2 世界场景这五项全部为空。裁切与重叠按屏幕空间判定，跨场景配对同样有效。
+
+Chromium 会把这 13 屏上传为 `typography-960x540` Actions 工件。截图如因有意 UI 调整而更新，
+应再次以 100% 缩放逐张检查，确保所有汉字可辨认且没有裁切、重叠或溢出。
