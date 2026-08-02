@@ -18,6 +18,7 @@ import {
   panelBox,
   type LayoutBox,
 } from './layout';
+import { HELP_CONTENT } from './helpContent';
 import { ROOM_MAP_LAYOUT } from './mapLayout';
 
 const overlayPanel = panelBox(OVERLAY.panel);
@@ -62,7 +63,7 @@ describe('UI 布局锚点', () => {
     ]);
   });
 
-  it('地图图例的三个条目横向不重叠', () => {
+  it('地图图例的每个条目横向不重叠', () => {
     // 图例是「色块 + 短标签」，标签用 16px 正文字，按最宽的四个汉字估算。
     const widest = 4 * 16;
     const entries = MAP.legend.entryX.map((x) => ({
@@ -89,7 +90,9 @@ describe('UI 布局锚点', () => {
   it('帮助面板的行距容得下按键胶囊，且最后一行不压到页脚', () => {
     const rowHeight = Math.max(CHIP.height, LINE_BOX.prose);
     expect(HELP.rowGap).toBeGreaterThan(rowHeight);
-    const rows = Array.from({ length: 5 }, (_, index) => ({
+    // 行数从内容里数出来，不要写死：写死 5 的那阵子首栏已经是六行，而多出来的那行
+    // 正压在页脚上，测试却照样绿。
+    const rows = Array.from({ length: longestHelpGroup() }, (_, index) => ({
       top: HELP.firstRowY + index * HELP.rowGap,
       bottom: HELP.firstRowY + index * HELP.rowGap + rowHeight,
       left: HELP.columnX[0]!,
@@ -183,6 +186,14 @@ describe('UI 布局锚点', () => {
     expect(TUTORIAL_HUD.panelBody.wrap).toBeLessThan(TUTORIAL_HUD.panel.width);
   });
 });
+
+function longestHelpGroup(): number {
+  return Math.max(
+    ...Object.values(HELP_CONTENT)
+      .flat()
+      .map((group) => group.rows.length),
+  );
+}
 
 function headingRow(): LayoutBox {
   return centeredRow(OVERLAY.heading.y, LINE_BOX.heading);

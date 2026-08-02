@@ -12,7 +12,7 @@ export interface HelpRowBox {
 }
 
 /**
- * 帮助面板是全项目最容易撞版的一屏：两栏 × 五行 × 每行两块。
+ * 帮助面板是全项目最容易撞版的一屏：两栏 × 每栏至多六行 × 每行两块。
  * 几何算在这里，renderHelpPanel 只负责照着摆，helpPanelLayout.test.ts 直接证明它不重叠。
  */
 export function helpPanelLayout(groups: readonly HelpGroup[]): HelpRowBox[] {
