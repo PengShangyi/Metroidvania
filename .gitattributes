@@ -2,3 +2,6 @@
 
 art/source/**/*.png filter=lfs diff=lfs merge=lfs -text
 art/source/**/*.webp filter=lfs diff=lfs merge=lfs -text
+
+art/source/**/*.otf filter=lfs diff=lfs merge=lfs -text
+art/source/**/*.ttf filter=lfs diff=lfs merge=lfs -text

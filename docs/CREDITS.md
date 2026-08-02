@@ -18,7 +18,11 @@
 
 ## 字体
 
-简体中文 UI 使用 TakWolf 的 Fusion Pixel Font 12px proportional `zh_hans` WebFont，版本 `2026.07.20`，以 SIL Open Font License 1.1 授权。运行时 WOFF2 的 SHA-256 为 `9d8d2f0bae6214568c591c72f4f3e8cbc39b2eeda461861e521e45d966ccefac`；完整许可证及字体所含组件许可证保存在 [`docs/licenses/fusion-pixel-font/`](licenses/fusion-pixel-font/)。
+界面使用两套简体中文字体，均以 SIL Open Font License 1.1 授权。
+
+像素字体是 TakWolf 的 Fusion Pixel Font 12px proportional `zh_hans` WebFont，版本 `2026.07.20`，用于数值、按键胶囊与其他需要定宽步进的短标签。运行时 WOFF2 的 SHA-256 为 `9d8d2f0bae6214568c591c72f4f3e8cbc39b2eeda461861e521e45d966ccefac`；完整许可证及字体所含组件许可证保存在 [`docs/licenses/fusion-pixel-font/`](licenses/fusion-pixel-font/)。
+
+正文字体是 Noto Sans CJK SC Regular 的子集，用于帮助面板、结局、教学目标等成段中文——12px 像素网格在这些位置已到中文可读极限。子集由 `pnpm art:font` 用 `subset-font`（HarfBuzz）从 Git LFS 中的上游 OTF 生成，只收录源码里实际出现的字符；`@font-face` 名称改为项目独占的 `Star Echo Sans SC`，以免与系统同名字体混淆。完整许可证见 [`docs/licenses/noto-sans-sc/`](licenses/noto-sans-sc/)，字体来源与再生成方式见 [`public/assets/fonts/README.md`](../public/assets/fonts/README.md)。
 
 ## 工具与依赖
 

@@ -12,6 +12,10 @@ const supportedExtensions = new Set(['.png', '.webp', '.jpg', '.jpeg']);
 const uiFontPath = join(root, 'fonts', 'fusion-pixel-12px-proportional-zh_hans.otf.woff2');
 const uiFontLicensePath = join(projectRoot, 'docs', 'licenses', 'fusion-pixel-font', 'OFL.txt');
 const uiFontSha256 = '9d8d2f0bae6214568c591c72f4f3e8cbc39b2eeda461861e521e45d966ccefac';
+const proseFontPath = join(root, 'fonts', 'star-echo-sans-sc-subset.woff2');
+const proseCharsetPath = join(root, 'fonts', 'star-echo-sans-sc-subset.charset.txt');
+const proseFontLicensePath = join(projectRoot, 'docs', 'licenses', 'noto-sans-sc', 'OFL.txt');
+const proseFontMaxBytes = 512 * 1024;
 const ENEMY_SPRITE_SIZES = {
   'sprites/crawler.png': [24, 16],
   'sprites/crawler-shielded.png': [24, 16],
@@ -82,13 +86,31 @@ if (createHash('sha256').update(font).digest('hex') !== uiFontSha256) {
   throw new Error('简体中文 UI 字体校验和不匹配');
 }
 
+// 正文字体是 pnpm art:font 从 LFS 里的上游 OTF 生成的构建产物，不像像素字体那样
+// 是直接下载的第三方文件，所以这里不固定校验和（否则每改一句中文都要连带更新它）。
+// 内容正确性由 fontCoverage.test.ts 保证：源码里的每个非 ASCII 字符都必须在子集内。
+await access(proseFontLicensePath);
+const proseCharset = await readFile(proseCharsetPath, 'utf8');
+if (proseCharset.length === 0) throw new Error('正文字体字符集清单为空');
+const proseFont = await readFile(proseFontPath);
+if (proseFont.subarray(0, 4).toString('ascii') !== 'wOF2') {
+  throw new Error('简体中文正文字体不是有效的 WOFF2 文件');
+}
+if (proseFont.byteLength > proseFontMaxBytes) {
+  throw new Error(
+    `简体中文正文字体 ${(proseFont.byteLength / 1024).toFixed(1)}KB 超过 ` +
+      `${proseFontMaxBytes / 1024}KB 上限，请检查子集是否收进了多余字形`,
+  );
+}
+
 if (totalBytes > budgetBytes) {
   throw new Error(`资源总量 ${(totalBytes / 1024 / 1024).toFixed(2)}MB 超过 20MB 预算`);
 }
 
 console.log(
-  `Validated ${imageFiles.length} image assets and 1 UI font ` +
-    `(${(totalBytes / 1024 / 1024).toFixed(2)}MB).`,
+  `Validated ${imageFiles.length} image assets and 2 UI fonts ` +
+    `(${(totalBytes / 1024 / 1024).toFixed(2)}MB, 正文子集 ${proseCharset.length} 字形 / ` +
+    `${(proseFont.byteLength / 1024).toFixed(1)}KB).`,
 );
 
 async function assertSeamlessTile(file, assetPath) {

@@ -33,6 +33,10 @@ jobs:
       - name: Verify repository
         run: pnpm check
 
+      # 校验和、尺寸上限与许可证此前完全没进 CI，等于没有约束力。
+      - name: Validate runtime assets
+        run: pnpm assets:validate
+
   browser:
     needs: check
     runs-on: ubuntu-latest
@@ -65,7 +69,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: typography-480x270
+          name: typography-960x540
           path: test-results/typography
           if-no-files-found: error
           retention-days: 7

@@ -1,13 +1,13 @@
 import Phaser from 'phaser';
 
 import { createGameConfig } from './game/config';
-import { ensureUIFont } from './game/ui/fontLoader';
+import { ensureUIFonts } from './game/ui/fontLoader';
 import './style.css';
 
 let game: Phaser.Game | undefined;
 
 async function startGame(): Promise<void> {
-  await ensureUIFont(document.fonts);
+  await ensureUIFonts(document.fonts);
   game = new Phaser.Game(createGameConfig());
   if (import.meta.env.MODE === 'test') {
     const { installTestBridge } = await import('./game/testing/installTestBridge');
