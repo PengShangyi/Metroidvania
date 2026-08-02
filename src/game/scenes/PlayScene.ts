@@ -22,9 +22,9 @@ import { RoomRuntime } from '../world/RoomRuntime';
 import {
   CONTEXT_HINT_DELAY_MS,
   CONTEXT_HINT_DURATION_MS,
-  ContextualCombatHintTracker,
-  contextualCombatHint,
-} from '../world/contextualCombatHints';
+  ContextualHintTracker,
+  contextualHints,
+} from '../world/contextualHints';
 import type { BiomeId, ExitDefinition } from '../world/types';
 
 export class PlayScene extends Phaser.Scene {
@@ -43,7 +43,7 @@ export class PlayScene extends Phaser.Scene {
   private pendingRespawn = false;
   private contextHintToken = 0;
   private hintSession?: GameSessionState;
-  private contextHints = new ContextualCombatHintTracker();
+  private contextHints = new ContextualHintTracker();
 
   public constructor() {
     super('play');
@@ -65,7 +65,7 @@ export class PlayScene extends Phaser.Scene {
     this.session = this.registry.get(REGISTRY_KEYS.session) as GameSessionState;
     if (this.hintSession !== this.session) {
       this.hintSession = this.session;
-      this.contextHints = new ContextualCombatHintTracker();
+      this.contextHints = new ContextualHintTracker();
     }
     this.cameras.main.setBackgroundColor(COLORS.void);
     this.cameras.main.setZoom(WORLD_ZOOM);
@@ -150,20 +150,26 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private scheduleContextHint(roomId: string): void {
-    const token = ++this.contextHintToken;
-    const hint = contextualCombatHint(roomId);
-    if (!hint || this.contextHints.hasShown(hint)) return;
+    // token 只在换房时前进，所以一个房间里的提示可以接力，换房则整条链作废。
+    this.showNextContextHint(roomId, ++this.contextHintToken);
+  }
+
+  private showNextContextHint(roomId: string, token: number): void {
+    const hint = contextualHints(roomId).find(
+      (candidate) => !this.contextHints.hasShown(candidate),
+    );
+    if (!hint) return;
     this.time.delayedCall(CONTEXT_HINT_DELAY_MS, () => {
       if (token !== this.contextHintToken || this.session.currentRoomId !== roomId) return;
       this.contextHints.markShown(hint);
       this.registry.set(REGISTRY_KEYS.runtimeMessage, hint.message);
       this.time.delayedCall(CONTEXT_HINT_DURATION_MS, () => {
-        if (
-          token === this.contextHintToken &&
-          this.registry.get(REGISTRY_KEYS.runtimeMessage) === hint.message
-        ) {
+        if (token !== this.contextHintToken) return;
+        if (this.registry.get(REGISTRY_KEYS.runtimeMessage) === hint.message) {
           this.registry.set(REGISTRY_KEYS.runtimeMessage, '');
         }
+        // 提示条一次只放得下一句，所以剩下的排队讲。
+        this.showNextContextHint(roomId, token);
       });
     });
   }
