@@ -6,6 +6,7 @@ import { createBrowserSaveService, type SaveService } from '../save/SaveService'
 import type { GameSessionState } from '../state/GameSession';
 import { COMPLETION_TOTAL, completionPercent } from '../ui/completion';
 import { bindFullscreenKey } from '../ui/fullscreen';
+import { overlayKeyAction, type OverlayKey, type OverlayMode } from '../ui/hudMode';
 import { ROOM_MAP_LAYOUT } from '../ui/mapLayout';
 import {
   buildAdjacency,
@@ -19,8 +20,6 @@ import { headingTextStyle, hudTextStyle, proseTextStyle, wrapProse } from '../ui
 import rawRooms from '../world/rooms.json';
 import type { RoomDefinition } from '../world/types';
 import type { PlayScene } from './PlayScene';
-
-type OverlayMode = 'game' | 'map' | 'pause' | 'settings' | 'help';
 
 export class HudScene extends Phaser.Scene {
   private healthText!: Phaser.GameObjects.Text;
@@ -53,20 +52,13 @@ export class HudScene extends Phaser.Scene {
   };
   private readonly mapKeyHandler = (event: KeyboardEvent): void => {
     event.preventDefault();
-    if (this.mode === 'map') this.closeOverlay();
-    else if (this.mode === 'game') this.openOverlay('map');
+    this.applyOverlayKey('map');
   };
-  private readonly pauseKeyHandler = (): void => {
-    if (this.mode === 'help') this.closeHelp();
-    else if (this.mode === 'game') this.openOverlay('pause');
-    else if (this.mode === 'pause') this.closeOverlay();
-    else this.openOverlay('pause');
-  };
+  private readonly pauseKeyHandler = (): void => this.applyOverlayKey('pause');
   private readonly helpKeyHandler = (event: KeyboardEvent): void => {
     if (event.code !== 'KeyH' || event.repeat) return;
     event.preventDefault();
-    if (this.mode === 'help') this.closeHelp();
-    else this.openHelp();
+    this.applyOverlayKey('help');
   };
   private readonly keyboardDeviceHandler = (): void => this.useInputDevice('keyboardMouse');
   private readonly pointerDeviceHandler = (): void => this.useInputDevice('keyboardMouse');
@@ -76,9 +68,27 @@ export class HudScene extends Phaser.Scene {
   }
 
   public create(): void {
+    // Phaser 复用 Scene 实例，字段初始化器不会重跑。mode 残留上一局退出时的
+    // 'pause'/'map' 会让 syncHudVisibility 把常驻 HUD 整层藏掉，而只有 closeOverlay
+    // 写得回 'game'——玩家必须先开一次覆盖层才看得到 HUD。rendered* 是 diff 基准，
+    // 残留旧值会与新建的空串判等，血量、探索度、房名就永远不画。
+    this.overlay = undefined;
+    this.setMode('game');
+    this.helpReturnMode = 'game';
+    this.renderedHelpDevice = undefined;
+    this.renderedHealth = '';
+    this.renderedExploration = '';
+    this.renderedMessage = '';
+    this.renderedBoss = '';
+    this.renderedRoomLabel = '';
+    this.renderedDash = undefined;
+    this.renderedGrip = undefined;
+    this.previousGamepadMap = false;
+    this.previousGamepadPause = false;
+    this.previousGamepadHelp = false;
+
     this.session = this.registry.get(REGISTRY_KEYS.session) as GameSessionState;
     this.saveService = createBrowserSaveService();
-    this.registry.set(REGISTRY_KEYS.uiMode, 'game');
     bindFullscreenKey(this);
 
     // 图标源图是 16×16 的像素画，整数 2× 放大，和世界层的做法一致。
@@ -140,6 +150,7 @@ export class HudScene extends Phaser.Scene {
       this.explorationText,
       keyHint,
     ];
+    this.syncHudVisibility();
 
     this.input.keyboard?.on('keydown-TAB', this.mapKeyHandler);
     this.input.keyboard?.on('keydown-ESC', this.pauseKeyHandler);
@@ -155,6 +166,7 @@ export class HudScene extends Phaser.Scene {
       window.removeEventListener('blur', this.blurHandler);
       window.removeEventListener('keydown', this.helpKeyHandler);
       this.overlay?.destroy(true);
+      this.overlay = undefined;
     });
   }
 
@@ -234,26 +246,39 @@ export class HudScene extends Phaser.Scene {
         Math.abs(pad?.axes[0]?.getValue() ?? 0) > 0.24 ||
         Math.abs(pad?.axes[1]?.getValue() ?? 0) > 0.24);
     if (gamepadActive) this.useInputDevice('gamepad');
-    if (helpPressed && !this.previousGamepadHelp) {
-      if (this.mode === 'help') this.closeHelp();
-      else this.openHelp();
-    } else if (mapPressed && !this.previousGamepadMap && this.mode !== 'help') {
-      if (this.mode === 'map') this.closeOverlay();
-      else if (this.mode === 'game') this.openOverlay('map');
-    }
+    if (helpPressed && !this.previousGamepadHelp) this.applyOverlayKey('help');
+    else if (mapPressed && !this.previousGamepadMap) this.applyOverlayKey('map');
+    // help 只交给 LB 关闭：MENU 在 help 下不响应，避免一次按压同时穿过两层面板。
     if (pausePressed && !this.previousGamepadPause && this.mode !== 'help') {
-      this.pauseKeyHandler();
+      this.applyOverlayKey('pause');
     }
     this.previousGamepadMap = mapPressed;
     this.previousGamepadPause = pausePressed;
     this.previousGamepadHelp = helpPressed;
   }
 
+  /**
+   * mode 与 registry 必须一起写。它们曾经是两份独立状态：create() 只写 registry，
+   * 于是 e2e 断言的 uiMode 全程正确，而真正控制 HUD 可见性的字段留着上一局的值。
+   */
+  private setMode(next: OverlayMode): void {
+    this.mode = next;
+    this.registry.set(REGISTRY_KEYS.uiMode, next);
+  }
+
+  private applyOverlayKey(key: OverlayKey): void {
+    const action = overlayKeyAction(this.mode, key);
+    if (action.kind === 'open') {
+      if (action.mode === 'help') this.openHelp();
+      else this.openOverlay(action.mode);
+    } else if (action.kind === 'close') this.closeOverlay();
+    else if (action.kind === 'closeHelp') this.closeHelp();
+  }
+
   private openOverlay(mode: Exclude<OverlayMode, 'game'>): void {
     if (!this.scene.isActive('play') && !this.scene.isPaused('play')) return;
     if (this.mode === 'game') this.scene.pause('play');
-    this.mode = mode;
-    this.registry.set(REGISTRY_KEYS.uiMode, mode);
+    this.setMode(mode);
     this.syncHudVisibility();
     this.renderOverlay();
   }
@@ -261,8 +286,7 @@ export class HudScene extends Phaser.Scene {
   private closeOverlay(): void {
     this.overlay?.destroy(true);
     this.overlay = undefined;
-    this.mode = 'game';
-    this.registry.set(REGISTRY_KEYS.uiMode, 'game');
+    this.setMode('game');
     this.syncHudVisibility();
     const play = this.scene.get('play') as PlayScene;
     play.clearInput();
@@ -528,7 +552,7 @@ export class HudScene extends Phaser.Scene {
     if (this.mode === 'help') return;
     this.helpReturnMode = this.mode;
     if (this.mode === 'game') this.scene.pause('play');
-    this.mode = 'help';
+    this.setMode('help');
     this.renderedHelpDevice = undefined;
     this.syncHudVisibility();
     this.renderOverlay();
@@ -541,8 +565,7 @@ export class HudScene extends Phaser.Scene {
       this.closeOverlay();
       return;
     }
-    this.mode = returnMode;
-    this.registry.set(REGISTRY_KEYS.uiMode, returnMode);
+    this.setMode(returnMode);
     this.syncHudVisibility();
     this.renderOverlay();
   }

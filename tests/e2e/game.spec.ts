@@ -12,6 +12,7 @@ interface TestSnapshot {
   bossHealth: number | null;
   uiMode: string;
   combat: { player: { x: number; movementState: string } | null };
+  typography: { labels: string[] };
 }
 
 interface BrowserTestBridge {
@@ -71,6 +72,20 @@ async function runRightUntilStopped(page: Page): Promise<number> {
   return current;
 }
 
+/**
+ * 常驻 HUD 真的画出来了才算数。labels 只收录 visible 且非空串的文本，所以这一条同时
+ * 拦住两种失效：整层被 setVisible(false) 藏掉，以及 diff 缓存残留导致 setText 从未调用。
+ */
+async function expectHudVisible(page: Page): Promise<void> {
+  for (const fragment of ['探索', '/']) {
+    await expect
+      .poll(async () =>
+        (await snapshot(page)).typography.labels.some((label) => label.includes(fragment)),
+      )
+      .toBe(true);
+  }
+}
+
 async function waitForGameFrame(page: Page): Promise<void> {
   await page.evaluate(
     () =>
@@ -115,6 +130,29 @@ test('starts a new game and opens map, pause, settings and controls', async ({ p
   await waitForGameFrame(page);
   await page.keyboard.press('Escape');
   await expect.poll(async () => (await snapshot(page)).uiMode).toBe('game');
+  expect(errors).toEqual([]);
+});
+
+test('keeps the HUD visible after returning to the title and starting again', async ({ page }) => {
+  // Phaser 复用 HudScene 实例：mode 与 rendered* 不在 create() 里复位的话，第二次进游戏
+  // 常驻 HUD 会整层隐身，要先开一次覆盖层才回来。registry 的 uiMode 全程正确，
+  // 所以既有的 uiMode 断言一条都发现不了。
+  const errors = await openGame(page);
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
+
+  await clickUi(page, 480, 252);
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('play');
+  await expectHudVisible(page);
+
+  await page.keyboard.press('Escape');
+  await expect.poll(async () => (await snapshot(page)).uiMode).toBe('pause');
+  await waitForGameFrame(page);
+  await clickUiUntil(page, 480, 470, 'title', async () => (await snapshot(page)).scene);
+
+  await clickUi(page, 480, 252);
+  await expect.poll(async () => (await snapshot(page)).scene).toBe('play');
+  await expect.poll(async () => (await snapshot(page)).uiMode).toBe('game');
+  await expectHudVisible(page);
   expect(errors).toEqual([]);
 });
 
@@ -242,6 +280,9 @@ test('completes the two-ability route, ending and post-game exploration', async 
   await expect.poll(async () => (await snapshot(page)).scene).toBe('play');
   expect((await snapshot(page)).roomId).toBe('core_guardian');
   expect((await snapshot(page)).bossHealth).toBeNull();
+  // 通关后 finishBoss 把血补满，所以血量字符串与上一局的 diff 缓存相同：
+  // 缓存不复位的话数值行永远是空的，而这条路径上 mode 还是 game，覆盖层救不回来。
+  await expectHudVisible(page);
 
   // finishBoss() 把 transitioning 置为 true，而 Phaser 会复用同一个 Scene 实例：
   // 不在 create() 里复位的话，通关后回到游戏的角色完全无法操作。
