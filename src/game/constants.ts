@@ -1,6 +1,20 @@
 export const GAME_WIDTH = 480;
 export const GAME_HEIGHT = 270;
 
+/**
+ * 世界层仍在 480×270 逻辑坐标里运行：rooms.json 的全部坐标、MOVEMENT/DASH/WALL_JUMP
+ * 与 world/reachability.ts 的跳跃包络都是按这套数值调出来的，改动等于重做关卡可达性。
+ */
+export const WORLD_WIDTH = 480;
+export const WORLD_HEIGHT = 270;
+
+/**
+ * 世界相机的放大倍数，必须是整数：Camera.preRender 里
+ * `renderRoundPixels = roundPixels && Number.isInteger(zoomX) && Number.isInteger(zoomY)`，
+ * 1.5 之类的倍率会静默关掉整像素吸附，像素画就开始抖。
+ */
+export const WORLD_ZOOM = GAME_WIDTH / WORLD_WIDTH;
+
 export const COLORS = {
   void: 0x070b18,
   panel: 0x101a32,
