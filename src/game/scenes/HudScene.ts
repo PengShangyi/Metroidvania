@@ -422,14 +422,21 @@ export class HudScene extends Phaser.Scene {
       }
     }
 
+    const markers = visibleMarkers(rooms, this.session);
+    // 还没拿到的能力模块所在房间即使没探索过也要画出来：那是主线目标，
+    // 藏起来只会让被能力门挡住的玩家不知道往哪走。
+    const objectives = new Set(
+      markers.filter((marker) => marker.kind === 'ability').map((marker) => marker.roomId),
+    );
+
     const { halfWidth, halfHeight } = MAP.node;
     for (const room of rooms) {
       const raw = ROOM_MAP_LAYOUT[room.id];
       if (!raw) continue;
       const point = mapPoint(raw);
       const visibility = roomVisibility(room.id, visited, adjacency);
-      if (visibility === 'hidden') continue;
-      if (visibility === 'adjacent') {
+      if (visibility === 'hidden' && !objectives.has(room.id)) continue;
+      if (visibility !== 'visited') {
         // 只画轮廓：玩家知道那边有个房间，但还不知道里面是什么。
         graphics
           .lineStyle(2, COLORS.steel, 0.55)
@@ -453,7 +460,7 @@ export class HudScene extends Phaser.Scene {
     }
 
     // 节点标注是图元而不是文本：17 个房间挂满房名一定会撞版，而图例那一行才是解释它们的地方。
-    for (const marker of visibleMarkers(rooms, this.session)) {
+    for (const marker of markers) {
       const raw = ROOM_MAP_LAYOUT[marker.roomId];
       if (!raw) continue;
       const point = mapPoint(raw);
@@ -461,6 +468,18 @@ export class HudScene extends Phaser.Scene {
         graphics.fillStyle(COLORS.pale, 0.95).fillRect(point.x - 2, point.y - 18, 4, 8);
       } else if (marker.kind === 'pickup') {
         graphics.fillStyle(COLORS.amber, 0.95).fillCircle(point.x + 16, point.y - 12, 4);
+      } else if (marker.kind === 'ability') {
+        // 摆在左上角：磁巢同时有终端和能力模块，两个标注不能叠在一起。
+        graphics
+          .fillStyle(COLORS.spore, 0.95)
+          .fillTriangle(
+            point.x - 16,
+            point.y - 18,
+            point.x - 22,
+            point.y - 8,
+            point.x - 10,
+            point.y - 8,
+          );
       } else {
         graphics.lineStyle(2, 0xed63d6, 0.9).strokeRect(point.x - 18, point.y + 10, 8, 6);
       }
@@ -500,6 +519,7 @@ export class HudScene extends Phaser.Scene {
   /** 原先是一行挤在一起的逗号串；现在每个图例都配上它实际画出来的那个图元。 */
   private renderMapLegend(container: Phaser.GameObjects.Container): void {
     const entries = [
+      { label: '能力模块', color: COLORS.spore },
       { label: '同步终端', color: COLORS.pale },
       { label: '未取道具', color: COLORS.amber },
       { label: '能力门', color: 0xed63d6 },

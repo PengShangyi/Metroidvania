@@ -12,6 +12,7 @@ describe('adaptive help content', () => {
         '能量枪',
         '能量刃',
         '相位冲刺',
+        '磁附跃迁',
         '交互',
         '地图',
         '暂停',
@@ -35,6 +36,16 @@ describe('adaptive help content', () => {
       expect(combatRows.find((row) => row.action === '相位冲刺')?.description).toContain(
         '穿盾开核',
       );
+    }
+  });
+
+  it('两项能力都要写出地形用途，不能只写战斗用途', () => {
+    // 玩家卡在酸池和竖井前的直接原因：帮助面板把冲刺写成纯战斗技能，
+    // 磁附跃迁干脆一行都没有，于是没人知道它们也是解地形的钥匙。
+    for (const device of ['keyboardMouse', 'gamepad'] as const) {
+      const rows = HELP_CONTENT[device][0]?.rows ?? [];
+      expect(rows.find((row) => row.action === '相位冲刺')?.description).toContain('酸池');
+      expect(rows.find((row) => row.action === '磁附跃迁')?.description).toContain('墙');
     }
   });
 });

@@ -7,7 +7,7 @@ import type { RoomDefinition } from '../world/types';
  */
 export type RoomVisibility = 'visited' | 'adjacent' | 'hidden';
 
-export type MapMarkerKind = 'terminal' | 'pickup' | 'gate';
+export type MapMarkerKind = 'terminal' | 'pickup' | 'gate' | 'ability';
 
 export interface MapMarker {
   roomId: string;
@@ -49,16 +49,31 @@ export function connectionVisible(
   return visited.has(fromRoomId) || visited.has(toRoomId);
 }
 
+const ABILITY_PICKUPS = new Set(['phaseDash', 'magneticGrip']);
+
 /**
  * 标注只在走过的房间里出现——地图的作用是记录「我看到过什么还没拿」，
  * 而不是提前把没去过的地方剧透干净。已经拿走的东西不再标。
+ *
+ * 两个能力模块是唯一的例外，它们从一开始就标出来。能力是主线目标而不是可选收集品：
+ * 被能力门挡住的玩家得到的提示只有「通道需要：相位冲刺」，藏起模块的位置并不制造
+ * 悬念，只是让人不知道往哪走。拿到之后标注消失，和其他拾取物一致。
  */
 export function visibleMarkers(rooms: RoomDefinition[], session: GameSessionState): MapMarker[] {
   const markers: MapMarker[] = [];
   for (const room of rooms) {
+    const uncollectedAbility = room.pickups.some(
+      (pickup) => ABILITY_PICKUPS.has(pickup.type) && !session.collectedPickups.has(pickup.id),
+    );
+    if (uncollectedAbility) markers.push({ roomId: room.id, kind: 'ability' });
     if (!session.visitedRooms.has(room.id)) continue;
     if (room.checkpoint) markers.push({ roomId: room.id, kind: 'terminal' });
-    if (room.pickups.some((pickup) => !session.collectedPickups.has(pickup.id))) {
+    // 能力模块已经有自己的标注了，别在同一个房间上再画一个通用道具点。
+    if (
+      room.pickups.some(
+        (pickup) => !ABILITY_PICKUPS.has(pickup.type) && !session.collectedPickups.has(pickup.id),
+      )
+    ) {
       markers.push({ roomId: room.id, kind: 'pickup' });
     }
     if (room.exits.some((exit) => exit.requirement !== 'none')) {

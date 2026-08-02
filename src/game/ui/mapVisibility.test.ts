@@ -44,32 +44,61 @@ describe('地图战争迷雾', () => {
 });
 
 describe('地图标注', () => {
-  it('没走过的房间不标注', () => {
+  it('除了能力模块，没走过的房间不标注', () => {
     const session = createNewSession();
     session.visitedRooms = new Set(['vestibule_dock']);
-    const markers = visibleMarkers(rooms, session);
-    expect(markers.every((marker) => marker.roomId === 'vestibule_dock')).toBe(true);
+    const strays = visibleMarkers(rooms, session).filter(
+      (marker) => marker.roomId !== 'vestibule_dock' && marker.kind !== 'ability',
+    );
+    expect(strays).toEqual([]);
   });
 
   it('标出终端、未拾取的道具与能力门', () => {
     const session = createNewSession();
-    session.visitedRooms = new Set(['vestibule_dock', 'vestibule_vault', 'vestibule_shaft']);
+    session.visitedRooms = new Set(['vestibule_dock', 'vestibule_depot', 'vestibule_shaft']);
     const kinds = (roomId: string): string[] =>
       visibleMarkers(rooms, session)
         .filter((marker) => marker.roomId === roomId)
         .map((marker) => marker.kind);
     expect(kinds('vestibule_dock')).toContain('terminal');
-    expect(kinds('vestibule_vault')).toContain('pickup');
+    expect(kinds('vestibule_depot')).toContain('pickup');
     expect(kinds('vestibule_shaft')).toContain('gate');
   });
 
   it('拾走之后就不再标注道具', () => {
     const session = createNewSession();
-    session.visitedRooms = new Set(['vestibule_vault']);
+    session.visitedRooms = new Set(['vestibule_depot']);
     expect(visibleMarkers(rooms, session).some((marker) => marker.kind === 'pickup')).toBe(true);
-    for (const pickup of rooms.find((room) => room.id === 'vestibule_vault')!.pickups) {
+    for (const pickup of rooms.find((room) => room.id === 'vestibule_depot')!.pickups) {
       session.collectedPickups.add(pickup.id);
     }
     expect(visibleMarkers(rooms, session).some((marker) => marker.kind === 'pickup')).toBe(false);
+  });
+
+  it('两个能力模块从一开始就标出来，拿到之后消失', () => {
+    // 有意推翻「不提前剧透」：能力是主线目标不是可选收集品，被能力门挡住的玩家
+    // 只会收到「通道需要：相位冲刺」，藏起模块位置只让人不知道往哪走。
+    const session = createNewSession();
+    session.visitedRooms = new Set(['vestibule_dock']);
+    const abilityRooms = (): string[] =>
+      visibleMarkers(rooms, session)
+        .filter((marker) => marker.kind === 'ability')
+        .map((marker) => marker.roomId);
+    expect(abilityRooms()).toEqual(['vestibule_vault', 'bioforge_cradle']);
+
+    session.collectedPickups.add('ability-phase-dash');
+    expect(abilityRooms()).toEqual(['bioforge_cradle']);
+    session.collectedPickups.add('ability-magnetic-grip');
+    expect(abilityRooms()).toEqual([]);
+  });
+
+  it('能力模块房间不会再多画一个通用道具点', () => {
+    const session = createNewSession();
+    session.visitedRooms = new Set(['vestibule_vault']);
+    const kinds = visibleMarkers(rooms, session)
+      .filter((marker) => marker.roomId === 'vestibule_vault')
+      .map((marker) => marker.kind);
+    expect(kinds).toContain('ability');
+    expect(kinds).not.toContain('pickup');
   });
 });

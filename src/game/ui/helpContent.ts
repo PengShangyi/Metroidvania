@@ -21,7 +21,10 @@ export const HELP_CONTENT: Record<InputDevice, readonly HelpGroup[]> = {
         { action: '跳跃', control: 'SPACE', description: '按住增高' },
         { action: '能量枪', control: 'J', description: '墙跳贯穿' },
         { action: '能量刃', control: 'K', description: '80ms 反射' },
-        { action: '相位冲刺', control: 'SHIFT', description: '穿盾开核/无敌' },
+        // 两项能力先前只写了战斗用途，磁附跃迁更是一行都没有——玩家因此看不出它们
+        // 也是解地形的钥匙，卡在酸池和竖井前不知道该找什么。
+        { action: '相位冲刺', control: 'SHIFT', description: '越酸池/穿盾开核' },
+        { action: '磁附跃迁', control: '贴墙 SPACE', description: '贴墙下滑与反跳' },
       ],
     },
     {
@@ -43,7 +46,8 @@ export const HELP_CONTENT: Record<InputDevice, readonly HelpGroup[]> = {
         { action: '跳跃', control: 'A', description: '按住增高' },
         { action: '能量枪', control: 'X', description: '墙跳贯穿' },
         { action: '能量刃', control: 'Y', description: '80ms 反射' },
-        { action: '相位冲刺', control: 'B', description: '穿盾开核/无敌' },
+        { action: '相位冲刺', control: 'B', description: '越酸池/穿盾开核' },
+        { action: '磁附跃迁', control: '贴墙 A', description: '贴墙下滑与反跳' },
       ],
     },
     {

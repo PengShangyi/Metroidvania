@@ -84,7 +84,7 @@ export const MAP = {
   ],
   regionLabelY: 130,
   current: { y: 430 },
-  legend: { y: 484, entryX: [180, 440, 700], swatch: 16, labelGap: 10 },
+  legend: { y: 484, entryX: [120, 330, 540, 750], swatch: 16, labelGap: 10 },
 } as const;
 
 export const HELP = {
@@ -92,7 +92,8 @@ export const HELP = {
   groupTitle: { y: 170 },
   columnX: [44, 492],
   firstRowY: 204,
-  rowGap: 56,
+  /** 六行 × 44 高的胶囊要落在 494 的页脚之上：204 + 5×48 + 44 = 488。 */
+  rowGap: 48,
   /** 胶囊宽 160 + 16 间隙；剩下的宽度给动作说明换行。 */
   descriptionOffsetX: CHIP.width + 16,
   descriptionWrap: 224,
