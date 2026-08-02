@@ -260,10 +260,14 @@ export class HudScene extends Phaser.Scene {
   /**
    * mode 与 registry 必须一起写。它们曾经是两份独立状态：create() 只写 registry，
    * 于是 e2e 断言的 uiMode 全程正确，而真正控制 HUD 可见性的字段留着上一局的值。
+   *
+   * help 是唯一一个对外值比 mode 更细的模式：e2e 要靠 help-keyboardMouse /
+   * help-gamepad 区分两套说明。这个覆盖参数就是为它留的，好过让 renderOverlay
+   * 绕过这里再写一次 registry——那正是当初两份状态走散的方式。
    */
-  private setMode(next: OverlayMode): void {
+  private setMode(next: OverlayMode, published: string = next): void {
     this.mode = next;
-    this.registry.set(REGISTRY_KEYS.uiMode, next);
+    this.registry.set(REGISTRY_KEYS.uiMode, published);
   }
 
   private applyOverlayKey(key: OverlayKey): void {
@@ -314,7 +318,7 @@ export class HudScene extends Phaser.Scene {
     this.overlay = container;
     if (this.mode === 'help') {
       this.renderedHelpDevice = getInputDevice(this.registry);
-      this.registry.set(REGISTRY_KEYS.uiMode, `help-${this.renderedHelpDevice}`);
+      this.setMode('help', `help-${this.renderedHelpDevice}`);
       renderHelpPanel(this, container, this.renderedHelpDevice);
       const close = this.add
         .text(OVERLAY.close.x, OVERLAY.close.y, '关闭 ×', {
@@ -413,9 +417,11 @@ export class HudScene extends Phaser.Scene {
         if (connections.has(key)) continue;
         connections.add(key);
         if (!connectionVisible(room.id, exit.targetRoomId, visited)) continue;
-        const start = mapPoint(ROOM_MAP_LAYOUT[room.id] ?? { x: 0, y: 0 });
-        const end = mapPoint(ROOM_MAP_LAYOUT[exit.targetRoomId] ?? { x: 0, y: 0 });
-        if (!ROOM_MAP_LAYOUT[room.id] || !ROOM_MAP_LAYOUT[exit.targetRoomId]) continue;
+        const from = ROOM_MAP_LAYOUT[room.id];
+        const to = ROOM_MAP_LAYOUT[exit.targetRoomId];
+        if (!from || !to) continue;
+        const start = mapPoint(from);
+        const end = mapPoint(to);
         const explored = visited.has(room.id) && visited.has(exit.targetRoomId);
         graphics.lineStyle(2, explored ? COLORS.cyan : COLORS.steel, explored ? 0.65 : 0.3);
         graphics.lineBetween(start.x, start.y, end.x, end.y);
