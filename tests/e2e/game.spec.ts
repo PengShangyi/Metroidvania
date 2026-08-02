@@ -228,26 +228,28 @@ test('reopens help without switching input device', async ({ page }) => {
   const errors = await openGame(page);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
 
-  // 标题页走 scene.start 替换场景。
-  for (let round = 0; round < 2; round += 1) {
+  // 每次开合都等场景真正切完再按下一次：uiMode 先于 scene.stop/resume 写入，
+  // 只等它的话下一次按键会落在切换过程中被吞掉。
+  const toggleHelp = async (settledScene: string): Promise<void> => {
     await page.keyboard.press('h');
     await expect.poll(async () => (await snapshot(page)).uiMode).toBe('help-keyboardMouse');
+    await expect.poll(async () => (await snapshot(page)).scene).toBe('help');
     await expectLabel(page, '磁附跃迁');
+    await waitForGameFrame(page);
     await page.keyboard.press('h');
-    await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
-  }
+    await expect.poll(async () => (await snapshot(page)).scene).toBe(settledScene);
+    await waitForGameFrame(page);
+  };
 
-  // 训练关走 launch + resumeScene，且开help时它和 tutorial-hud 都已暂停：
+  // 标题页走 scene.start 替换场景。
+  for (let round = 0; round < 2; round += 1) await toggleHelp('title');
+
+  // 训练关走 launch + resumeScene，且开 help 时它和 tutorial-hud 都已暂停：
   // 面板画不出来的话玩家看到的就是画面卡死。
   await page.keyboard.press('t');
   await expect.poll(async () => (await snapshot(page)).scene).toBe('tutorial');
-  for (let round = 0; round < 2; round += 1) {
-    await page.keyboard.press('h');
-    await expect.poll(async () => (await snapshot(page)).uiMode).toBe('help-keyboardMouse');
-    await expectLabel(page, '磁附跃迁');
-    await page.keyboard.press('h');
-    await expect.poll(async () => (await snapshot(page)).uiMode).toBe('game');
-  }
+  for (let round = 0; round < 2; round += 1) await toggleHelp('tutorial');
+  await expect.poll(async () => (await snapshot(page)).uiMode).toBe('game');
   expect(errors).toEqual([]);
 });
 
