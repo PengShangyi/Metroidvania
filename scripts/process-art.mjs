@@ -46,8 +46,11 @@ await Promise.all([
     .resize(480, 270, { fit: 'cover', position: 'centre', kernel: sharp.kernel.nearest })
     .webp({ quality: 84, smartSubsample: false, effort: 6 })
     .toFile(`${publicAssets}backgrounds/reactor.webp`),
+  // 标题图只被 TitleScene 用，而 TitleScene 现在是 960×540 的 UI 层；
+  // 三张区域背景仍是 480×270 的世界层资源，由 zoom 2 相机整数放大。
+  // 源图 1672×941，960×540 依然是降采样，不是拉伸。
   sharp(`${source}title-key-art.png`)
-    .resize(480, 270, { fit: 'cover', position: 'centre', kernel: sharp.kernel.nearest })
+    .resize(960, 540, { fit: 'cover', position: 'centre', kernel: sharp.kernel.nearest })
     .webp({ quality: 86, smartSubsample: false, effort: 6 })
     .toFile(`${publicAssets}backgrounds/title.webp`),
   sharp(`${prepared}iya-cutout.png`)
@@ -75,7 +78,7 @@ const expectations = new Map([
   [`${publicAssets}backgrounds/vestibule.webp`, [480, 270]],
   [`${publicAssets}backgrounds/bioforge.webp`, [480, 270]],
   [`${publicAssets}backgrounds/reactor.webp`, [480, 270]],
-  [`${publicAssets}backgrounds/title.webp`, [480, 270]],
+  [`${publicAssets}backgrounds/title.webp`, [960, 540]],
   [`${publicAssets}sprites/iya-portrait.png`, [undefined, 384]],
   [`${publicAssets}sprites/enemy-lineup.png`, [768, undefined]],
   [`${publicAssets}sprites/core-guardian.png`, [72, 72]],

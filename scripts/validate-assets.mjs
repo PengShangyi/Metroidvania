@@ -16,6 +16,14 @@ const proseFontPath = join(root, 'fonts', 'star-echo-sans-sc-subset.woff2');
 const proseCharsetPath = join(root, 'fonts', 'star-echo-sans-sc-subset.charset.txt');
 const proseFontLicensePath = join(projectRoot, 'docs', 'licenses', 'noto-sans-sc', 'OFL.txt');
 const proseFontMaxBytes = 512 * 1024;
+// 世界层背景是 480×270、由 zoom 2 相机整数放大；标题图是 UI 层资源，原生 960×540。
+// 这张表原先只在 process-art.mjs 里，而那个脚本从不在 CI 里跑，等于没人拦着两者漂移。
+const BACKGROUND_SIZES = {
+  'backgrounds/vestibule.webp': [480, 270],
+  'backgrounds/bioforge.webp': [480, 270],
+  'backgrounds/reactor.webp': [480, 270],
+  'backgrounds/title.webp': [960, 540],
+};
 const ENEMY_SPRITE_SIZES = {
   'sprites/crawler.png': [24, 16],
   'sprites/crawler-shielded.png': [24, 16],
@@ -68,6 +76,13 @@ for (const file of imageFiles) {
     (metadata.width !== 72 || metadata.height !== 72)
   ) {
     throw new Error('守核者运行时轮廓必须为 72×72px');
+  }
+  const backgroundSize = BACKGROUND_SIZES[assetPath];
+  if (
+    backgroundSize &&
+    (metadata.width !== backgroundSize[0] || metadata.height !== backgroundSize[1])
+  ) {
+    throw new Error(`${assetPath} 必须为 ${backgroundSize[0]}×${backgroundSize[1]}px`);
   }
   // 敌人贴图直接顶替同名的程序化占位纹理，尺寸必须与碰撞盒的假设一致。
   const enemySize = ENEMY_SPRITE_SIZES[assetPath];

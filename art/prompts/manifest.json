@@ -97,7 +97,7 @@
       "status": "selected",
       "source": "art/source/title-key-art.png",
       "outputs": ["public/assets/backgrounds/title.webp"],
-      "processing": "Sharp 480x270 nearest-neighbour cover crop and WebP quality 86"
+      "processing": "Sharp 960x540 nearest-neighbour cover crop and WebP quality 86（标题图属于 960×540 的 UI 层；三张区域背景仍是 480×270 的世界层资源）"
     }
   ]
 }
