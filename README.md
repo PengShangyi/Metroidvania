@@ -8,7 +8,7 @@
 
 项目面向桌面浏览器，不需要后端、数据库或账号。完整环境要求为 Node.js 24 LTS
 （`>=24.14.0`）、pnpm `11.9.0`、Git 和 Git LFS。建议使用 960×540 或更大的 16:9
-窗口；最低 `480×270` 视口也经过中文清晰度验收。项目不支持触屏。
+窗口（画布原生分辨率即 960×540）；更小的窗口会按 16:9 等比缩小，仍可运行但中文会随之变糊。项目不支持触屏。
 
 ### 第 1 步：安装 Git 和 Git LFS
 
@@ -182,7 +182,7 @@ pnpm check              # 除浏览器旅程外的统一质量门
 - `art/source/`：Git LFS 管理的 7 张高分辨率生成源图。
 - `art/prompts/manifest.json`：完整生成提示词、约束和处理记录。
 - `public/assets/`：只包含裁切、限色和优化后的运行时资源。
-- `docs/qa/`：960×540 发布画面及 480×270 中文与帮助页视觉基线。
+- `docs/qa/`：960×540 原生分辨率的发布画面与中文排版视觉基线。
 
 详细规格见 [游戏设计](docs/GAME_DESIGN.md)、[视觉规范](docs/ART_BIBLE.md)、[资源策略](docs/ASSET_POLICY.md)、[制作与 AI 披露](docs/CREDITS.md)和[发布验收记录](docs/RELEASE_CHECKLIST.md)。
 

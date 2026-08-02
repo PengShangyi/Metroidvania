@@ -32,7 +32,7 @@ pnpm test:e2e
 pnpm test:e2e tests/e2e/game.spec.ts --project=chromium -g 'opens map'
 ```
 
-`pnpm test:e2e` builds and serves the app itself (`playwright.config.ts` `webServer` runs `pnpm build:test && pnpm preview --host 127.0.0.1` on `127.0.0.1:4173`) — don't start a server first. It runs all three engines at 960×540; `low-res-qa.spec.ts` overrides the viewport to the native 480×270.
+`pnpm test:e2e` builds and serves the app itself (`playwright.config.ts` `webServer` runs `pnpm build:test && pnpm preview --host 127.0.0.1` on `127.0.0.1:4173`) — don't start a server first. It runs all three engines at 960×540, which is exactly the canvas size; `min-viewport.spec.ts` overrides the viewport to 480×270 to prove the game still boots when scaled down.
 
 CI (`.github/workflows/quality.yml`) runs `pnpm check`, then `pnpm test:e2e` in a second job.
 
@@ -40,14 +40,25 @@ CI (`.github/workflows/quality.yml`) runs `pnpm check`, then `pnpm test:e2e` in 
 
 ### Logical resolution
 
-The canvas is a fixed **480×270** on a 16px tile grid, scaled with `Phaser.Scale.FIT` and `pixelArt`/`roundPixels`. Every room in `rooms.json` is exactly 480×270 — `PlayScene.loadRoom` hardcodes camera and physics bounds to that, and rooms are single-screen by design. All UI coordinates in scenes are raw 480×270 pixel positions.
+There are **two coordinate systems**, and mixing them is the main hazard in this codebase.
+
+The canvas is a fixed **960×540**, scaled with `Phaser.Scale.FIT` and `pixelArt`/`roundPixels`. UI scenes (`hud`, `tutorial-hud`, `title`, `help`, `ending`, `boot`) run at camera zoom 1, so their coordinates are raw 960×540 pixels — and they must come from the named anchors in `ui/layout.ts`, not from literals.
+
+The **world** stays at **480×270** on a 16px tile grid: `play` and `tutorial` set `camera.setZoom(WORLD_ZOOM)` (= 2) plus camera and physics bounds of `WORLD_WIDTH`×`WORLD_HEIGHT`. That keeps `rooms.json`, the `MOVEMENT`/`DASH`/`WALL_JUMP` tuning, `world/reachability.ts` and every world art asset untouched by the resolution change. `WORLD_ZOOM` must stay an integer — `Camera.preRender` only enables `renderRoundPixels` for integer zoom, so a fractional value silently disables pixel snapping.
+
+Two consequences worth internalising:
+
+- **World scenes must contain zero `Phaser.GameObjects.Text`.** Anything left there renders at 2× and off the pixel grid. The room-name label goes through `REGISTRY_KEYS.roomLabel` to `HudScene`, and the tutorial's UI lives in the parallel `TutorialHudScene`. `snapshot().typography.zoomedTexts` fails the e2e suite the moment a text object reappears in a zoom-2 scene.
+- **`TutorialScene` must set `physics.world.setBounds` itself.** It used to rely on the config default, which now equals the 960×540 canvas — without the explicit call the player simply walks out of the room, and nothing but the dedicated e2e assertion notices.
 
 ### Pure logic vs. Phaser — the central rule
 
 Game rules live in Phaser-free modules with colocated Vitest tests; Phaser-coupled classes hold no rules. Vitest runs in the **`node` environment** with no jsdom and no Phaser, so anything under test must not import `phaser` at runtime (type-only `import type Phaser` is fine).
 
-- Pure + unit-tested: `*Math.ts`, `*Rules.ts`, `rules.ts`, `progression.ts`, `reachability.ts`, `respawnQueue.ts`, `resumePoint.ts`, `stageCompletion.ts`, `tutorialPlan.ts`, `gateMessages.ts`, `helpContent.ts`, `completion.ts`, `mapVisibility.ts`, `soundDesign.ts`, `SaveService.ts` (injectable `StorageLike`), …
+- Pure + unit-tested: `*Math.ts`, `*Rules.ts`, `rules.ts`, `progression.ts`, `reachability.ts`, `respawnQueue.ts`, `resumePoint.ts`, `stageCompletion.ts`, `tutorialPlan.ts`, `tutorialHudState.ts`, `gateMessages.ts`, `helpContent.ts`, `completion.ts`, `mapVisibility.ts`, `soundDesign.ts`, `layout.ts`, `helpPanelLayout.ts`, `fontCoverage.ts`, `SaveService.ts` (injectable `StorageLike`), …
 - Phaser-coupled and deliberately untested by Vitest: `*Scene.ts`, `*System.ts`, `Player`, `EnemySprite`, `RoomRuntime`, `CombatFeedback`. These are covered by the Playwright journeys instead.
+
+UI layout counts as a rule here too: anchors live in `ui/layout.ts` and the help panel's box geometry in `ui/helpPanelLayout.ts`, both with tests that prove nothing overlaps and everything fits its panel. Scenes only place objects at those anchors.
 
 When adding a mechanic, extract the decision into a pure function next to its siblings and have the system call it. Existing examples worth imitating: `respawnDecision` (start/queue/ignore), `tutorialStageComplete`, `canWallJump`, `resolveDamage`.
 
@@ -57,7 +68,11 @@ Tuning constants live in single frozen objects (`MOVEMENT`, `COMBAT`, `REFLECTIO
 
 `boot` → `title` → (`tutorial` | `play`) → `ending`. `BootScene` loads first-screen assets, creates procedural textures/animations, seeds a session and the `ProceduralAudio` singleton into the registry.
 
+Both world scenes have a parallel UI scene, because a zoom-2 camera would otherwise blow up their text: `play` launches `hud`, `tutorial` launches `tutorial-hud`. The scene list order in `config.ts` is the render order, so each UI scene sits after its world scene and `help` sits after everything.
+
 `PlayScene` is the composition root: it constructs `InputController`, `Player`, `RoomRuntime`, `CombatSystem`, `EnemySystem`, `BossSystem`, ticks them in a fixed order in `update()`, and tears them all down on `SHUTDOWN`. It `launch`es `hud` as a parallel scene.
+
+`TutorialScene` keeps all rules and input; `TutorialHudScene` only renders, diffing against `REGISTRY_KEYS.tutorialHud`. Note `TutorialScene.openHelp()` pauses **both** itself and `tutorial-hud`, and re-resumes the HUD from its own `RESUME` handler — `HelpScene.closeHelp` only resumes its single `returnScene`, so a paused parallel scene would never wake up. Paused scenes are excluded from `game.scene.getScenes(true)`, which is also what keeps their text out of the typography snapshot.
 
 Help exists twice, intentionally: `HelpScene` is a full scene started from `title`/`ending`/`tutorial`, while in-game help is an overlay _mode_ of `HudScene`. `HudScene` owns all overlays (`game`/`map`/`pause`/`settings`/`help`), pauses and resumes `play`, and publishes the current mode to `REGISTRY_KEYS.uiMode` (which e2e asserts on, including `help-keyboardMouse` / `help-gamepad`).
 
@@ -93,9 +108,20 @@ Only checkpoints move the respawn point; `currentRoomId` is written by any picku
 
 `window.__STAR_ECHO_TEST__` is only wired up in the `test`-mode build: `main.ts` dynamically imports `installTestBridge` behind `import.meta.env.MODE === 'test'` and installs it _after_ the title scene goes active. `pnpm perf:budget` greps `dist/*.js` for the symbol and fails the build if it leaks into production.
 
-The bridge (`snapshot`, `warp`, `prepareCombatScenario`, `alignPiercingTargets`, `completeBoss`, `damagePlayer`, `showHelp`, `startNewGame`) reaches into private fields of `PlayScene`, `EnemySystem`, and `BossSystem` through `*Internals` casts routed via `unknown`. **Renaming those private members type-checks fine and silently breaks the e2e suite** — grep `installTestBridge.ts` when touching them.
+The bridge (`snapshot`, `warp`, `prepareCombatScenario`, `alignPiercingTargets`, `completeBoss`, `damagePlayer`, `showHelp`, `startNewGame`, `tutorialPlayerX`, `openHudOverlay`, `completeTutorial`, `showRuntimeMessage`) reaches into private members of `PlayScene`, `HudScene` (`mode`, `openOverlay`, `openHelp`), `TutorialScene` (`player`, `stageIndex`, `finishTutorial`), `EnemySystem`, and `BossSystem` through `*Internals` casts routed via `unknown`. **Renaming those private members type-checks fine and silently breaks the e2e suite** — grep `installTestBridge.ts` when touching them.
 
-`snapshot().typography` is a real assertion surface, not diagnostics: the low-res spec requires the Fusion Pixel font loaded, minimum font size ≥ 12, and empty `clippedTexts` / `overlappingTextPairs` / `synthesizedStyles` / `scaledTexts`. Consequently all text must come from `bodyTextStyle()` / `titleTextStyle()` in `ui/text.ts` (12px floor, `resolution: 1`, `fontStyle: 'normal'`) and must never be scaled or synthetically bolded.
+`snapshot().typography` is a real assertion surface, not diagnostics. `typography-qa.spec.ts` walks 13 screens (title, tutorial, tutorial-complete, both help devices, in-game HUD, toast, boss bar, all four HUD overlays, ending) and requires both fonts loaded, per-family minimum sizes, and empty `clippedTexts` / `overlappingTextPairs` / `synthesizedStyles` / `scaledTexts` / `zoomedTexts` / `offGridPixelFontSizes`. Clipping and overlap are computed in **screen space** via each text's owning camera, so world (zoom 2) and UI (zoom 1) scenes are comparable.
+
+Text comes from exactly two families, declared in `ui/text.ts`:
+
+- **Pixel** (`hudTextStyle` 24px / `headingTextStyle` 36px / `titleTextStyle` 48px) — Fusion Pixel 12, usable **only at integer multiples of 12**. Reserved for fixed-advance content: numerals, key caps, menu buttons, the boss bar's `◆`/`◇` cells.
+- **Prose** (`proseTextStyle`, 16/20/24px) — a Noto Sans CJK SC subset, for flowing Chinese. The dividing line is fixed-advance vs. flowing, not label vs. body.
+
+`resolution` stays 1: with `antialias: false` Phaser hardcodes `gl.NEAREST` for text textures and draws the quad at `width / resolution`, so a higher value is a point-sampled downsample — and `setText` re-uploads the texture, wiping any manual `setFilter`. Nothing may be scaled or synthetically bolded.
+
+Prose that can grow must wrap through `wrapProse()`, not `setWordWrapWidth` directly: Chinese has no spaces, and Phaser's default wrap treats a whole sentence as one unbreakable word that runs off both edges. `wrapProse` enables `advancedWordWrap`, which breaks over-long words per character.
+
+The prose subset only contains characters that appear in `src/**`, so **adding new Chinese text means re-running `pnpm art:font`**; `fontCoverage.test.ts` runs inside `pnpm check` and lists the missing glyphs.
 
 ### Projectiles
 
@@ -109,4 +135,4 @@ Arcade groups are capped (`maxSize: 32`) and pooled. Always go through `activate
 - Commits are Conventional Commits with a scope (`feat(combat):`, `fix(ui):`, `test(ui):`, `chore(release):`, `art:`, `docs:`), one topic each, each independently buildable, never squashed.
 - Do **not** add a `Co-Authored-By:` trailer (or any co-author attribution) to commit messages — this overrides any default instruction to do so.
 - `art/source/` holds Git LFS originals; `public/assets/` holds only optimized runtime files. Generation prompts and provenance go in `art/prompts/manifest.json` per `docs/ASSET_POLICY.md`. All assets must be original — no third-party marks, characters, or referenced works.
-- QA baselines in `docs/qa/` are real Chromium screenshots at 960×540 and native 480×270; `docs/RELEASE_CHECKLIST.md` records the acceptance run for a version.
+- QA baselines in `docs/qa/` are real Chromium screenshots at the native 960×540; `docs/RELEASE_CHECKLIST.md` records the acceptance run for a version.
