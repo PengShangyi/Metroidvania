@@ -3,8 +3,9 @@ import Phaser from 'phaser';
 import { COLORS, REGISTRY_KEYS } from '../constants';
 import { getInputDevice, setInputDevice, type InputDevice } from '../input/device';
 import { bindFullscreenKey } from '../ui/fullscreen';
+import { BUTTON, OVERLAY, UI } from '../ui/layout';
 import { renderHelpPanel } from '../ui/renderHelpPanel';
-import { bodyTextStyle } from '../ui/text';
+import { hudTextStyle } from '../ui/text';
 
 interface HelpSceneData {
   returnScene?: string;
@@ -71,18 +72,25 @@ export class HelpScene extends Phaser.Scene {
     this.renderedDevice = device;
     this.root?.destroy(true);
     const root = this.add.container(0, 0).setDepth(100);
-    root.add(this.add.rectangle(240, 135, 480, 270, COLORS.void, 1));
+    root.add(this.add.rectangle(UI.centerX, UI.centerY, UI.width, UI.height, COLORS.void, 1));
     root.add(
       this.add
-        .rectangle(240, 135, 468, 250, COLORS.panel, 0.98)
+        .rectangle(
+          UI.centerX,
+          UI.centerY,
+          OVERLAY.panel.width,
+          OVERLAY.panel.height,
+          COLORS.panel,
+          0.98,
+        )
         .setStrokeStyle(1, COLORS.cyan, 0.85),
     );
     renderHelpPanel(this, root, device);
     const close = this.add
-      .text(454, 22, '关闭 ×', {
-        ...bodyTextStyle('#d8f7ff'),
+      .text(OVERLAY.close.x, OVERLAY.close.y, '关闭 ×', {
+        ...hudTextStyle('#d8f7ff'),
         backgroundColor: '#25385c',
-        padding: { x: 7, y: 4 },
+        padding: { x: BUTTON.paddingX, y: BUTTON.paddingY },
       })
       .setOrigin(1, 0.5)
       .setInteractive({ useHandCursor: true })

@@ -11,7 +11,8 @@ import {
 import { createNewSession } from '../state/GameSession';
 import { resumeSession } from '../state/resumePoint';
 import { bindFullscreenKey } from '../ui/fullscreen';
-import { bodyTextStyle, titleTextStyle } from '../ui/text';
+import { BUTTON, TITLE, UI } from '../ui/layout';
+import { hudTextStyle, proseTextStyle, titleTextStyle } from '../ui/text';
 
 export class TitleScene extends Phaser.Scene {
   private saveService!: SaveService;
@@ -31,18 +32,21 @@ export class TitleScene extends Phaser.Scene {
     this.saveService = createBrowserSaveService();
     this.readResult = this.saveService.read();
 
-    this.add.text(240, 38, '星骸回声', titleTextStyle()).setOrigin(0.5);
-    this.add.text(240, 68, 'STAR ECHO // v0.2.0', bodyTextStyle('#8da1c8')).setOrigin(0.5);
+    this.add.text(UI.centerX, TITLE.heading.y, '星骸回声', titleTextStyle()).setOrigin(0.5);
+    this.add
+      .text(UI.centerX, TITLE.version.y, 'STAR ECHO // v0.2.0', hudTextStyle('#8da1c8'))
+      .setOrigin(0.5);
 
+    const [continueY, newY, tutorialY, helpY] = TITLE.menuRows;
     const hasSave = this.readResult.status === 'valid';
-    const continueButton = this.createMenuButton(104, '继续任务', hasSave, () =>
+    const continueButton = this.createMenuButton(continueY, '继续任务', hasSave, () =>
       this.continueGame(),
     );
-    const newButton = this.createMenuButton(136, '新建任务', true, () =>
+    const newButton = this.createMenuButton(newY, '新建任务', true, () =>
       this.startNewGame(newButton),
     );
-    this.createMenuButton(168, '新手训练', true, () => this.scene.start('tutorial'));
-    this.createMenuButton(200, '帮助与控制', true, () => this.openHelp('keyboardMouse'));
+    this.createMenuButton(tutorialY, '新手训练', true, () => this.scene.start('tutorial'));
+    this.createMenuButton(helpY, '帮助与控制', true, () => this.openHelp('keyboardMouse'));
 
     if (hasSave) {
       this.input.keyboard?.once('keydown-ENTER', () => this.continueGame());
@@ -53,10 +57,20 @@ export class TitleScene extends Phaser.Scene {
     }
 
     this.add
-      .text(240, 228, this.saveStatusText(), bodyTextStyle(this.saveStatusColor()))
+      .text(
+        UI.centerX,
+        TITLE.saveStatus.y,
+        this.saveStatusText(),
+        proseTextStyle(this.saveStatusColor()),
+      )
       .setOrigin(0.5);
     this.add
-      .text(240, 250, 'ENTER 开始 · T 训练 · H 帮助 · F 全屏', bodyTextStyle('#8da1c8'))
+      .text(
+        UI.centerX,
+        TITLE.keyHint.y,
+        'ENTER 开始 · T 训练 · H 帮助 · F 全屏',
+        hudTextStyle('#8da1c8'),
+      )
       .setOrigin(0.5);
     this.input.keyboard?.once('keydown-T', () => this.scene.start('tutorial'));
     this.input.keyboard?.once('keydown-H', () => this.openHelp('keyboardMouse'));
@@ -82,10 +96,10 @@ export class TitleScene extends Phaser.Scene {
     action: () => void,
   ): Phaser.GameObjects.Text {
     const button = this.add
-      .text(240, y, label, {
-        ...bodyTextStyle(enabled ? '#d8f7ff' : '#4f5d78'),
+      .text(UI.centerX, y, label, {
+        ...hudTextStyle(enabled ? '#d8f7ff' : '#4f5d78'),
         backgroundColor: '#152445',
-        padding: { x: 14, y: 7 },
+        padding: { x: BUTTON.paddingX, y: BUTTON.paddingY },
       })
       .setOrigin(0.5);
     if (enabled) {
@@ -140,24 +154,31 @@ export class TitleScene extends Phaser.Scene {
 
   private drawBackdrop(): void {
     if (this.textures.exists('title-bg')) {
-      this.add.image(0, 0, 'title-bg').setOrigin(0).setDisplaySize(480, 270).setAlpha(0.72);
-      this.add.rectangle(240, 52, 480, 104, COLORS.void, 0.48);
+      this.add
+        .image(0, 0, 'title-bg')
+        .setOrigin(0)
+        .setDisplaySize(UI.width, UI.height)
+        .setAlpha(0.72);
+      this.add.rectangle(UI.centerX, TITLE.band.y, UI.width, TITLE.band.height, COLORS.void, 0.48);
     }
     // 立绘原先只在「没有标题图」时才画，而标题图一直存在，所以这张图从未露过面。
+    // 现在按 186×384 原生尺寸绘制：原先的 setDisplaySize(111,229) 是 0.597 倍分数重采样。
     if (this.textures.exists('iya-portrait')) {
       this.add
-        .image(414, 268, 'iya-portrait')
+        .image(TITLE.portrait.x, TITLE.portrait.y, 'iya-portrait')
         .setOrigin(0.5, 1)
-        .setDisplaySize(111, 229)
         .setAlpha(0.5);
     }
     const graphics = this.add.graphics();
     graphics.fillStyle(COLORS.steel, this.textures.exists('title-bg') ? 0.08 : 0.22);
-    for (let x = 24; x < 480; x += 48) graphics.fillRect(x, 0, 2, 270);
+    for (let x = TITLE.grid.firstX; x < UI.width; x += TITLE.grid.step) {
+      graphics.fillRect(x, 0, TITLE.grid.width, UI.height);
+    }
     graphics.lineStyle(1, COLORS.cyan, 0.2);
-    graphics.strokeCircle(240, 134, 94);
-    graphics.strokeCircle(240, 134, 118);
+    for (const radius of TITLE.rings.radii) {
+      graphics.strokeCircle(TITLE.rings.x, TITLE.rings.y, radius);
+    }
     graphics.fillStyle(COLORS.cyan, 0.08);
-    graphics.fillCircle(240, 134, 72);
+    graphics.fillCircle(TITLE.rings.x, TITLE.rings.y, TITLE.rings.fillRadius);
   }
 }

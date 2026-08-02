@@ -6,7 +6,8 @@ import type { InputDevice } from '../input/device';
 import { createProceduralTextures } from '../render/createProceduralTextures';
 import { createPlayerAnimations } from '../render/playerAnimations';
 import { createNewSession } from '../state/GameSession';
-import { bodyTextStyle } from '../ui/text';
+import { BOOT } from '../ui/layout';
+import { proseTextStyle } from '../ui/text';
 
 export class BootScene extends Phaser.Scene {
   public constructor() {
@@ -43,7 +44,7 @@ export class BootScene extends Phaser.Scene {
     createPlayerAnimations(this);
 
     const status = this.add
-      .text(240, 135, '正在校准星骸信标…', bodyTextStyle('#8ce7ff'))
+      .text(BOOT.loading.x, BOOT.loading.y, '正在校准星骸信标…', proseTextStyle('#8ce7ff'))
       .setOrigin(0.5);
 
     this.time.delayedCall(180, () => {

@@ -50,6 +50,27 @@ async function snapshot(page: Page): Promise<TestSnapshot> {
   return page.evaluate(() => (window as unknown as TestWindow).__STAR_ECHO_TEST__.snapshot());
 }
 
+/**
+ * 一直向右跑到位置不再变化为止，而不是按固定时长赌一个距离：
+ * 训练关中途会切课并把玩家挪回起点，固定 5 秒有时只跑到 436。
+ */
+async function runRightUntilStopped(page: Page): Promise<number> {
+  const readX = async (): Promise<number> =>
+    (await page.evaluate(() =>
+      (window as unknown as TestWindow).__STAR_ECHO_TEST__.tutorialPlayerX(),
+    )) ?? 0;
+  await page.keyboard.down('ArrowRight');
+  let previous = -1;
+  let current = await readX();
+  for (let sample = 0; sample < 30 && current !== previous; sample += 1) {
+    await page.waitForTimeout(400);
+    previous = current;
+    current = await readX();
+  }
+  await page.keyboard.up('ArrowRight');
+  return current;
+}
+
 async function waitForGameFrame(page: Page): Promise<void> {
   await page.evaluate(
     () =>
@@ -63,7 +84,7 @@ test('starts a new game and opens map, pause, settings and controls', async ({ p
   const errors = await openGame(page);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
 
-  await clickUi(page, 240, 136);
+  await clickUi(page, 480, 252);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('play');
   await expect.poll(async () => (await snapshot(page)).roomId).toBe('vestibule_dock');
   await page.keyboard.press('h');
@@ -81,10 +102,10 @@ test('starts a new game and opens map, pause, settings and controls', async ({ p
   await expect.poll(async () => (await snapshot(page)).uiMode).toBe('pause');
   await waitForGameFrame(page);
 
-  await clickUi(page, 240, 144);
+  await clickUi(page, 480, 310);
   await expect.poll(async () => (await snapshot(page)).uiMode).toBe('settings');
   await waitForGameFrame(page);
-  await clickUi(page, 240, 130);
+  await clickUi(page, 480, 238);
   const settings = await page.evaluate(() => localStorage.getItem('star-echo.settings.v1'));
   expect(settings).toContain('screenShake');
   await page.keyboard.press('Escape');
@@ -119,7 +140,7 @@ test('restores a valid save and safely replaces a corrupt save', async ({ page }
   await page.reload();
   await page.waitForFunction(() => Boolean((window as unknown as TestWindow).__STAR_ECHO_TEST__));
   await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
-  await clickUi(page, 240, 104);
+  await clickUi(page, 480, 184);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('play');
   await expect.poll(async () => (await snapshot(page)).roomId).toBe('bioforge_intake');
   expect((await snapshot(page)).abilities.phaseDash).toBe(true);
@@ -128,7 +149,7 @@ test('restores a valid save and safely replaces a corrupt save', async ({ page }
   await page.reload();
   await page.waitForFunction(() => Boolean((window as unknown as TestWindow).__STAR_ECHO_TEST__));
   await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
-  await clickUi(page, 240, 136);
+  await clickUi(page, 480, 252);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('play');
   await expect.poll(async () => (await snapshot(page)).roomId).toBe('vestibule_dock');
   expect(errors).toEqual([]);
@@ -144,17 +165,10 @@ test('opens the playable tutorial and safely returns to the title', async ({ pag
   // 训练关此前不设物理边界，靠 config 的默认值兜底。画布升到 960×540 之后
   // 默认值也跟着变，玩家会一路走出房间——而且不会有任何一处报错。
   await page.locator('canvas').click({ position: { x: 60, y: 60 } });
-  await page.keyboard.down('ArrowRight');
-  // 第二课的起点在 x=92，MOVEMENT.speed 是 110px/s，5 秒足够顶到右墙；
-  // 没有物理边界的话同样 5 秒会跑到 600 开外。
-  await page.waitForTimeout(5_000);
-  await page.keyboard.up('ArrowRight');
-  const tutorialX = await page.evaluate(() =>
-    (window as unknown as TestWindow).__STAR_ECHO_TEST__.tutorialPlayerX(),
-  );
-  expect(tutorialX).not.toBeNull();
-  expect(tutorialX ?? 0).toBeGreaterThan(440);
-  expect(tutorialX ?? 0).toBeLessThanOrEqual(480);
+  const tutorialX = await runRightUntilStopped(page);
+  // 有边界时停在右墙（x≈473）；没有边界时会一路跑到画布边缘才停下。
+  expect(tutorialX).toBeGreaterThan(400);
+  expect(tutorialX).toBeLessThanOrEqual(480);
 
   await page.keyboard.press('Escape');
   await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
@@ -243,7 +257,7 @@ test('walks through a corridor without pressing interact and does not bounce bac
 }) => {
   const errors = await openGame(page);
   await expect.poll(async () => (await snapshot(page)).scene).toBe('title');
-  await clickUi(page, 240, 136);
+  await clickUi(page, 480, 252);
   await expect.poll(async () => (await snapshot(page)).roomId).toBe('vestibule_dock');
   // 合成点击不会把键盘焦点交给画布，长按方向键读不到 Key.isDown。
   await page.locator('canvas').click({ position: { x: 60, y: 60 } });

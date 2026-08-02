@@ -103,8 +103,8 @@ export const TITLE = {
   heading: { y: 60 },
   version: { y: 124 },
   menuRows: [184, 252, 320, 388],
-  saveStatus: { y: 448 },
-  keyHint: { y: 496 },
+  saveStatus: { y: 442 },
+  keyHint: { y: 490 },
   band: { y: 104, height: 208 },
   /** 立绘按 186×384 原生尺寸绘制：原先 setDisplaySize(111,229) 是 0.597 倍分数重采样。 */
   portrait: { x: 830, y: 536 },

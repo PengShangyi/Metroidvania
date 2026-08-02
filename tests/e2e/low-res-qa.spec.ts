@@ -3,6 +3,8 @@ import { join } from 'node:path';
 
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 
+import { PIXEL_FONT_FAMILY, PROSE_FONT_FAMILY } from '../../src/game/ui/text';
+
 interface TypographySnapshot {
   fontReady: boolean;
   textCount: number;
@@ -97,7 +99,12 @@ async function expectReadableTypography(page: Page): Promise<void> {
   expect(typography.textCount).toBeGreaterThan(0);
   expect(typography.minimumFontSize).toBeGreaterThanOrEqual(12);
   expect(typography.fontFamilies.length).toBeGreaterThan(0);
-  expect(typography.fontFamilies.every((family) => family.includes('Fusion Pixel 12'))).toBe(true);
+  // 白名单而不是子串匹配：界面只允许这两条字体栈，别的都是漏网的临时样式。
+  expect(
+    typography.fontFamilies.filter(
+      (family) => family !== PIXEL_FONT_FAMILY && family !== PROSE_FONT_FAMILY,
+    ),
+  ).toEqual([]);
   expect(typography.clippedTexts).toEqual([]);
   expect(typography.overlappingTextPairs).toEqual([]);
   expect(typography.synthesizedStyles).toEqual([]);

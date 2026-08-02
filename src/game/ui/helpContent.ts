@@ -3,7 +3,6 @@ import type { TutorialStepId } from '../tutorial/tutorialPlan';
 
 export interface HelpRow {
   action: string;
-  compactAction?: string;
   control: string;
   description: string;
 }
@@ -22,12 +21,7 @@ export const HELP_CONTENT: Record<InputDevice, readonly HelpGroup[]> = {
         { action: '跳跃', control: 'SPACE', description: '按住增高' },
         { action: '能量枪', control: 'J', description: '墙跳贯穿' },
         { action: '能量刃', control: 'K', description: '80ms 反射' },
-        {
-          action: '相位冲刺',
-          compactAction: '冲刺',
-          control: 'SHIFT',
-          description: '穿盾开核/无敌',
-        },
+        { action: '相位冲刺', control: 'SHIFT', description: '穿盾开核/无敌' },
       ],
     },
     {
@@ -49,12 +43,7 @@ export const HELP_CONTENT: Record<InputDevice, readonly HelpGroup[]> = {
         { action: '跳跃', control: 'A', description: '按住增高' },
         { action: '能量枪', control: 'X', description: '墙跳贯穿' },
         { action: '能量刃', control: 'Y', description: '80ms 反射' },
-        {
-          action: '相位冲刺',
-          compactAction: '冲刺',
-          control: 'B',
-          description: '穿盾开核/无敌',
-        },
+        { action: '相位冲刺', control: 'B', description: '穿盾开核/无敌' },
       ],
     },
     {
@@ -64,12 +53,7 @@ export const HELP_CONTENT: Record<InputDevice, readonly HelpGroup[]> = {
         { action: '地图', control: 'VIEW', description: '探索地图' },
         { action: '暂停', control: 'MENU', description: '设置' },
         { action: '帮助', control: 'LB', description: '随时查看' },
-        {
-          action: '菜单选择',
-          compactAction: '菜单',
-          control: '鼠标',
-          description: '点击按钮',
-        },
+        { action: '菜单选择', control: '鼠标', description: '点击按钮' },
       ],
     },
   ],
