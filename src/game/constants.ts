@@ -30,6 +30,7 @@ export const REGISTRY_KEYS = {
   session: 'star-echo.session',
   runtimeMessage: 'star-echo.runtime-message',
   roomLabel: 'star-echo.room-label',
+  tutorialHud: 'star-echo.tutorial-hud',
   bossHealth: 'star-echo.boss-health',
   bossPhase: 'star-echo.boss-phase',
   uiMode: 'star-echo.ui-mode',

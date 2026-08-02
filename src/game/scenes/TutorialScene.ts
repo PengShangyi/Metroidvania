@@ -20,13 +20,18 @@ import { queueRegionAssets } from '../render/regionAssets';
 import { createNewSession, type GameSessionState } from '../state/GameSession';
 import { trainingEnemiesExhausted, tutorialStageComplete } from '../tutorial/stageCompletion';
 import {
+  initialTutorialHudState,
+  tutorialHudState,
+  withComplete,
+  withEffect,
+  type TutorialHudState,
+} from '../tutorial/tutorialHudState';
+import {
   TUTORIAL_STEPS,
   tutorialAbilities,
   tutorialEnemies,
   type TutorialStepId,
 } from '../tutorial/tutorialPlan';
-import { tutorialControlHint } from '../ui/helpContent';
-import { bodyTextStyle } from '../ui/text';
 
 export class TutorialScene extends Phaser.Scene {
   private controls!: InputController;
@@ -37,10 +42,6 @@ export class TutorialScene extends Phaser.Scene {
   private session!: GameSessionState;
   private platforms!: Phaser.Physics.Arcade.StaticGroup;
   private playerCollider?: Phaser.Physics.Arcade.Collider;
-  private progressText!: Phaser.GameObjects.Text;
-  private titleText!: Phaser.GameObjects.Text;
-  private objectiveText!: Phaser.GameObjects.Text;
-  private effectText!: Phaser.GameObjects.Text;
   private stageIndex = 0;
   private stageObjects: Phaser.GameObjects.GameObject[] = [];
   private shootTarget?: Phaser.GameObjects.Image;
@@ -54,6 +55,13 @@ export class TutorialScene extends Phaser.Scene {
   private complete = false;
   private restocking = false;
   private renderedDevice?: InputDevice;
+  /**
+   * HelpScene 关闭时只 resume 自己的 returnScene，够不到并行的 UI 场景，
+   * 所以由本场景在自己被唤醒时把它一起带回来。
+   */
+  private readonly resumeHudHandler = (): void => {
+    this.scene.resume('tutorial-hud');
+  };
 
   public constructor() {
     super('tutorial');
@@ -87,20 +95,9 @@ export class TutorialScene extends Phaser.Scene {
     this.combat.bindWorld(this.platforms);
     this.enemySystem = new EnemySystem(this, this.player, this.combat);
 
-    this.add.rectangle(240, 41, 468, 72, COLORS.void, 0.88).setStrokeStyle(1, COLORS.cyan, 0.7);
-    this.progressText = this.add.text(14, 10, '', bodyTextStyle('#ffb454'));
-    this.titleText = this.add
-      .text(240, 9, '', { ...bodyTextStyle('#d8f7ff'), fontSize: '12px' })
-      .setOrigin(0.5, 0);
-    this.objectiveText = this.add
-      .text(240, 31, '', { ...bodyTextStyle('#d8f7ff'), align: 'center' })
-      .setOrigin(0.5, 0)
-      .setWordWrapWidth(450);
-    this.effectText = this.add
-      .text(240, 50, '', { ...bodyTextStyle('#8ce7ff'), align: 'center' })
-      .setOrigin(0.5, 0)
-      .setWordWrapWidth(450);
-    this.add.text(468, 10, 'H 帮助 · ESC 标题', bodyTextStyle('#8da1c8')).setOrigin(1, 0);
+    this.registry.set(REGISTRY_KEYS.tutorialHud, initialTutorialHudState());
+    this.scene.launch('tutorial-hud');
+    this.events.on(Phaser.Scenes.Events.RESUME, this.resumeHudHandler);
 
     this.input.keyboard?.on('keydown-H', this.openHelp, this);
     this.input.keyboard?.on('keydown-ESC', this.returnToTitle, this);
@@ -116,11 +113,13 @@ export class TutorialScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.input.keyboard?.off('keydown-H', this.openHelp, this);
       this.input.keyboard?.off('keydown-ESC', this.returnToTitle, this);
+      this.events.off(Phaser.Scenes.Events.RESUME, this.resumeHudHandler);
       this.controls.destroy();
       this.combat.destroy();
       this.enemySystem.destroy();
       this.playerCollider?.destroy();
       if (this.platforms.children) this.platforms.destroy(true);
+      this.scene.stop('tutorial-hud');
     });
   }
 
@@ -132,7 +131,7 @@ export class TutorialScene extends Phaser.Scene {
       return;
     }
     const device = getInputDevice(this.registry);
-    if (device !== this.renderedDevice) this.renderStageInstruction(device);
+    if (device !== this.renderedDevice) this.publishHudState(device);
     const body = this.player.body as Phaser.Physics.Arcade.Body;
     const wallJumpSerialBefore = this.player.wallJumpSerial;
     this.player.updateMovement(delta, input, this.session.abilities);
@@ -170,11 +169,8 @@ export class TutorialScene extends Phaser.Scene {
     if (!step) return;
     this.session.health = this.session.maxHealth;
     this.session.abilities = tutorialAbilities(step.id);
-    this.progressText.setText(`训练 ${this.stageIndex + 1}/${TUTORIAL_STEPS.length}`);
-    this.titleText.setText(step.title);
     this.renderedDevice = undefined;
-    this.renderStageInstruction(getInputDevice(this.registry));
-    this.effectText.setText(step.effect);
+    this.publishHudState(getInputDevice(this.registry));
     this.combat.clearTransient();
     this.player.resetTraversalState();
     this.piercingProjectileSerial = undefined;
@@ -284,13 +280,13 @@ export class TutorialScene extends Phaser.Scene {
     this.restocking = true;
     this.piercingProjectileSerial = undefined;
     this.piercingTargets.clear();
-    this.effectText.setText('训练体已耗尽 · 正在重构');
+    this.publishEffect('训练体已耗尽 · 正在重构');
     this.time.delayedCall(800, () => {
       this.restocking = false;
       if (this.complete || this.advancing) return;
       if (TUTORIAL_STEPS[this.stageIndex]?.id !== step) return;
       this.enemySystem.load(tutorialEnemies(step), this.platforms);
-      this.effectText.setText(TUTORIAL_STEPS[this.stageIndex]?.effect ?? '');
+      this.publishEffect(TUTORIAL_STEPS[this.stageIndex]?.effect ?? '');
     });
   }
 
@@ -298,38 +294,8 @@ export class TutorialScene extends Phaser.Scene {
     this.complete = true;
     this.combat.clearTransient();
     this.player.setVelocity(0, 0).setAcceleration(0, 0).play('iya-idle', true);
-    const panel = this.add.container(0, 0).setDepth(30);
-    panel.add(this.add.rectangle(240, 135, 480, 270, COLORS.void, 0.86));
-    panel.add(
-      this.add
-        .rectangle(240, 135, 360, 152, COLORS.panel, 0.98)
-        .setStrokeStyle(2, COLORS.cyan, 0.9),
-    );
-    panel.add(
-      this.add
-        .text(240, 90, '训练完成', { ...bodyTextStyle('#d8f7ff'), fontSize: '24px' })
-        .setOrigin(0.5),
-    );
-    panel.add(
-      this.add
-        .text(240, 124, '你已掌握反射、穿盾开核与墙跳贯穿。\n正式任务会从坠星船坞开始。', {
-          ...bodyTextStyle('#8ce7ff'),
-          align: 'center',
-          lineSpacing: 6,
-        })
-        .setOrigin(0.5),
-    );
-    const button = this.add
-      .text(240, 181, '返回标题 · ENTER / 点击', {
-        ...bodyTextStyle('#07101d'),
-        backgroundColor: '#43d8e8',
-        padding: { x: 14, y: 7 },
-      })
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerdown', this.returnToTitle, this);
-    panel.add(button);
-    this.input.keyboard?.once('keydown-ENTER', this.returnToTitle, this);
+    const current = this.registry.get(REGISTRY_KEYS.tutorialHud) as TutorialHudState | undefined;
+    if (current) this.registry.set(REGISTRY_KEYS.tutorialHud, withComplete(current));
   }
 
   private clearStageObjects(): void {
@@ -372,21 +338,26 @@ export class TutorialScene extends Phaser.Scene {
     for (let x = 24; x < 480; x += 48) graphics.strokeRect(x, 78, 28, 164);
   }
 
-  private renderStageInstruction(device: InputDevice): void {
-    const step = TUTORIAL_STEPS[this.stageIndex];
-    if (!step) return;
+  private publishHudState(device: InputDevice): void {
     this.renderedDevice = device;
-    this.objectiveText.setText(`${tutorialControlHint(step.id, device)}：${step.objective}`);
+    this.registry.set(REGISTRY_KEYS.tutorialHud, tutorialHudState(this.stageIndex, device));
+  }
+
+  private publishEffect(effect: string): void {
+    const current = this.registry.get(REGISTRY_KEYS.tutorialHud) as TutorialHudState | undefined;
+    if (!current) return;
+    this.registry.set(REGISTRY_KEYS.tutorialHud, withEffect(current, effect));
   }
 
   private openHelp(): void {
     this.controls.clear();
     this.combat.clearHitStop();
     this.scene.launch('help', { returnScene: 'tutorial', resumeScene: true });
+    this.scene.pause('tutorial-hud');
     this.scene.pause();
   }
 
-  private returnToTitle(): void {
+  public returnToTitle(): void {
     this.scene.start('title');
   }
 
@@ -400,7 +371,7 @@ export class TutorialScene extends Phaser.Scene {
 
   private onShieldOpened(_event: ShieldOpenedEvent): void {
     if (TUTORIAL_STEPS[this.stageIndex]?.id !== 'shield') return;
-    this.effectText.setText('核心已开放：留在抵达侧，用能量刃或能量枪攻击。');
+    this.publishEffect('核心已开放：留在抵达侧，用能量刃或能量枪攻击。');
   }
 
   private onShieldCoreHit(_event: ShieldCoreHitEvent): void {
@@ -414,7 +385,7 @@ export class TutorialScene extends Phaser.Scene {
       this.piercingTargets.clear();
     }
     this.piercingTargets.add(event.targetId);
-    this.effectText.setText(`贯穿命中 ${this.piercingTargets.size}/2：保持移动，继续穿透目标。`);
+    this.publishEffect(`贯穿命中 ${this.piercingTargets.size}/2：保持移动，继续穿透目标。`);
     if (this.piercingTargets.size >= 2) this.advanceStage();
   }
 }

@@ -7,6 +7,7 @@ import { HelpScene } from './scenes/HelpScene';
 import { HudScene } from './scenes/HudScene';
 import { PlayScene } from './scenes/PlayScene';
 import { TitleScene } from './scenes/TitleScene';
+import { TutorialHudScene } from './scenes/TutorialHudScene';
 import { TutorialScene } from './scenes/TutorialScene';
 
 export function createGameConfig(): Phaser.Types.Core.GameConfig {
@@ -41,6 +42,16 @@ export function createGameConfig(): Phaser.Types.Core.GameConfig {
       pixelArt: true,
       roundPixels: true,
     },
-    scene: [BootScene, TitleScene, TutorialScene, PlayScene, HudScene, HelpScene, EndingScene],
+    // 顺序即渲染层级：UI 场景要压在各自的世界场景之上，HelpScene 再压在所有 UI 之上。
+    scene: [
+      BootScene,
+      TitleScene,
+      TutorialScene,
+      TutorialHudScene,
+      PlayScene,
+      HudScene,
+      HelpScene,
+      EndingScene,
+    ],
   };
 }
