@@ -5,10 +5,12 @@ import { ensureUIFonts } from './game/ui/fontLoader';
 import './style.css';
 
 let game: Phaser.Game | undefined;
+let booted = false;
 
 async function startGame(): Promise<void> {
   await ensureUIFonts(document.fonts);
   game = new Phaser.Game(createGameConfig());
+  booted = true;
   if (import.meta.env.MODE === 'test') {
     const { installTestBridge } = await import('./game/testing/installTestBridge');
     await waitForTitleScene(game);
@@ -51,4 +53,18 @@ function showRuntimeError(message: string): void {
 }
 
 window.addEventListener('error', (event) => showRuntimeError(event.message || '未知运行错误'));
-window.addEventListener('unhandledrejection', () => showRuntimeError('资源或系统初始化失败'));
+
+/**
+ * 这块面板写的是「资源或系统初始化失败」，它也只该管初始化。游戏跑起来之后仍会有
+ * 够不到的 Promise 拒绝——最典型的是全屏：Phaser 的 ScaleManager 调用
+ * requestFullscreen() 后直接丢掉返回的 Promise，浏览器一拒绝（转场未落定时连按两次
+ * F、或页面根本不被允许全屏）就成了未捕获拒绝。游戏本身毫发无损，却被盖上一个
+ * 「信标连接中断」的红框。启动完成之后改记到控制台，e2e 的控制台断言照样拦得住真问题。
+ */
+window.addEventListener('unhandledrejection', (event) => {
+  if (booted) {
+    console.error('未处理的 Promise 拒绝：', event.reason);
+    return;
+  }
+  showRuntimeError('资源或系统初始化失败');
+});
