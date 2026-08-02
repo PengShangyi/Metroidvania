@@ -35,8 +35,18 @@ function showRuntimeError(message: string): void {
   const panel = existing ?? document.createElement('section');
   panel.dataset.runtimeError = 'true';
   panel.className = 'runtime-error';
-  panel.innerHTML = `<strong>信标连接中断</strong><span>${message}</span><button type="button">重新加载</button>`;
-  panel.querySelector('button')?.addEventListener('click', () => window.location.reload());
+  // message 直接来自 window.onerror，拼进 innerHTML 等于把运行时字符串当 HTML 执行。
+  // 纯本地游戏里利用面很窄，但用 textContent 就没有这回事。
+  panel.replaceChildren();
+  const title = document.createElement('strong');
+  title.textContent = '信标连接中断';
+  const detail = document.createElement('span');
+  detail.textContent = message;
+  const reload = document.createElement('button');
+  reload.type = 'button';
+  reload.textContent = '重新加载';
+  reload.addEventListener('click', () => window.location.reload());
+  panel.append(title, detail, reload);
   if (!existing) document.body.append(panel);
 }
 
