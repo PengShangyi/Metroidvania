@@ -73,8 +73,13 @@ export function tutorialStageComplete(
  * 结果是只能按 ESC 退回标题。这里判定「该重新投放训练体了」。
  *
  * 穿盾课不算：打死那只爬行体本身就会先触发 shieldCoreHit 过关。
+ *
+ * 判据是「少了一只就补」而不是「死光才补」：贯穿课要同一发弹体串起两个靶子，打死其中
+ * 一只之后剩下的那只再怎么打也凑不齐 2/2，而 sentry 只有 3 点生命、能量刃两下就误杀。
+ * 等 aliveCount 归零的话，玩家会卡在一个既过不了关、又不给任何提示的房间里。
  */
 export function trainingEnemiesExhausted(step: TutorialStepId, aliveCount: number): boolean {
   if (step !== 'reflect' && step !== 'piercing') return false;
-  return tutorialEnemies(step).length > 0 && aliveCount === 0;
+  const total = tutorialEnemies(step).length;
+  return total > 0 && aliveCount < total;
 }

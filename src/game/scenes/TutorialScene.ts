@@ -292,7 +292,7 @@ export class TutorialScene extends Phaser.Scene {
     this.restocking = true;
     this.piercingProjectileSerial = undefined;
     this.piercingTargets.clear();
-    this.publishEffect('训练体已耗尽 · 正在重构');
+    this.publishEffect('训练体不足 · 正在重构');
     this.time.delayedCall(800, () => {
       this.restocking = false;
       if (this.complete || this.advancing) return;

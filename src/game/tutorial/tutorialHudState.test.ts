@@ -47,9 +47,9 @@ describe('训练 HUD 状态', () => {
   it('withEffect 与 withComplete 不改动其他字段', () => {
     const base = tutorialHudState(2, 'keyboardMouse');
 
-    expect(withEffect(base, '训练体已耗尽 · 正在重构')).toEqual({
+    expect(withEffect(base, '训练体不足 · 正在重构')).toEqual({
       ...base,
-      effect: '训练体已耗尽 · 正在重构',
+      effect: '训练体不足 · 正在重构',
     });
     expect(withComplete(base)).toEqual({ ...base, complete: true });
     expect(base.complete).toBe(false);

@@ -82,9 +82,15 @@ describe('训练体耗尽判定', () => {
     expect(trainingEnemiesExhausted('piercing', 0)).toBe(true);
   });
 
-  it('还有靶子活着就不重投', () => {
+  it('靶子齐全时不重投', () => {
     expect(trainingEnemiesExhausted('reflect', 1)).toBe(false);
     expect(trainingEnemiesExhausted('piercing', 2)).toBe(false);
+  });
+
+  it('贯穿课少一只靶子就要重投——剩下一只永远凑不齐 2/2', () => {
+    // 这个中间值此前没被测到：判据写成 aliveCount === 0 时它返回 false，
+    // 玩家误杀一只 sentry 之后就卡在一个既过不了关、也不给提示的房间里。
+    expect(trainingEnemiesExhausted('piercing', 1)).toBe(true);
   });
 
   it('穿盾课不参与：打死那只爬行体本身就会先过关', () => {
