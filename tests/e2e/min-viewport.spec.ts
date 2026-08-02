@@ -1,10 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-interface MinViewportBridge {
-  snapshot(): { scene: string };
-}
-
-type MinViewportWindow = Window & { __STAR_ECHO_TEST__: MinViewportBridge };
+import type { TestWindow } from './bridge';
 
 /**
  * 480×270 曾经是原生渲染分辨率，现在只是一个很小的窗口：画布固定 960×540，
@@ -21,9 +17,7 @@ test('在最小窗口下依然以 960×540 背板启动且无控制台报错', a
   page.on('pageerror', (error) => errors.push(error.stack ?? error.message));
 
   await page.goto('/');
-  await page.waitForFunction(() =>
-    Boolean((window as unknown as MinViewportWindow).__STAR_ECHO_TEST__),
-  );
+  await page.waitForFunction(() => Boolean((window as unknown as TestWindow).__STAR_ECHO_TEST__));
   const canvas = page.locator('canvas');
   await expect(canvas).toBeVisible();
 
@@ -41,9 +35,7 @@ test('在最小窗口下依然以 960×540 背板启动且无控制台报错', a
 
   await expect
     .poll(() =>
-      page.evaluate(
-        () => (window as unknown as MinViewportWindow).__STAR_ECHO_TEST__.snapshot().scene,
-      ),
+      page.evaluate(() => (window as unknown as TestWindow).__STAR_ECHO_TEST__.snapshot().scene),
     )
     .toBe('title');
   expect(errors).toEqual([]);

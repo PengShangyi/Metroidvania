@@ -19,12 +19,13 @@ import { activateArcadeImage } from '../render/arcadePool';
 import { createNewSession, type GameSessionState } from '../state/GameSession';
 import { TUTORIAL_STEPS } from '../tutorial/tutorialPlan';
 import { PROSE_FONT_DESCRIPTOR, UI_FONT_DESCRIPTOR, UI_FONT_PROBE } from '../ui/fontLoader';
+import type { OverlayMode } from '../ui/hudMode';
 import { PIXEL_FONT_FAMILY, PIXEL_FONT_GRID } from '../ui/text';
 import { RoomRepository } from '../world/RoomRepository';
 import type { RoomRuntime } from '../world/RoomRuntime';
 import type { BiomeId, EnemySpawn } from '../world/types';
 
-interface TestProgressPatch {
+export interface TestProgressPatch {
   health?: number;
   phaseDash?: boolean;
   magneticGrip?: boolean;
@@ -32,7 +33,7 @@ interface TestProgressPatch {
   collectedPickups?: string[];
 }
 
-interface TestSnapshot {
+export interface TestSnapshot {
   scene: string;
   roomId: string;
   health: number;
@@ -45,7 +46,7 @@ interface TestSnapshot {
   combat: CombatTestSnapshot;
 }
 
-interface TypographyTestSnapshot {
+export interface TypographyTestSnapshot {
   fontReady: boolean;
   textCount: number;
   /** 屏幕上所有可见文本，用来断言「某句话确实渲染出来了」。 */
@@ -74,7 +75,7 @@ interface ActiveText {
 
 export type CombatTestScenario = 'shield' | 'turretReflection' | 'bossReflection' | 'piercing';
 
-interface CombatTestSnapshot {
+export interface CombatTestSnapshot {
   player: {
     x: number;
     y: number;
@@ -98,7 +99,7 @@ interface CombatTestSnapshot {
   events: CombatEventLog;
 }
 
-interface CombatEventLog {
+export interface CombatEventLog {
   reflected: ProjectileReflectedEvent[];
   shieldOpened: ShieldOpenedEvent[];
   shieldCoreHits: ShieldCoreHitEvent[];
@@ -120,7 +121,8 @@ export interface StarEchoTestBridge {
   showRuntimeMessage(message: string): void;
 }
 
-export type HudOverlayMode = 'map' | 'pause' | 'settings' | 'help';
+/** 覆盖层模式的唯一定义在 ui/hudMode.ts，这里只是去掉 'game' 之后的别名。 */
+export type HudOverlayMode = Exclude<OverlayMode, 'game'>;
 
 type TestWindow = Window & { __STAR_ECHO_TEST__?: StarEchoTestBridge };
 type PlaySceneInternals = Phaser.Scene & {

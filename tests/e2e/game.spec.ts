@@ -1,39 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import type { TestSnapshot, TestWindow } from './bridge';
 import { clickUi, clickUiUntil } from './uiPoint';
-
-interface TestSnapshot {
-  scene: string;
-  roomId: string;
-  health: number;
-  maxHealth: number;
-  abilities: { phaseDash: boolean; magneticGrip: boolean };
-  bossDefeated: boolean;
-  bossHealth: number | null;
-  uiMode: string;
-  combat: { player: { x: number; movementState: string } | null };
-  typography: { labels: string[] };
-}
-
-interface BrowserTestBridge {
-  snapshot(): TestSnapshot;
-  startNewGame(): void;
-  warp(
-    roomId: string,
-    patch?: {
-      health?: number;
-      phaseDash?: boolean;
-      magneticGrip?: boolean;
-      bossDefeated?: boolean;
-      collectedPickups?: string[];
-    },
-  ): Promise<void>;
-  completeBoss(): void;
-  showHelp(device: 'keyboardMouse' | 'gamepad'): void;
-  tutorialPlayerX(): number | null;
-}
-
-type TestWindow = Window & { __STAR_ECHO_TEST__: BrowserTestBridge };
 
 async function openGame(page: Page): Promise<string[]> {
   const errors: string[] = [];

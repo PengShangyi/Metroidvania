@@ -1,49 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-type CombatScenario = 'shield' | 'turretReflection' | 'bossReflection' | 'piercing';
-
-interface CombatSnapshot {
-  scene: string;
-  roomId: string;
-  bossHealth: number | null;
-  combat: {
-    player: {
-      x: number;
-      y: number;
-      movementState: string;
-      wallJumpSerial: number;
-      facing: -1 | 1;
-    } | null;
-    piercingArmed: boolean;
-    playerProjectileCount: number;
-    hostileProjectileCount: number;
-    enemies: Array<{
-      id: string;
-      x?: number;
-      y?: number;
-      health: number;
-      shieldState: string;
-      coreSide: number;
-    }>;
-    events: {
-      reflected: Array<{ serial: number; kind: 'turret' | 'bossVolley' }>;
-      shieldOpened: Array<{ enemyId: string; coreSide: -1 | 1 }>;
-      shieldCoreHits: Array<{ enemyId: string; damage: number; remainingHealth: number }>;
-      piercingHits: Array<{ serial: number; targetId: string }>;
-    };
-  };
-}
-
-interface CombatBridge {
-  snapshot(): CombatSnapshot;
-  startNewGame(): void;
-  warp(roomId: string): Promise<void>;
-  prepareCombatScenario(scenario: CombatScenario): Promise<void>;
-  alignPiercingTargets(): void;
-  damagePlayer(amount: number): void;
-}
-
-type CombatWindow = Window & { __STAR_ECHO_TEST__: CombatBridge };
+import type { CombatTestScenario, TestSnapshot, TestWindow } from './bridge';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -54,19 +11,19 @@ async function openCombatGame(page: Page): Promise<string[]> {
   });
   page.on('pageerror', (error) => errors.push(error.stack ?? error.message));
   await page.goto('/');
-  await page.waitForFunction(() => Boolean((window as unknown as CombatWindow).__STAR_ECHO_TEST__));
-  await page.evaluate(() => (window as unknown as CombatWindow).__STAR_ECHO_TEST__.startNewGame());
+  await page.waitForFunction(() => Boolean((window as unknown as TestWindow).__STAR_ECHO_TEST__));
+  await page.evaluate(() => (window as unknown as TestWindow).__STAR_ECHO_TEST__.startNewGame());
   await expect.poll(async () => (await combatSnapshot(page)).scene).toBe('play');
   return errors;
 }
 
-async function combatSnapshot(page: Page): Promise<CombatSnapshot> {
-  return page.evaluate(() => (window as unknown as CombatWindow).__STAR_ECHO_TEST__.snapshot());
+async function combatSnapshot(page: Page): Promise<TestSnapshot> {
+  return page.evaluate(() => (window as unknown as TestWindow).__STAR_ECHO_TEST__.snapshot());
 }
 
-async function prepareScenario(page: Page, scenario: CombatScenario): Promise<void> {
+async function prepareScenario(page: Page, scenario: CombatTestScenario): Promise<void> {
   await page.evaluate(
-    (value) => (window as unknown as CombatWindow).__STAR_ECHO_TEST__.prepareCombatScenario(value),
+    (value) => (window as unknown as TestWindow).__STAR_ECHO_TEST__.prepareCombatScenario(value),
     scenario,
   );
   await expect.poll(async () => (await combatSnapshot(page)).combat.player !== null).toBe(true);
@@ -146,7 +103,7 @@ test('wall-jump first shot pierces two formal enemy targets', async ({ page }) =
   await page.keyboard.up('ArrowLeft');
   await expect.poll(async () => (await combatSnapshot(page)).combat.piercingArmed).toBe(true);
   await page.evaluate(() =>
-    (window as unknown as CombatWindow).__STAR_ECHO_TEST__.alignPiercingTargets(),
+    (window as unknown as TestWindow).__STAR_ECHO_TEST__.alignPiercingTargets(),
   );
   await page.keyboard.down('j');
 
@@ -173,7 +130,7 @@ test('room changes and death clear the wall-jump charge and transient shots', as
   await expect.poll(async () => (await combatSnapshot(page)).combat.piercingArmed).toBe(true);
 
   await page.evaluate(() =>
-    (window as unknown as CombatWindow).__STAR_ECHO_TEST__.warp('vestibule_dock'),
+    (window as unknown as TestWindow).__STAR_ECHO_TEST__.warp('vestibule_dock'),
   );
   await expect.poll(async () => (await combatSnapshot(page)).combat.piercingArmed).toBe(false);
   expect((await combatSnapshot(page)).combat.playerProjectileCount).toBe(0);
@@ -181,9 +138,7 @@ test('room changes and death clear the wall-jump charge and transient shots', as
   await prepareScenario(page, 'piercing');
   await performWallJump(page);
   await expect.poll(async () => (await combatSnapshot(page)).combat.piercingArmed).toBe(true);
-  await page.evaluate(() =>
-    (window as unknown as CombatWindow).__STAR_ECHO_TEST__.damagePlayer(99),
-  );
+  await page.evaluate(() => (window as unknown as TestWindow).__STAR_ECHO_TEST__.damagePlayer(99));
   await expect.poll(async () => (await combatSnapshot(page)).combat.piercingArmed).toBe(false);
   expect((await combatSnapshot(page)).combat.playerProjectileCount).toBe(0);
   expect(errors).toEqual([]);
