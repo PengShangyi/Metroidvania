@@ -3,7 +3,7 @@ import {
   type AccessibilitySettings,
   type GameSessionState,
 } from '../state/GameSession';
-import { RoomRepository } from '../world/RoomRepository';
+import { shippedRooms } from '../world/RoomRepository';
 
 export const SAVE_KEY = 'star-echo.save.v1';
 export const SETTINGS_KEY = 'star-echo.settings.v1';
@@ -185,7 +185,7 @@ function isSaveDataV1(value: unknown): value is SaveDataV1 {
  * 对不上只是落点略有偏差，不会崩。
  */
 function referencesRealRooms(data: SaveDataV1): boolean {
-  const rooms = new RoomRepository();
+  const rooms = shippedRooms();
   return (
     rooms.find(data.currentRoomId) !== undefined && rooms.find(data.checkpointRoomId) !== undefined
   );

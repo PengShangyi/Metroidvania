@@ -17,7 +17,7 @@ import { createBrowserSaveService, type SaveService } from '../save/SaveService'
 import type { GameSessionState } from '../state/GameSession';
 import { respawnDecision } from '../state/respawnQueue';
 import { sessionEntryPoint } from '../state/resumePoint';
-import { RoomRepository } from '../world/RoomRepository';
+import { shippedRooms, type RoomRepository } from '../world/RoomRepository';
 import { RoomRuntime } from '../world/RoomRuntime';
 import {
   CONTEXT_HINT_DELAY_MS,
@@ -60,7 +60,7 @@ export class PlayScene extends Phaser.Scene {
 
   public preload(): void {
     const session = this.registry.get(REGISTRY_KEYS.session) as GameSessionState;
-    const rooms = new RoomRepository();
+    const rooms = shippedRooms();
     const room = rooms.get(session.currentRoomId);
     queueRegionAssets(this, room.biome);
   }
@@ -88,7 +88,7 @@ export class PlayScene extends Phaser.Scene {
     this.events.on(AUDIO_EVENT, this.audioHandler);
     this.events.on(Phaser.Scenes.Events.PAUSE, this.scenePauseHandler);
     this.events.on(Phaser.Scenes.Events.RESUME, this.sceneResumeHandler);
-    this.rooms = new RoomRepository();
+    this.rooms = shippedRooms();
     createRegionAnimations(this, this.rooms.get(this.session.currentRoomId).biome);
     this.player = new Player(this, 0, 0);
     this.roomRuntime = new RoomRuntime(this, this.rooms, this.session, () =>

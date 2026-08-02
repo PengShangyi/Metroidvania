@@ -33,6 +33,8 @@ export class RoomRuntime {
    * 所以进房时先把玩家所在的出口「解除武装」，等他离开判定区再重新启用。
    */
   private disarmedExits = new Set<string>();
+  /** 出口矩形是静态数据，在 load() 时建一次就够；update() 每帧为每个出口 new 一个纯属浪费。 */
+  private exitBoxes = new Map<string, Phaser.Geom.Rectangle>();
   private safePosition = new Phaser.Math.Vector2();
   private readonly saveProgress: () => boolean;
 
@@ -90,8 +92,10 @@ export class RoomRuntime {
     player.resetTraversalState();
     this.safePosition.set(spawn.x, spawn.y);
     this.disarmedExits.clear();
+    this.exitBoxes.clear();
     for (const exit of this.room.exits) {
       const box = new Phaser.Geom.Rectangle(exit.x, exit.y, exit.width, exit.height);
+      this.exitBoxes.set(exit.id, box);
       if (Phaser.Geom.Rectangle.Contains(box, spawn.x, spawn.y - 12)) {
         this.disarmedExits.add(exit.id);
       }
@@ -119,13 +123,10 @@ export class RoomRuntime {
       this.safePosition.set(player.x, player.y);
     }
     this.handlePickups(player, input);
-    const overlappingExit = this.room.exits.find((exit) =>
-      Phaser.Geom.Rectangle.Contains(
-        new Phaser.Geom.Rectangle(exit.x, exit.y, exit.width, exit.height),
-        player.x,
-        player.y - 12,
-      ),
-    );
+    const overlappingExit = this.room.exits.find((exit) => {
+      const box = this.exitBoxes.get(exit.id);
+      return box ? Phaser.Geom.Rectangle.Contains(box, player.x, player.y - 12) : false;
+    });
 
     for (const exit of this.room.exits) {
       if (exit !== overlappingExit) this.disarmedExits.delete(exit.id);

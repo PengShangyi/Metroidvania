@@ -21,7 +21,7 @@ import { TUTORIAL_STEPS } from '../tutorial/tutorialPlan';
 import { PROSE_FONT_DESCRIPTOR, UI_FONT_DESCRIPTOR, UI_FONT_PROBE } from '../ui/fontLoader';
 import type { OverlayMode } from '../ui/hudMode';
 import { PIXEL_FONT_FAMILY, PIXEL_FONT_GRID } from '../ui/text';
-import { RoomRepository } from '../world/RoomRepository';
+import { shippedRooms } from '../world/RoomRepository';
 import type { RoomRuntime } from '../world/RoomRuntime';
 import type { BiomeId, EnemySpawn } from '../world/types';
 
@@ -448,7 +448,7 @@ async function warp(game: Phaser.Game, roomId: string, patch: TestProgressPatch)
   const play = playInternals(game);
   play.combat.clearTransient();
   play.enemySystem.clear();
-  const biome = new RoomRepository().get(roomId).biome;
+  const biome = shippedRooms().get(roomId).biome;
   await new Promise<void>((resolve) => {
     play.ensureRegionAssets(biome, () => {
       play.transitioning = false;

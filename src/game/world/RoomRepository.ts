@@ -34,6 +34,18 @@ export class RoomRepository {
   }
 }
 
+let shipped: RoomRepository | undefined;
+
+/**
+ * rooms.json 是静态数据，而 validateRooms 要走完 17 个房间的全部出口、敌人与拾取。
+ * 点一次「继续任务」此前会构造三遍：SaveService 校验存档一次，PlayScene 的 preload
+ * 与 create 各一次。带参数的构造函数留给测试注入自定义世界。
+ */
+export function shippedRooms(): RoomRepository {
+  shipped ??= new RoomRepository();
+  return shipped;
+}
+
 export function validateRooms(definitions: RoomDefinition[]): void {
   if (definitions.length !== 17)
     throw new Error(`世界必须包含 17 个房间，当前为 ${definitions.length}`);
